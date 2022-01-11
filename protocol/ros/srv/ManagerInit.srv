@@ -1,15 +1,8 @@
-# Messages
-uint8 ASK_SERVER = 0
-uint8 ASK_CHECK = 1
-
-# Request
-uint8 ask_code
+# This srv does not need request.
 
 ---
 
-# Result
-uint8 OK = 0
-uint8 FAILED = 1
+# Result code has defined robot_code.
 
 # Response
-uint8 res_code
+int32 res_code
