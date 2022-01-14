@@ -13,6 +13,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   # msg
   "ros/msg/ManagerState.msg"
   "ros/msg/Heartbeats.msg"
+  "ros/msg/Touch.msg"
   # srv
   "ros/srv/ManagerInit.srv"
   "ros/srv/LedExecute.srv"
