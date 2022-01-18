@@ -1,9 +1,13 @@
 # request
-string caller
-int8 target
-int8 level
-int8 timeout
-int32 id
+string client # BMS,1;BLUETOOTH,2;AUDIO,3 ..;
+uint8 target # tail_led, head_led,mini_led ...
+uint8 priority #  response priority
+uint64 timeout 
+uint8 effect
+
+
+uint64 COMMAND_OFF = 0
+uint64 COMMAND_ALWAYSON = 0xFFFFFFFFFFFFFFFF
 
 ---
 
