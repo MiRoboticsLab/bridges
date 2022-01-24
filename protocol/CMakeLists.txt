@@ -19,6 +19,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "ros/srv/ManagerInit.srv"
   "ros/srv/LedExecute.srv"
   "ros/srv/ConnectorStatus.srv"
+  "ros/srv/Wifi.srv"
+  "ros/srv/IP.srv"
 )
 
 if(BUILD_TESTING)
