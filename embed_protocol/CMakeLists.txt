@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(cyberdog_common_protocol)
+project(cyberdog_embed_protocol)
 
 # Default to C99
 if(NOT CMAKE_C_STANDARD)

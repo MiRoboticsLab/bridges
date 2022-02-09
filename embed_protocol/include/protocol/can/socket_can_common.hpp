@@ -32,7 +32,7 @@
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 
 /// Bind a non-blocking CAN_RAW socket to the given interface
@@ -104,7 +104,7 @@ fd_set single_set(int32_t file_descriptor) noexcept
   return descriptor_set;
 }
 
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
 #endif  // PROTOCOL__CAN__SOCKET_CAN_COMMON_HPP_

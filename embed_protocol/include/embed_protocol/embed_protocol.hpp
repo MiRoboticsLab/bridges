@@ -12,25 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COMMON_PROTOCOL__COMMON_PROTOCOL_HPP_
-#define COMMON_PROTOCOL__COMMON_PROTOCOL_HPP_
+#ifndef EMBED_PROTOCOL__EMBED_PROTOCOL_HPP_
+#define EMBED_PROTOCOL__EMBED_PROTOCOL_HPP_
 
 #include <string>
 #include <memory>
 #include <vector>
 #include <utility>
 
-#include "common_protocol/protocol_base.hpp"
-#include "common_protocol/can_protocol.hpp"
+#include "embed_protocol/protocol_base.hpp"
+#include "embed_protocol/can_protocol.hpp"
 
 #define XNAME(x) (#x)
 #define LINK_VAR(var) LinkVar( \
     XNAME(var), \
-    cyberdog::common::ProtocolData(sizeof((var)), static_cast<void *>(&(var))))
+    cyberdog::embed::ProtocolData(sizeof((var)), static_cast<void *>(&(var))))
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 template<typename TDataClass>
 class Protocol
@@ -122,7 +122,7 @@ private:
     auto name = toml::find_or<std::string>(toml_config, "name", "#unknow");
     if (protocol_toml_path != "") {
       printf(
-        "[PROTOCOL][INFO] Creat common protocol[%s], protocol:\"%s\", path:\"%s\"\n",
+        "[PROTOCOL][INFO] Creat embed protocol[%s], protocol:\"%s\", path:\"%s\"\n",
         name.c_str(), protocol.c_str(), protocol_toml_path.c_str());
     }
 
@@ -145,7 +145,7 @@ private:
     }
   }
 };  // class Protocol
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
-#endif  // COMMON_PROTOCOL__COMMON_PROTOCOL_HPP_
+#endif  // EMBED_PROTOCOL__EMBED_PROTOCOL_HPP_

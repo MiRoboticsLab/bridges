@@ -18,9 +18,9 @@
 
 #include "gtest/gtest.h"
 
-#include "common_protocol/common_protocol.hpp"
+#include "embed_protocol/embed_protocol.hpp"
 
-#define EVM cyberdog::common
+#define EVM cyberdog::embed
 #define CLCT clct.GetAllStateTimesNum
 
 class testing_full_var

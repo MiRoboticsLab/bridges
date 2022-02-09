@@ -1,32 +1,32 @@
-# COMMON_PROTOCOL
+# EMBED_PROTOCOL
 [English Version](README_EN.md)
 
-common_protocol是一个通用的外设抽象类，可动态灵活的配置基于某种通信协议外设的数据解析方式，且所有通信协议都被抽象为一种描述文件，该文件通过外部加载的形式载入，可在不重新编译软件源代码的情况下进行更改，<u>为防止改动出现错误，每一个描述文件都在初始编译态预置在了程序内部，当外部文件缺失或出现错误的情况下可自动载入内部预置文件(TBD)</u>
+embed_protocol是一个通用的外设抽象类，可动态灵活的配置基于某种通信协议外设的数据解析方式，且所有通信协议都被抽象为一种描述文件，该文件通过外部加载的形式载入，可在不重新编译软件源代码的情况下进行更改，<u>为防止改动出现错误，每一个描述文件都在初始编译态预置在了程序内部，当外部文件缺失或出现错误的情况下可自动载入内部预置文件(TBD)</u>
 
 实例通过载入不同描述文件以兼容不同的通信传输协议以及格式，简化了使用外设设备的方法，现在只需要关心消息的使用与指令数据的下发，从复杂的消息编码、解码、发送和接收中解放了出来，不同的通信传输协议也有了统一的通用接口
 
 ***
 ## 1.结构简介
 
-整个功能包使用命名空间`common_protocol`
+整个功能包使用命名空间`embed_protocol`
 
 功能目录结构如下:
 ```
 include
-├── common_protocol
+├── embed_protocol
 │   ├── can_protocol.hpp
-│   ├── common_protocol.hpp
+│   ├── embed_protocol.hpp
 │   ├── common.hpp
 │   └── protocol_base.hpp
-└── common_parser
+└── embed_parser
     └── can_parser.hpp
 ```
-- common_protocol : 通用设备，用于存放主体代码
+- embed_protocol : 通用设备，用于存放主体代码
     - common.hpp : 通用及工具代码
-    - common_protocol.hpp : 对外统一接口
+    - embed_protocol.hpp : 对外统一接口
     - protocol_base.hpp : 不同协议的基类接口
     - [实现] can_protocol.hpp : CAN协议传输的功能实现，从protocol_base派生
-- common_parser : 通用解析器，用于存放协议解析代码
+- embed_parser : 通用解析器，用于存放协议解析代码
     - [实现] can_parser.hpp : CAN协议传输的解析实现
 
 描述文件存放目录见 : [`cyberdog_bridges/README.md`](TBD)规定
@@ -39,9 +39,9 @@ include
 #define XNAME(x) (#x)
 #define LINK_VAR(var) LinkVar( \
     XNAME(var), \
-    cyberdog::common::ProtocolData(sizeof((var)), static_cast<void *>(&(var))))
+    cyberdog::embed::ProtocolData(sizeof((var)), static_cast<void *>(&(var))))
 
-namespace common
+namespace embed
 {
 template<typename TDataClass>
 class Protocol
@@ -62,7 +62,7 @@ public:
 
   StateCollector & GetErrorCollector();
 };  // class Protocol
-}  // namespace common
+}  // namespace embed
 ```
 
 > 构造函数，通过外部描述文件创建实例对象
@@ -148,7 +148,7 @@ int main(int argc, char ** argv)
   UNUSED_VAR(argv);
 
   // receive-operate mode
-  cyberdog::common::Protocol<Acc> protocol_1("parser/can/acc_protocol/acc_1.toml");
+  cyberdog::embed::Protocol<Acc> protocol_1("parser/can/acc_protocol/acc_1.toml");
   protocol_1.LINK_VAR(protocol_1.GetData()->x);
   protocol_1.LINK_VAR(protocol_1.GetData()->y);
   protocol_1.LINK_VAR(protocol_1.GetData()->z);
@@ -158,7 +158,7 @@ int main(int argc, char ** argv)
   protocol_1.Operate("start", data);
   
   // for_send mode
-  cyberdog::common::Protocol<Acc> protocol_2("parser/can/acc_protocol/acc_2.toml");
+  cyberdog::embed::Protocol<Acc> protocol_2("parser/can/acc_protocol/acc_2.toml");
   protocol_2.LINK_VAR(protocol_2.GetData()->x);
   protocol_2.LINK_VAR(protocol_2.GetData()->y);
   protocol_2.LINK_VAR(protocol_2.GetData()->z);
@@ -181,7 +181,7 @@ int main(int argc, char ** argv)
 示例:
 
 ```toml
-# -- common params -- #
+# -- embed params -- #
 # protocol = "can"             (string)
 # name = "can_protocol_name"     (string)
 # [delete] for_send = false  (true / false)
@@ -261,10 +261,10 @@ description = "this is example named example_cmd_1"
 ```
 
 解析:
-- `common params` : 通用参数
+- `embed params` : 通用参数
     - `protocol` : 该描述文件所规定的通信协议
-    - `name` : 该设备`common_protocol`的名称，在log中会使用该值来提示
-    - ~~[删除] `for_send` : 该设备从`TDataClass`接收或发送，如为`false`则开启接收线程从`CAN总线`接收数据到`TDataClass`; 如为`true`则关闭接收线程，使用`SendSelfData()`函数将`TDataClass`发送到`CAN总线`~~(改为在class common_protocol中传入，以实现收发使用同一份描述文件)
+    - `name` : 该设备`embed_protocol`的名称，在log中会使用该值来提示
+    - ~~[删除] `for_send` : 该设备从`TDataClass`接收或发送，如为`false`则开启接收线程从`CAN总线`接收数据到`TDataClass`; 如为`true`则关闭接收线程，使用`SendSelfData()`函数将`TDataClass`发送到`CAN总线`~~(改为在class embed_protocol中传入，以实现收发使用同一份描述文件)
 - `can params` : CAN协议参数
     - `can_interface` : 使用的CAN总线，一般为`"can0"`, `"can1"` 或 `"can2"`
     - [可选] `extended_frame` : 是否使用扩展帧(主要针对发送，接收是全兼容的)，默认缺省值为 : `false`

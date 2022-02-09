@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COMMON_PROTOCOL__COMMON_HPP_
-#define COMMON_PROTOCOL__COMMON_HPP_
+#ifndef EMBED_PROTOCOL__COMMON_HPP_
+#define EMBED_PROTOCOL__COMMON_HPP_
 
 #include <set>
 #include <map>
@@ -28,7 +28,7 @@
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 #define C_END "\033[m"
 #define C_RED "\033[0;32;31m"
@@ -339,7 +339,7 @@ bool toml_parse(toml::value & toml, const std::string & path)
   }
   return false;
 }
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
-#endif  // COMMON_PROTOCOL__COMMON_HPP_
+#endif  // EMBED_PROTOCOL__EMBED_HPP_

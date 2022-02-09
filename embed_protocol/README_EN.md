@@ -1,32 +1,32 @@
-# COMMON_PROTOCOL
+# EMBED_PROTOCOL
 [中文版本](README.md)
 
-Common_protocol is a general peripheral abstract class, which can dynamically and flexibly configure the data analysis method of peripherals based on a certain communication protocol, and all communication protocols are abstracted into a description file, which can be loaded in the form of external loading. Make changes without recompiling the software source code,<u>In order to prevent errors in the modification, each description file is preset in the program in the initial compilation state, and the internal preset file can be automatically loaded when the external file is missing or an error occurs.(TBD)</u>
+embed_protocol is a general peripheral abstract class, which can dynamically and flexibly configure the data analysis method of peripherals based on a certain communication protocol, and all communication protocols are abstracted into a description file, which can be loaded in the form of external loading. Make changes without recompiling the software source code,<u>In order to prevent errors in the modification, each description file is preset in the program in the initial compilation state, and the internal preset file can be automatically loaded when the external file is missing or an error occurs.(TBD)</u>
 
 The example simplifies the method of using peripheral devices by loading different description files to be compatible with different communication transmission protocols and formats. Now only need to care about the use of messages and the issuance of instruction data, from complex message encoding, decoding, sending and It is liberated from receiving, and different communication transmission protocols also have a unified common interface
 
 ***
 ## 1.Structure introduction
 
-The entire feature pack uses namespace `common_protocol`
+The entire feature pack uses namespace `embed_protocol`
 
 The function directory structure is as follows:
 ```
 include
-├── common_protocol
+├── embed_protocol
 │   ├── can_protocol.hpp
-│   ├── common_protocol.hpp
+│   ├── embed_protocol.hpp
 │   ├── common.hpp
 │   └── protocol_base.hpp
-└── common_parser
+└── embed_parser
     └── can_parser.hpp
 ```
-- common_protocol : General equipment, used to store the main body code
+- embed_protocol : General equipment, used to store the main body code
     - common.hpp : General and tool codes
-    - common_protocol.hpp : Unified external interface
+    - embed_protocol.hpp : Unified external interface
     - protocol_base.hpp : Base class interface of different protocols
     - [accomplish] can_protocol.hpp : Function realization of CAN protocol transmission, derived from protocol_base
-- common_parser : Universal parser, used to store protocol parsing code
+- embed_parser : Universal parser, used to store protocol parsing code
     - [accomplish] can_parser.hpp : Analysis and realization of CAN protocol transmission
 
 The description file storage directory see : [`cyberdog_bridges/README.md`](TBD)
@@ -39,9 +39,9 @@ This class is used for the main external interface:
 #define XNAME(x) (#x)
 #define LINK_VAR(var) LinkVar( \
     XNAME(var), \
-    cyberdog::common::ProtocolData(sizeof((var)), static_cast<void *>(&(var))))
+    cyberdog::embed::ProtocolData(sizeof((var)), static_cast<void *>(&(var))))
 
-namespace common
+namespace embed
 {
 template<typename TDataClass>
 class Protocol
@@ -62,7 +62,7 @@ public:
 
   StateCollector & GetErrorCollector();
 };  // class Protocol
-}  // namespace common
+}  // namespace embed
 ```
 
 > Constructor, create instance object through external description file
@@ -148,7 +148,7 @@ int main(int argc, char ** argv)
   UNUSED_VAR(argv);
 
   // receive-operate mode
-  cyberdog::common::Protocol<Acc> protocol_1("parser/can/acc_protocol/acc_1.toml");
+  cyberdog::embed::Protocol<Acc> protocol_1("parser/can/acc_protocol/acc_1.toml");
   protocol_1.LINK_VAR(protocol_1.GetData()->x);
   protocol_1.LINK_VAR(protocol_1.GetData()->y);
   protocol_1.LINK_VAR(protocol_1.GetData()->z);
@@ -158,7 +158,7 @@ int main(int argc, char ** argv)
   protocol_1.Operate("start", data);
   
   // for_send mode
-  cyberdog::common::Protocol<Acc> protocol_2("parser/can/acc_protocol/acc_2.toml");
+  cyberdog::embed::Protocol<Acc> protocol_2("parser/can/acc_protocol/acc_2.toml");
   protocol_2.LINK_VAR(protocol_2.GetData()->x);
   protocol_2.LINK_VAR(protocol_2.GetData()->y);
   protocol_2.LINK_VAR(protocol_2.GetData()->z);
@@ -181,7 +181,7 @@ int main(int argc, char ** argv)
 Example:
 
 ```toml
-# -- common params -- #
+# -- embed params -- #
 # protocol = "can"             (string)
 # name = "can_protocol_name"     (string)
 # [delete] for_send = false  (true / false)
@@ -261,10 +261,10 @@ description = "this is example named example_cmd_1"
 ```
 
 Parsing:
-- `common params` : General parameters
+- `embed params` : General parameters
     - `protocol`: the communication protocol specified by the description file
-    - `name`: the name of the device `common_protocol`, this value will be used to indicate in the log
-    - ~~[Delete] `for_send`: The device receives or sends from `TDataClass`, if it is `false`, the receiving thread is turned on to receive data from the `CAN bus` to `TDataClass`; if it is `true`, the receiving thread is closed , Use the `SendSelfData()` function to send the `TDataClass` to the `CAN bus`~~ (instead of passing in the class common_protocol, in order to achieve the same description file for sending and receiving)
+    - `name`: the name of the device `embed_protocol`, this value will be used to indicate in the log
+    - ~~[Delete] `for_send`: The device receives or sends from `TDataClass`, if it is `false`, the receiving thread is turned on to receive data from the `CAN bus` to `TDataClass`; if it is `true`, the receiving thread is closed , Use the `SendSelfData()` function to send the `TDataClass` to the `CAN bus`~~ (instead of passing in the class embed_protocol, in order to achieve the same description file for sending and receiving)
 - `can params`: CAN protocol parameters
     - `can_interface`: The CAN bus used, generally `"can0"`, `"can1"` or `"can2"`
     - [Optional] `extended_frame`: Whether to use extended frame (mainly for sending and receiving are fully compatible), the default default value is: `false`

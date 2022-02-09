@@ -27,7 +27,7 @@
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 using IdT = uint32_t;
 using LengthT = uint32_t;
@@ -224,7 +224,7 @@ private:
   IdT m_id{};
   LengthT m_data_length{};
 };  // class CanId
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
 #endif  // PROTOCOL__CAN__SOCKET_CAN_ID_HPP_

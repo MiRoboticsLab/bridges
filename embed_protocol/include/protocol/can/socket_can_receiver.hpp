@@ -36,7 +36,7 @@
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 /// Simple RAII wrapper around a raw CAN receiver
 class SOCKETCAN_PUBLIC SocketCanReceiver
@@ -72,7 +72,7 @@ public:
     }
     // Write
     auto receive_id = CanId{frame.can_id, frame.len};
-    if (receive_id.frame_type() == cyberdog::common::FrameType::DATA) {
+    if (receive_id.frame_type() == cyberdog::embed::FrameType::DATA) {
       rx_frame->can_id = receive_id.standard().get();
       rx_frame->can_dlc = receive_id.length();
       std::memcpy(rx_frame->data, frame.data, sizeof(rx_frame->data));
@@ -98,7 +98,7 @@ public:
     }
     // Write
     auto receive_id = CanId{frame.can_id, frame.len};
-    if (receive_id.frame_type() == cyberdog::common::FrameType::DATA) {
+    if (receive_id.frame_type() == cyberdog::embed::FrameType::DATA) {
       rx_frame->can_id = receive_id.standard().get();
       rx_frame->len = receive_id.length();
       std::memcpy(rx_frame->data, frame.data, sizeof(rx_frame->data));
@@ -157,7 +157,7 @@ private:
   int32_t m_file_descriptor;
 };  // class SocketCanReceiver
 
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
 #endif  // PROTOCOL__CAN__SOCKET_CAN_RECEIVER_HPP_

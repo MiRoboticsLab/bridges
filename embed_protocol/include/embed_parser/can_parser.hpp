@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COMMON_PARSER__CAN_PARSER_HPP_
-#define COMMON_PARSER__CAN_PARSER_HPP_
+#ifndef EMBED_PARSER__CAN_PARSER_HPP_
+#define EMBED_PARSER__CAN_PARSER_HPP_
 
 #include <set>
 #include <map>
@@ -26,11 +26,11 @@
 #include "toml/toml.hpp"
 
 #include "protocol/can/can_utils.hpp"
-#include "common_parser/parser_base.hpp"
+#include "embed_parser/parser_base.hpp"
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 class CanParser
 {
@@ -858,8 +858,8 @@ private:
     }
   }
 };  // class CanParser
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
 
-#endif  // COMMON_PARSER__CAN_PARSER_HPP_
+#endif  // EMBED_PARSER__CAN_PARSER_HPP_

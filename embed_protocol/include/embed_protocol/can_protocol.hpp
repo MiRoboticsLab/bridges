@@ -12,21 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COMMON_PROTOCOL__CAN_PROTOCOL_HPP_
-#define COMMON_PROTOCOL__CAN_PROTOCOL_HPP_
+#ifndef EMBED_PROTOCOL__CAN_PROTOCOL_HPP_
+#define EMBED_PROTOCOL__CAN_PROTOCOL_HPP_
 
 #include <string>
 #include <memory>
 #include <vector>
 #include <algorithm>
 
-#include "common_protocol/common.hpp"
-#include "common_protocol/protocol_base.hpp"
-#include "common_parser/can_parser.hpp"
+#include "embed_protocol/common.hpp"
+#include "embed_protocol/protocol_base.hpp"
+#include "embed_parser/can_parser.hpp"
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 template<typename TDataClass>
 class CanProtocol : public ProtocolBase<TDataClass>
@@ -166,7 +166,7 @@ private:
     }
   }
 };  // class CanProtocol
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
-#endif  // COMMON_PROTOCOL__CAN_PROTOCOL_HPP_
+#endif  // EMBED_PROTOCOL__CAN_PROTOCOL_HPP_
