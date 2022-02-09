@@ -17,10 +17,10 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(toml11_vendor REQUIRED)
+find_package(toml REQUIRED)
 
 set(dependencies
-  toml11_vendor
+  toml
 )
 
 install(
