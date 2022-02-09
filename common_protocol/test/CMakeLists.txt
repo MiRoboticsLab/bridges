@@ -3,7 +3,7 @@ include_directories(
 )
 
 set(dependencies
-  toml11_vendor
+  toml
 )
 
 ament_add_gtest(
