@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COMMON_PROTOCOL__PROTOCOL_BASE_HPP_
-#define COMMON_PROTOCOL__PROTOCOL_BASE_HPP_
+#ifndef EMBED_PROTOCOL__PROTOCOL_BASE_HPP_
+#define EMBED_PROTOCOL__PROTOCOL_BASE_HPP_
 
 #include <map>
 #include <memory>
@@ -24,11 +24,11 @@
 #include <functional>
 
 #include "toml/toml.hpp"
-#include "common_protocol/common.hpp"
+#include "embed_protocol/common.hpp"
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 #define MIN_TIME_OUT_US     1'000L  // 1ms
 #define MAX_TIME_OUT_US 3'000'000L  // 3s
@@ -89,7 +89,7 @@ protected:
   std::shared_ptr<TDataClass> protocol_data_;
   std::function<void(std::shared_ptr<TDataClass>)> protocol_data_callback_;
 };  // class ProtocolBase
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
-#endif  // COMMON_PROTOCOL__PROTOCOL_BASE_HPP_
+#endif  // EMBED_PROTOCOL__PROTOCOL_BASE_HPP_

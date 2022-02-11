@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>cyberdog_common_protocol</name>
+  <name>cyberdog_embed_protocol</name>
   <version>1.0.0</version>
   <description>Easier to use peripherals with toml description file</description>
   <maintainer email="zhengjunyuan1@xiaomi.com">ZhengJunyuan</maintainer>

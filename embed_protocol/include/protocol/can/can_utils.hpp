@@ -34,7 +34,7 @@
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 using can_std_callback = std::function<void (std::shared_ptr<struct can_frame> recv_frame)>;
 using can_fd_callback = std::function<void (std::shared_ptr<struct canfd_frame> recv_frame)>;
@@ -108,7 +108,7 @@ private:
   std::unique_ptr<std::thread> main_T_;
   std::shared_ptr<struct can_frame> rx_std_frame_;
   std::shared_ptr<struct canfd_frame> rx_fd_frame_;
-  std::unique_ptr<cyberdog::common::SocketCanReceiver> receiver_;
+  std::unique_ptr<cyberdog::embed::SocketCanReceiver> receiver_;
 
   void init(
     const std::string & interface,
@@ -127,7 +127,7 @@ private:
     can_std_callback_ = std_callback;
     can_fd_callback_ = fd_callback;
     try {
-      receiver_ = std::make_unique<cyberdog::common::SocketCanReceiver>(interface_);
+      receiver_ = std::make_unique<cyberdog::embed::SocketCanReceiver>(interface_);
       receiver_->enable_canfd(canfd_);
       isthreadrunning_ = true;
       main_T_ = std::make_unique<std::thread>(std::bind(&CanRxDev::main_recv_func, this));
@@ -141,7 +141,7 @@ private:
   }
   bool wait_for_can_data()
   {
-    cyberdog::common::CanId receive_id{};
+    cyberdog::embed::CanId receive_id{};
     std::string can_type;
     if (canfd_) {
       can_type = "FD";
@@ -209,7 +209,7 @@ public:
     interface_ = interface;
     extended_frame_ = extended_frame;
     try {
-      sender_ = std::make_unique<cyberdog::common::SocketCanSender>(interface_);
+      sender_ = std::make_unique<cyberdog::embed::SocketCanSender>(interface_);
       sender_->enable_canfd(canfd_on);
     } catch (const std::exception & ex) {
       printf(
@@ -244,7 +244,7 @@ private:
   int64_t nano_timeout_;
   std::string name_;
   std::string interface_;
-  std::unique_ptr<cyberdog::common::SocketCanSender> sender_;
+  std::unique_ptr<cyberdog::embed::SocketCanSender> sender_;
 
   bool send_can_message(struct can_frame * std_frame, struct canfd_frame * fd_frame)
   {
@@ -260,15 +260,15 @@ private:
     canid_t * canid = self_fd ? &fd_frame->can_id : &std_frame->can_id;
 
     bool result = true;
-    cyberdog::common::CanId send_id = extended_frame_ ?
-      cyberdog::common::CanId(
+    cyberdog::embed::CanId send_id = extended_frame_ ?
+      cyberdog::embed::CanId(
       *canid,
-      cyberdog::common::FrameType::DATA,
-      cyberdog::common::ExtendedFrame) :
-      cyberdog::common::CanId(
+      cyberdog::embed::FrameType::DATA,
+      cyberdog::embed::ExtendedFrame) :
+      cyberdog::embed::CanId(
       *canid,
-      cyberdog::common::FrameType::DATA,
-      cyberdog::common::StandardFrame);
+      cyberdog::embed::FrameType::DATA,
+      cyberdog::embed::StandardFrame);
 
     if (sender_ != nullptr) {
       try {
@@ -393,7 +393,7 @@ private:
   std::unique_ptr<CanTxDev> tx_op_;
 };  // class CanDev
 
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
 #endif  // PROTOCOL__CAN__CAN_UTILS_HPP_

@@ -12,19 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef COMMON_PARSER__PARSER_BASE_HPP_
-#define COMMON_PARSER__PARSER_BASE_HPP_
+#ifndef EMBED_PARSER__PARSER_BASE_HPP_
+#define EMBED_PARSER__PARSER_BASE_HPP_
 
 #include <vector>
 #include <string>
 #include <memory>
 
 #include "toml/toml.hpp"
-#include "common_protocol/common.hpp"
+#include "embed_protocol/common.hpp"
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 class RuleVarBase
 {
@@ -158,7 +158,7 @@ public:
   std::string parser_type;
   uint8_t parser_param[3];
 };    // class RuleVarBase
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
-#endif  // COMMON_PARSER__PARSER_BASE_HPP_
+#endif  // EMBED_PARSER__PARSER_BASE_HPP_

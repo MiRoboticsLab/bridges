@@ -36,7 +36,7 @@
 
 namespace cyberdog
 {
-namespace common
+namespace embed
 {
 
 /// Simple RAII wrapper around a raw CAN sender
@@ -237,7 +237,7 @@ private:
   CanId m_default_id;
 };  // class SocketCanSender
 
-}  // namespace common
+}  // namespace embed
 }  // namespace cyberdog
 
 #endif  // PROTOCOL__CAN__SOCKET_CAN_SENDER_HPP_
