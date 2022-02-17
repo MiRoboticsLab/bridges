@@ -1,0 +1,16 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "test_send"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+[[cmd]]
+description = ""
+cmd_name = "example_data"
+# can_id = "0x0c030200"
+can_id = "0x0c020100"
+ctrl_len = 8
+ctrl_data = ["0x01", "0x02", "0x03", "0x04", "0x02", "0x01", "0x04", "0x03"]

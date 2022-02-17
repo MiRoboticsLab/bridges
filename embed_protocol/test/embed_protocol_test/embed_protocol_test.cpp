@@ -162,7 +162,7 @@ public:
 };
 
 std::shared_ptr<testing_full_var> callback_data = nullptr;
-void callback(std::shared_ptr<testing_full_var> data)
+void callback(std::string&, std::shared_ptr<testing_full_var> data)
 {
   callback_data = data;
 }
@@ -443,8 +443,9 @@ public:
 };
 
 std::shared_ptr<testing_var> callback_data_testing_var = nullptr;
-void testing_var_callback(std::shared_ptr<testing_var> data)
+void testing_var_callback(std::string& name, std::shared_ptr<testing_var> data)
 {
+  ASSERT_NE(name, "unkown");
   callback_data_testing_var = data;
 }
 

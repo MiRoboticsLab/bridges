@@ -1,0 +1,45 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "ultrasonic"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+[[array]]
+description = ""
+can_package_num = 2
+can_id = ["0x00842000", "0x00842001"]
+array_name = "ultrasonic_data_array"
+
+[[var]]
+description = ""
+can_id = "0x00840000"
+var_name = "enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x00840100"
+var_name = "enable_off_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x00842100"
+var_name = "ultrasonic_clock"
+var_type = "u64"
+parser_param = [0, 7]
+
+[[cmd]]
+description = ""
+cmd_name = "enable_on"
+can_id = "0x00850000"
+
+[[cmd]]
+description = ""
+cmd_name = "enable_off"
+can_id = "0x00850100"
