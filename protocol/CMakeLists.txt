@@ -16,6 +16,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "ros/msg/TouchStatus.msg"
   "ros/msg/ConnectorStatus.msg"
   "ros/msg/GpsPayload.msg"
+  "ros/msg/UltrasonicPayload.msg"
   # srv
   "ros/srv/ManagerInit.srv"
   "ros/srv/LedExecute.srv"
