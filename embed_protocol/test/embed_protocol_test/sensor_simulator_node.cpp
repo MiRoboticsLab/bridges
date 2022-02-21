@@ -29,6 +29,8 @@ class TestSenor
 public:
   TestSenor(rclcpp::Logger l):logger_(l),is_stop_(false)
   {
+      RCLCPP_INFO(rclcpp::get_logger("TestSenor"), "begin TestSenor.");
+
       std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_send.toml";
       auto pro = std::make_shared<EVM::Protocol<test_send_data>>(path, false);
       pro->LINK_VAR(pro->GetData()->u64_var);       
@@ -41,6 +43,7 @@ public:
 
   ~TestSenor()
   {
+    RCLCPP_INFO(rclcpp::get_logger("TestSenor"), "close TestSenor.");
     is_stop_ = true;
     thread_->join();
   }       
@@ -62,6 +65,8 @@ class UltrasonicSenor
 public:
   UltrasonicSenor(rclcpp::Logger l):logger_(l)
   {
+    RCLCPP_INFO(rclcpp::get_logger("UltrasonicSenor"), "begin UltrasonicSenor.");
+
     auto func = [this](){
       std::string path = std::string(PASER_PATH) + "/can_protocal_toml/ultrasonic_simulator.toml";
       ultrasonic_can_ = std::make_shared<EVM::Protocol<ultrasonic_can_simulator>>(path, false);
@@ -86,7 +91,7 @@ public:
           ultrasonic_can_->Operate("ultrasonic_data", u_data);
           ultrasonic_can_->Operate("ultrasonic_data_clock", u_data_time);
           ++i_cnt;
-          std::this_thread::sleep_for(std::chrono::microseconds(300));
+          std::this_thread::sleep_for(std::chrono::microseconds(1000000));
         }         
       }
     };
@@ -95,6 +100,7 @@ public:
 
   ~UltrasonicSenor()
   {
+    RCLCPP_INFO(rclcpp::get_logger("TestSenor"), "close TestSenor.");
     is_stop_ = true;
     is_enable_ = false;
     {
@@ -153,6 +159,7 @@ class TofSenor
 public:
   TofSenor(rclcpp::Logger l):logger_(l)
   {
+    RCLCPP_INFO(rclcpp::get_logger("TofSenor"), "begin TofSenor.");
     auto func = [this](){
       // std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_send.toml";
       // auto pro = std::make_shared<EVM::Protocol<can_data>>(path, false);
@@ -188,6 +195,8 @@ public:
 
   ~TofSenor()
   {
+    RCLCPP_INFO(rclcpp::get_logger("TofSenor"), "close TofSenor.");
+
     is_stop_ = true;
     is_enable_ = false;
     {
@@ -242,9 +251,11 @@ public:
   CanNode()
   : Node("sensor_simulator_node")
   {
-    test_ = std::make_unique<TestSenor>(this->get_logger());
+    RCLCPP_INFO(rclcpp::get_logger("sensor_simulator_node"), "begin sensor_simulator_node.");
+
+    //test_ = std::make_unique<TestSenor>(this->get_logger());
     ultrasonic_ = std::make_unique<UltrasonicSenor>(this->get_logger());
-    tof_ = std::make_unique<TofSenor>(this->get_logger());
+    //tof_ = std::make_unique<TofSenor>(this->get_logger());
     // subscription_ = this->create_subscription<std_msgs::msg::UInt16>(
     //   "sensor_simulator",
     //   10,

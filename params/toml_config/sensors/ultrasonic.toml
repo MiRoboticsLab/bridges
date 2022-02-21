@@ -7,11 +7,27 @@ extended_frame = true
 canfd_enable = false
 timeout_us = 1234567
 
-[[array]]
-description = ""
-can_package_num = 2
-can_id = ["0x00842000", "0x00842001"]
-array_name = "ultrasonic_data_array"
+
+
+[[var]]
+can_id = "0x00842000"
+var_name = "ultrasonic_data"
+var_type = "double"
+parser_param = [0, 7]
+var_zoom = 0.0001
+description = "this is example named ultrasonic_data"
+
+
+
+[[var]]
+can_id = "0x00842001"
+var_name = "ultrasonic_data_clock"
+var_type = "u64"
+parser_param = [0, 7]
+description = "this is example named ultrasonic_data_clock"
+
+
+
 
 [[var]]
 description = ""
