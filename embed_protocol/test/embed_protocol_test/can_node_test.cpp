@@ -43,7 +43,7 @@ public:
     ptr_ultrasonic_protocol = std::make_shared<EVM::Protocol<ultrasonic_can>>(path, false);
     // ptr_ultrasonic_protocol->Operate("enable_on", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
     // // pro->Operate("enable_off", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});   
-    ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->enable_on_ack);
+    // ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->enable_on_ack);
     ptr_ultrasonic_protocol->SetDataCallback(std::bind(&UltrasonicControl::recv_ultrasonic_callback, this, std::placeholders::_1, std::placeholders::_2));     
     // auto func = [this](){
     //   // std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_receive.toml";
@@ -147,7 +147,7 @@ public:
   {
     std::string path = ament_index_cpp::get_package_share_directory("params") + "/toml_config/sensors/tof.toml";
     ptr_tof_protocol = std::make_shared<EVM::Protocol<tof_can>>(path, false);
-    ptr_tof_protocol->LINK_VAR(ptr_tof_protocol->GetData()->enable_on_ack);
+    // ptr_tof_protocol->LINK_VAR(ptr_tof_protocol->GetData()->enable_on_ack);
     ptr_tof_protocol->SetDataCallback(std::bind(&TofControl::recv_tof_callback, this, std::placeholders::_1, std::placeholders::_2));   
   }
 
@@ -178,7 +178,7 @@ private:
     else if(name == "tof_data_array")
     {
       std::string out_put("");
-      char one_data[8] = { 0 };
+      char one_data[1024] = { 0 };
       for(size_t i=0 ; i<sizeof(ptr_tof_data_->tof_data_array); ++i)
       {
         snprintf(one_data, sizeof(one_data), "%02x", ptr_tof_data_->tof_data_array[i]);
@@ -212,7 +212,26 @@ public:
       "can_protocol_test",
       10,
       [this](std_msgs::msg::UInt16::SharedPtr msg) {
-        RCLCPP_INFO(this->get_logger(), "I heard: '%d'", msg->data);
+        std::map<int16_t, std::string> m_cmd { {1, "ultrasonic on"}, {2, "ultrasonic off"}, 
+                                           {3, "tof on"}, {4, "tof off"}};
+        if(m_cmd.find(msg->data) != m_cmd.end())
+          RCLCPP_INFO(this->get_logger(), "{Command}: '%d'", msg->data);
+        switch(msg->data)
+        {
+          case 1:
+          tof_control_->Enable_On();
+          break;
+          case 2:
+          tof_control_->Enable_Off();
+          break;
+          case 3:
+          ultrasonic_control_->Enable_On();
+          break;
+          case 4:
+          ultrasonic_control_->Enable_Off();
+          default:
+          break;
+        }
       });
     ultrasonic_control_ = std::make_unique<UltrasonicControl>(this->get_logger());
     tof_control_ = std::make_unique<TofControl>(this->get_logger());

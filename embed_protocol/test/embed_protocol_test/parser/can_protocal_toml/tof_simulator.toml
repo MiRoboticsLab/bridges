@@ -48,7 +48,7 @@ can_id = "0x00822002"
 
 [[cmd]]
 description = ""
-cmd_name = "tof_data_thour"
+cmd_name = "tof_data_four"
 can_id = "0x00822003"
 
 [[cmd]]

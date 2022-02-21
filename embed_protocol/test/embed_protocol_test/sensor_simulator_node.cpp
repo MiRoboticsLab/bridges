@@ -29,6 +29,7 @@ class TestSenor
 public:
   TestSenor(rclcpp::Logger l):logger_(l),is_stop_(false)
   {
+    auto func = [this](){
       std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_send.toml";
       auto pro = std::make_shared<EVM::Protocol<test_send_data>>(path, false);
       pro->LINK_VAR(pro->GetData()->u64_var);       
@@ -37,6 +38,8 @@ public:
         pro->Operate("example_data");  
         std::this_thread::sleep_for(std::chrono::microseconds(300));        
       }
+    };
+    thread_ = std::make_unique<std::thread>(func);
   }
 
   ~TestSenor()
@@ -60,7 +63,7 @@ typedef struct _ultrasonic_can_simulator {
 class UltrasonicSenor
 {
 public:
-  UltrasonicSenor(rclcpp::Logger l):logger_(l)
+  UltrasonicSenor(rclcpp::Logger l):logger_(l), is_enable_(false), is_stop_(false)
   {
     auto func = [this](){
       std::string path = std::string(PASER_PATH) + "/can_protocal_toml/ultrasonic_simulator.toml";
@@ -151,7 +154,7 @@ typedef struct _tof_can_simulator {
 class TofSenor
 {
 public:
-  TofSenor(rclcpp::Logger l):logger_(l)
+  TofSenor(rclcpp::Logger l):logger_(l), is_enable_(false), is_stop_(false)
   {
     auto func = [this](){
       // std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_send.toml";
@@ -176,7 +179,14 @@ public:
           int64_t mcrosec = std::chrono::duration_cast<std::chrono::microseconds>(duration_since_epoch).count();
           std::vector<uint8_t> u_data( ((uint8_t*)&i_cnt), (((uint8_t*)&i_cnt)+7) );
           std::vector<uint8_t> u_data_time( ((uint8_t*)&mcrosec), (((uint8_t*)&mcrosec)+7) );
-          tof_can_->Operate("tof_data", u_data);
+          tof_can_->Operate("tof_data_one", u_data);
+          tof_can_->Operate("tof_data_two", u_data);
+          tof_can_->Operate("tof_data_three", u_data);
+          tof_can_->Operate("tof_data_four", u_data);
+          tof_can_->Operate("tof_data_five", u_data);
+          tof_can_->Operate("tof_data_six", u_data);
+          tof_can_->Operate("tof_data_seven", u_data);
+          tof_can_->Operate("tof_data_eight", u_data);
           tof_can_->Operate("tof_data_clock", u_data_time);
           ++i_cnt;
           std::this_thread::sleep_for(std::chrono::microseconds(300));
