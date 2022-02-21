@@ -1,6 +1,6 @@
 # Testing normal usage STD_CAN with std_frame
 protocol = "can"
-name = "ultrasonic"
+name = "tof"
 
 can_interface = "can0"
 extended_frame = true
@@ -9,37 +9,37 @@ timeout_us = 1234567
 
 [[array]]
 description = ""
-can_package_num = 2
-can_id = ["0x00842000", "0x00842001"]
-array_name = "ultrasonic_data_array"
+can_package_num = 9
+can_id = ["0x00822000", "0x00822001", "0x00822002", "0x00822003", "0x00822004", "0x00822005", "0x00822006", "0x00822007", "0x00822008"]
+array_name = "tof_data_array"
 
 [[var]]
 description = ""
-can_id = "0x00840000"
+can_id = "0x00820000"
 var_name = "enable_on_ack"
 var_type = "i8"
 parser_param = [0, 0]
 
 [[var]]
 description = ""
-can_id = "0x00840100"
+can_id = "0x00820100"
 var_name = "enable_off_ack"
 var_type = "i8"
 parser_param = [0, 0]
 
 [[var]]
 description = ""
-can_id = "0x00842100"
-var_name = "ultrasonic_clock"
+can_id = "0x00822100"
+var_name = "tof_clock"
 var_type = "u64"
 parser_param = [0, 7]
 
 [[cmd]]
 description = ""
 cmd_name = "enable_on"
-can_id = "0x00850000"
+can_id = "0x00830000"
 
 [[cmd]]
 description = ""
 cmd_name = "enable_off"
-can_id = "0x00850100"
+can_id = "0x00830100"

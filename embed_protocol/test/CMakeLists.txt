@@ -9,19 +9,20 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(toml REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 set(dependencies
   toml
 )
 
-add_executable(can_node_one embed_protocol_test/can_node_one.cpp)
-ament_target_dependencies(can_node_one rclcpp std_msgs toml)
-target_compile_definitions(can_node_one PRIVATE
+add_executable(can_node_test embed_protocol_test/can_node_test.cpp)
+ament_target_dependencies(can_node_test rclcpp std_msgs toml)
+target_compile_definitions(can_node_test PRIVATE
   "PASER_PATH=\"${CMAKE_SOURCE_DIR}/test/embed_protocol_test/parser\""
 )
-add_executable(can_node_two embed_protocol_test/can_node_two.cpp)
-ament_target_dependencies(can_node_two rclcpp std_msgs toml)
-target_compile_definitions(can_node_two PRIVATE
+add_executable(sensor_simulator_node embed_protocol_test/sensor_simulator_node.cpp)
+ament_target_dependencies(sensor_simulator_node rclcpp std_msgs toml)
+target_compile_definitions(sensor_simulator_node PRIVATE
   "PASER_PATH=\"${CMAKE_SOURCE_DIR}/test/embed_protocol_test/parser\""
 )
 
