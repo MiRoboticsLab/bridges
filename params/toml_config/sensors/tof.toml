@@ -10,8 +10,18 @@ timeout_us = 1234567
 [[array]]
 description = ""
 can_package_num = 9
-can_id = ["0x00822000", "0x00822001", "0x00822002", "0x00822003", "0x00822004", "0x00822005", "0x00822006", "0x00822007", "0x00822008"]
+can_id = ["0x00822000", "0x00822001", "0x00822002", "0x00822003", "0x00822004", "0x00822005", "0x00822006", "0x00822007"]
 array_name = "tof_data_array"
+
+
+[[var]]
+description = ""
+can_id = "0x00822008"
+var_name = "tof_data_clock"
+var_type = "u64"
+parser_param = [0, 7]
+
+
 
 [[var]]
 description = ""
