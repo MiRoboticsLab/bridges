@@ -29,8 +29,7 @@ class TestSenor
 public:
   TestSenor(rclcpp::Logger l):logger_(l),is_stop_(false)
   {
-      RCLCPP_INFO(rclcpp::get_logger("TestSenor"), "begin TestSenor.");
-
+    auto func = [this](){
       std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_send.toml";
       auto pro = std::make_shared<EVM::Protocol<test_send_data>>(path, false);
       pro->LINK_VAR(pro->GetData()->u64_var);       
@@ -39,11 +38,12 @@ public:
         pro->Operate("example_data");  
         std::this_thread::sleep_for(std::chrono::microseconds(300));        
       }
+    };
+    thread_ = std::make_unique<std::thread>(func);
   }
 
   ~TestSenor()
   {
-    RCLCPP_INFO(rclcpp::get_logger("TestSenor"), "close TestSenor.");
     is_stop_ = true;
     thread_->join();
   }       
@@ -63,10 +63,8 @@ typedef struct _ultrasonic_can_simulator {
 class UltrasonicSenor
 {
 public:
-  UltrasonicSenor(rclcpp::Logger l):logger_(l)
+  UltrasonicSenor(rclcpp::Logger l):logger_(l), is_enable_(false), is_stop_(false)
   {
-    RCLCPP_INFO(rclcpp::get_logger("UltrasonicSenor"), "begin UltrasonicSenor.");
-
     auto func = [this](){
       std::string path = std::string(PASER_PATH) + "/can_protocal_toml/ultrasonic_simulator.toml";
       ultrasonic_can_ = std::make_shared<EVM::Protocol<ultrasonic_can_simulator>>(path, false);
@@ -100,7 +98,6 @@ public:
 
   ~UltrasonicSenor()
   {
-    RCLCPP_INFO(rclcpp::get_logger("TestSenor"), "close TestSenor.");
     is_stop_ = true;
     is_enable_ = false;
     {
@@ -117,7 +114,7 @@ private:
     // 数据解析在这里进行
     if(name == "enable_on")
     {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      RCLCPP_INFO(logger_, "I heard ultrasonic name:%s", name.c_str());
       ultrasonic_can_->BREAK_VAR(ultrasonic_can_->GetData()->enable_on);
       ultrasonic_can_->Operate("enable_on_ack", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
       is_enable_ = true;
@@ -125,7 +122,7 @@ private:
     }
     else if(name == "enable_off")
     {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      RCLCPP_INFO(logger_, "I heard ultrasonic name:%s", name.c_str());
       ultrasonic_can_->BREAK_VAR(pro->GetData()->enable_off);
       ultrasonic_can_->Operate("enable_off_ack", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
       is_enable_ = false;
@@ -157,9 +154,8 @@ typedef struct _tof_can_simulator {
 class TofSenor
 {
 public:
-  TofSenor(rclcpp::Logger l):logger_(l)
+  TofSenor(rclcpp::Logger l):logger_(l), is_enable_(false), is_stop_(false)
   {
-    RCLCPP_INFO(rclcpp::get_logger("TofSenor"), "begin TofSenor.");
     auto func = [this](){
       // std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_send.toml";
       // auto pro = std::make_shared<EVM::Protocol<can_data>>(path, false);
@@ -183,10 +179,17 @@ public:
           int64_t mcrosec = std::chrono::duration_cast<std::chrono::microseconds>(duration_since_epoch).count();
           std::vector<uint8_t> u_data( ((uint8_t*)&i_cnt), (((uint8_t*)&i_cnt)+7) );
           std::vector<uint8_t> u_data_time( ((uint8_t*)&mcrosec), (((uint8_t*)&mcrosec)+7) );
-          tof_can_->Operate("tof_data", u_data);
+          tof_can_->Operate("tof_data_one", u_data);
+          tof_can_->Operate("tof_data_two", u_data);
+          tof_can_->Operate("tof_data_three", u_data);
+          tof_can_->Operate("tof_data_four", u_data);
+          tof_can_->Operate("tof_data_five", u_data);
+          tof_can_->Operate("tof_data_six", u_data);
+          tof_can_->Operate("tof_data_seven", u_data);
+          tof_can_->Operate("tof_data_eight", u_data);
           tof_can_->Operate("tof_data_clock", u_data_time);
           ++i_cnt;
-          std::this_thread::sleep_for(std::chrono::microseconds(300));
+          std::this_thread::sleep_for(std::chrono::microseconds(1000000));
         }         
       }
     };
@@ -195,8 +198,6 @@ public:
 
   ~TofSenor()
   {
-    RCLCPP_INFO(rclcpp::get_logger("TofSenor"), "close TofSenor.");
-
     is_stop_ = true;
     is_enable_ = false;
     {
@@ -213,7 +214,7 @@ private:
     // 数据解析在这里进行
     if(name == "enable_on")
     {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      RCLCPP_INFO(logger_, "I heard tof_ name:%s", name.c_str());
       tof_can_->BREAK_VAR(tof_can_->GetData()->enable_on);
       tof_can_->Operate("enable_on_ack", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
       is_enable_ = true;
@@ -221,7 +222,7 @@ private:
     }
     else if(name == "enable_off")
     {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      RCLCPP_INFO(logger_, "I heard tof_name:%s", name.c_str());
       tof_can_->BREAK_VAR(pro->GetData()->enable_off);
       tof_can_->Operate("enable_off_ack", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
       is_enable_ = false;
@@ -251,11 +252,9 @@ public:
   CanNode()
   : Node("sensor_simulator_node")
   {
-    RCLCPP_INFO(rclcpp::get_logger("sensor_simulator_node"), "begin sensor_simulator_node.");
-
-    //test_ = std::make_unique<TestSenor>(this->get_logger());
+    test_ = std::make_unique<TestSenor>(this->get_logger());
     ultrasonic_ = std::make_unique<UltrasonicSenor>(this->get_logger());
-    //tof_ = std::make_unique<TofSenor>(this->get_logger());
+    tof_ = std::make_unique<TofSenor>(this->get_logger());
     // subscription_ = this->create_subscription<std_msgs::msg::UInt16>(
     //   "sensor_simulator",
     //   10,
