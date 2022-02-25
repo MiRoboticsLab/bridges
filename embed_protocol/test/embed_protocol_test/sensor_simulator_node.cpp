@@ -172,12 +172,17 @@ public:
         data_cond_.wait(lck, [this] {return is_stop_ || is_enable_;});
         lck.unlock();
         uint64_t i_cnt = 0;
+        std::vector<uint8_t> u_data( ((uint8_t*)&i_cnt), (((uint8_t*)&i_cnt)+7) );
         while(is_enable_)
         {
           std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
           std::chrono::system_clock::duration duration_since_epoch = now.time_since_epoch(); 
           int64_t mcrosec = std::chrono::duration_cast<std::chrono::microseconds>(duration_since_epoch).count();
-          std::vector<uint8_t> u_data( ((uint8_t*)&i_cnt), (((uint8_t*)&i_cnt)+7) );
+          
+          for(int i=0;i<8;i++){
+            std::cout<<"data:: "<<int(u_data[i])<<std::endl;
+            u_data[i]=u_data[i]+1;
+          }
           std::vector<uint8_t> u_data_time( ((uint8_t*)&mcrosec), (((uint8_t*)&mcrosec)+7) );
           tof_can_->Operate("tof_data_one", u_data);
           tof_can_->Operate("tof_data_two", u_data);

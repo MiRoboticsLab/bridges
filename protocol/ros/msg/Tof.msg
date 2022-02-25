@@ -1,5 +1,5 @@
 
-# This message contains tof
+# This message is  used to describe single tof 
 
 std_msgs/Header header # Header timestamp should be acquisition time of tof
 
@@ -9,7 +9,7 @@ uint8 LEFT_BACK=2
 uint8 RIGHT_BACK=3
 int32 TOF_DATA_NUM=64
 float32 SCALE_FACTOR=0.02
-
+bool data_available
 uint8 tof_postion              
 
 float32[] data             

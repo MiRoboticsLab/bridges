@@ -29,6 +29,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "ros/msg/ConnectorStatus.msg"
   "ros/msg/GpsPayload.msg"
   "ros/msg/Tof.msg"
+  "ros/msg/MultipleTof.msg"
   # srv
   "ros/srv/ManagerInit.srv"
   "ros/srv/LedExecute.srv"

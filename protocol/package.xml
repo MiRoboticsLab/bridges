@@ -12,7 +12,9 @@
   <depend>builtin_interfaces</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>message_generation</depend> 
+  <depend>message_generation</depend>     
+  <depend>rclcpp</depend>   
+
 
   <exec_depend>rosidl_default_runtime</exec_depend>
 
