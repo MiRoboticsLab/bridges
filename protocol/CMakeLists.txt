@@ -8,7 +8,7 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
-
+find_package(sensor_msgs REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   # msg
   "ros/msg/ManagerState.msg"
@@ -23,6 +23,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "ros/srv/ConnectorStatus.srv"
   "ros/srv/Wifi.srv"
   "ros/srv/IP.srv"
+  DEPENDENCIES   builtin_interfaces sensor_msgs
 )
 
 if(BUILD_TESTING)
@@ -36,5 +37,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(rosidl_default_runtime)
+ament_export_dependencies(rosidl_default_runtime sensor_msgs)
 ament_package()
