@@ -85,9 +85,9 @@ public:
           std::chrono::system_clock::duration duration_since_epoch = now.time_since_epoch(); 
           int64_t mcrosec = std::chrono::duration_cast<std::chrono::microseconds>(duration_since_epoch).count();
           std::vector<uint8_t> u_data( ((uint8_t*)&i_cnt), (((uint8_t*)&i_cnt)+7) );
-          std::vector<uint8_t> u_data_time( ((uint8_t*)&mcrosec), (((uint8_t*)&mcrosec)+7) );
+          //std::vector<uint8_t> u_data_time( ((uint8_t*)&mcrosec), (((uint8_t*)&mcrosec)+7) );
           ultrasonic_can_->Operate("ultrasonic_data", u_data);
-          ultrasonic_can_->Operate("ultrasonic_data_clock", u_data_time);
+          //ultrasonic_can_->Operate("ultrasonic_data_clock", u_data_time);
           ++i_cnt;
           std::this_thread::sleep_for(std::chrono::microseconds(1000000));
         }         
