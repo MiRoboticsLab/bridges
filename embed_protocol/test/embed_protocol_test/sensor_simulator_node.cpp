@@ -257,7 +257,7 @@ public:
   CanNode()
   : Node("sensor_simulator_node")
   {
-    test_ = std::make_unique<TestSenor>(this->get_logger());
+    //test_ = std::make_unique<TestSenor>(this->get_logger());
     ultrasonic_ = std::make_unique<UltrasonicSenor>(this->get_logger());
     tof_ = std::make_unique<TofSenor>(this->get_logger());
     // subscription_ = this->create_subscription<std_msgs::msg::UInt16>(

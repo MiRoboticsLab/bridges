@@ -9,14 +9,14 @@ timeout_us = 1234567
 
 [[var]]
 description = ""
-can_id = "0x00850200"
+can_id = "0x01830200"
 var_name = "enable_on"
 var_type = "i8"
 parser_param = [0, 0]
 
 [[var]]
 description = ""
-can_id = "0x00850400"
+can_id = "0x01830400"
 var_name = "enable_off"
 var_type = "i8"
 parser_param = [0, 0]
@@ -24,16 +24,16 @@ parser_param = [0, 0]
 [[cmd]]
 description = ""
 cmd_name = "enable_on_ack"
-can_id = "0x00840200"
+can_id = "0x01820200"
 
 [[cmd]]
 description = ""
 cmd_name = "enable_off_ack"
-can_id = "0x00840400"
+can_id = "0x01820400"
 
 [[cmd]]
 description = ""
 cmd_name = "ultrasonic_data"
-can_id = "0x00842000"
+can_id = "0x01822000"
 
 
