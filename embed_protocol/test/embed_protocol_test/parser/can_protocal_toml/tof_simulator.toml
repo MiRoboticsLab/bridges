@@ -9,14 +9,14 @@ timeout_us = 1234567
 
 [[var]]
 description = ""
-can_id = "0x00830000"
+can_id = "0x01850200"
 var_name = "enable_on"
 var_type = "i8"
 parser_param = [0, 0]
 
 [[var]]
 description = ""
-can_id = "0x00830100"
+can_id = "0x01850400"
 var_name = "enable_off"
 var_type = "i8"
 parser_param = [0, 0]
@@ -24,59 +24,55 @@ parser_param = [0, 0]
 [[cmd]]
 description = ""
 cmd_name = "enable_on_ack"
-can_id = "0x00820000"
+can_id = "0x01840200"
 
 [[cmd]]
 description = ""
 cmd_name = "enable_off_ack"
-can_id = "0x00820100"
+can_id = "0x01840400"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_one"
-can_id = "0x00822000"
+can_id = "0x01842000"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_two"
-can_id = "0x00822001"
+can_id = "0x01842001"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_three"
-can_id = "0x00822002"
+can_id = "0x01842002"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_four"
-can_id = "0x00822003"
+can_id = "0x01842003"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_five"
-can_id = "0x00822004"
+can_id = "0x01842004"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_six"
-can_id = "0x00822005"
+can_id = "0x01842005"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_seven"
-can_id = "0x00822006"
+can_id = "0x01842006"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_eight"
-can_id = "0x00822007"
+can_id = "0x01842007"
 
 [[cmd]]
 description = ""
 cmd_name = "tof_data_clock"
-can_id = "0x00822008"
+can_id = "0x01842008"
 
-[[cmd]]
-description = ""
-cmd_name = "tof_clock"
-can_id = "0x00822100"

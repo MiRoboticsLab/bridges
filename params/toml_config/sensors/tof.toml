@@ -10,13 +10,13 @@ timeout_us = 1234567
 [[array]]
 description = ""
 can_package_num = 8
-can_id = ["0x00822000", "0x00822001", "0x00822002", "0x00822003", "0x00822004", "0x00822005", "0x00822006", "0x00822007"]
+can_id = ["0x01842000", "0x01842001", "0x01842002", "0x01842003", "0x01842004", "0x01842005", "0x01842006", "0x01842007"]
 array_name = "tof_data_array"
 
 
 [[var]]
 description = ""
-can_id = "0x00822008"
+can_id = "0x01842008"
 var_name = "tof_data_clock"
 var_type = "u64"
 parser_param = [0, 7]
@@ -25,31 +25,25 @@ parser_param = [0, 7]
 
 [[var]]
 description = ""
-can_id = "0x00820000"
+can_id = "0x01840200"
 var_name = "enable_on_ack"
 var_type = "i8"
 parser_param = [0, 0]
 
 [[var]]
 description = ""
-can_id = "0x00820100"
+can_id = "0x01840400"
 var_name = "enable_off_ack"
 var_type = "i8"
 parser_param = [0, 0]
 
-[[var]]
-description = ""
-can_id = "0x00822100"
-var_name = "tof_clock"
-var_type = "u64"
-parser_param = [0, 7]
 
 [[cmd]]
 description = ""
 cmd_name = "enable_on"
-can_id = "0x00830000"
+can_id = "0x01850200"
 
 [[cmd]]
 description = ""
 cmd_name = "enable_off"
-can_id = "0x00830100"
+can_id = "0x01850400"
