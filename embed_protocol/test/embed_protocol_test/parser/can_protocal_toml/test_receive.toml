@@ -1,0 +1,15 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "test_receive"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+[[var]]
+description = ""
+can_id = "0x0c020100"
+var_name = "example_data"
+var_type = "u64"
+parser_param = [0, 7]

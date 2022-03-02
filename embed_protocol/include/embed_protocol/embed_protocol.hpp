@@ -27,6 +27,8 @@
 #define LINK_VAR(var) LinkVar( \
     XNAME(var), \
     cyberdog::embed::ProtocolData(sizeof((var)), static_cast<void *>(&(var))))
+#define BREAK_VAR(var) BreakVar( \
+    XNAME(var))    
 
 namespace cyberdog
 {
@@ -71,6 +73,12 @@ public:
     if (base_ != nullptr) {base_->LinkVar(get_var_name(origin_name, error_clct_), var);}
   }
 
+  // please use "#define BREAK_VAR(var)" instead
+  void BreakVar(const std::string & origin_name)
+  {
+    if (base_ != nullptr) {base_->BreakVar(get_var_name(origin_name, error_clct_));}
+  }  
+
   bool Operate(const std::string & CMD, const std::vector<uint8_t> & data = std::vector<uint8_t>())
   {
     if (base_ != nullptr) {return base_->Operate(CMD, data);}
@@ -83,7 +91,7 @@ public:
     return false;
   }
 
-  void SetDataCallback(std::function<void(std::shared_ptr<TDataClass>)> callback)
+  void SetDataCallback(std::function<void(std::string&, std::shared_ptr<TDataClass>)> callback)
   {
     if (base_ != nullptr) {base_->SetDataCallback(callback);}
   }

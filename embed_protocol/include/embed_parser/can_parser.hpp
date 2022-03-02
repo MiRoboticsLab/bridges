@@ -282,17 +282,19 @@ public:
   bool Decode(
     PROTOCOL_DATA_MAP & protocol_data_map,
     std::shared_ptr<canfd_frame> rx_frame,
-    bool & error_flag)
+    bool & error_flag,
+    std::string & id_name)
   {
-    return Decode(protocol_data_map, rx_frame->can_id, rx_frame->data, error_flag);
+    return Decode(protocol_data_map, rx_frame->can_id, rx_frame->data, error_flag, id_name);
   }
   // return true when finish all package
   bool Decode(
     PROTOCOL_DATA_MAP & protocol_data_map,
     std::shared_ptr<can_frame> rx_frame,
-    bool & error_flag)
+    bool & error_flag,
+    std::string & id_name)
   {
-    return Decode(protocol_data_map, rx_frame->can_id, rx_frame->data, error_flag);
+    return Decode(protocol_data_map, rx_frame->can_id, rx_frame->data, error_flag, id_name);
   }
 
   bool Encode(can_frame & tx_frame, const std::string & CMD, const std::vector<uint8_t> & data)
@@ -494,13 +496,15 @@ private:
     PROTOCOL_DATA_MAP & protocol_data_map,
     canid_t can_id,
     uint8_t * data,
-    bool & error_flag)
+    bool & error_flag,
+    std::string & id_name)
   {
     // var decode
     if (parser_var_map_.find(can_id) != parser_var_map_.end()) {
       for (auto & rule : parser_var_map_.at(can_id)) {
         if (protocol_data_map.find(rule.var_name) != protocol_data_map.end()) {
           ProtocolData * var = &protocol_data_map.at(rule.var_name);
+          id_name = rule.var_name;
           // main decode begin
           if (rule.var_type == "double") {
             uint8_t u8_num = rule.parser_param[1] - rule.parser_param[0] + 1;
@@ -567,6 +571,7 @@ private:
       if (offset == -1) {continue;}
       if (protocol_data_map.find(rule.array_name) != protocol_data_map.end()) {
         ProtocolData * var = &protocol_data_map.at(rule.array_name);
+        id_name = rule.array_name;
         if (var->len < rule.can_package_num * CAN_LEN()) {
           error_flag = true;
           error_clct_->LogState(ErrorCode::RULEARRAY_ILLEGAL_PARSERPARAM_VALUE);

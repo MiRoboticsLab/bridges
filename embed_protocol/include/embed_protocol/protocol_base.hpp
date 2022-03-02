@@ -39,7 +39,7 @@ class ProtocolBase
 public:
   std::shared_ptr<TDataClass> GetData() {return protocol_data_;}
 
-  void SetDataCallback(std::function<void(std::shared_ptr<TDataClass>)> callback)
+  void SetDataCallback(std::function<void(std::string& , std::shared_ptr<TDataClass>)> callback)
   {
     if (for_send_) {
       printf(
@@ -60,6 +60,19 @@ public:
     }
     protocol_data_map_.insert(std::pair<std::string, ProtocolData>(name, var));
   }
+
+  void BreakVar(const std::string & name)
+  {
+    for(auto iter=protocol_data_map_.begin(); iter!=protocol_data_map_.end(); ++iter)
+    {
+      protocol_data_map_.erase(iter);
+      return;
+    }        
+    error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
+    printf(
+      C_RED "[PROTOCOL][ERROR][%s] BREAK_VAR error, not find same name:\"%s\". erase error\n" C_END,
+      name_.c_str(), name.c_str());    
+  }  
 
   virtual bool Operate(
     const std::string & CMD,
@@ -87,7 +100,7 @@ protected:
   CHILD_STATE_CLCT error_clct_;
   PROTOCOL_DATA_MAP protocol_data_map_;
   std::shared_ptr<TDataClass> protocol_data_;
-  std::function<void(std::shared_ptr<TDataClass>)> protocol_data_callback_;
+  std::function<void(std::string& , std::shared_ptr<TDataClass>)> protocol_data_callback_;
 };  // class ProtocolBase
 }  // namespace embed
 }  // namespace cyberdog
