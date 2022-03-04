@@ -36,7 +36,10 @@ public:
       while(!is_stop_)
       {
         pro->Operate("example_data");  
-        std::this_thread::sleep_for(std::chrono::microseconds(300));        
+        // pro->Operate("example_data_1");  
+        // pro->Operate("example_data_2");  
+        // std::this_thread::sleep_for(std::chrono::microseconds(300));        
+        std::this_thread::sleep_for(std::chrono::seconds(10));    
       }
     };
     thread_ = std::make_unique<std::thread>(func);
@@ -253,8 +256,8 @@ public:
   : Node("sensor_simulator_node")
   {
     test_ = std::make_unique<TestSenor>(this->get_logger());
-    ultrasonic_ = std::make_unique<UltrasonicSenor>(this->get_logger());
-    tof_ = std::make_unique<TofSenor>(this->get_logger());
+    // ultrasonic_ = std::make_unique<UltrasonicSenor>(this->get_logger());
+    // tof_ = std::make_unique<TofSenor>(this->get_logger());
     // subscription_ = this->create_subscription<std_msgs::msg::UInt16>(
     //   "sensor_simulator",
     //   10,

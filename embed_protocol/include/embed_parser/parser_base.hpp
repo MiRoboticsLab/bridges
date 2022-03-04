@@ -40,6 +40,7 @@ public:
     warn_flag = false;
     var_name = toml_at<std::string>(table, "var_name", error_clct);
     var_type = toml_at<std::string>(table, "var_type", error_clct);
+    var_size = toml_at<uint8_t>(table, "var_size", 0);
     can_id = HEXtoUINT(toml_at<std::string>(table, "can_id", error_clct), error_clct);
     CanidRangeCheck(can_id, extended, var_name, name, error_clct);
     if (var_name == "") {
@@ -70,6 +71,18 @@ public:
     parser_type = toml_at<std::string>(table, "parser_type", "auto");
     auto tmp_parser_param = toml_at<std::vector<uint8_t>>(table, "parser_param", error_clct);
     size_t param_size = tmp_parser_param.size();
+    if(param_size >= 2) {
+      auto range_right = std::max(tmp_parser_param[0], tmp_parser_param[1]) + 1;
+      if(var_size < range_right && range_right <= can_len) {
+        printf(
+          C_YELLOW "[PARSER_BASE][WARN][%s][var:%s] No var_size field or get var size = %d not qualified parser_param range "
+          "%d-%d. now adjust to %d\n" C_END, name.c_str(), var_name.c_str(), 
+          var_size, tmp_parser_param[0], tmp_parser_param[1], range_right);        
+        var_size = std::min(range_right, can_len); 
+      } else {
+        var_size = can_len;
+      }
+    }    
     if (parser_type == "auto") {
       if (param_size == 3) {
         parser_type = "bit";
@@ -88,12 +101,12 @@ public:
         parser_param[0] = tmp_parser_param[0];
         parser_param[1] = tmp_parser_param[1];
         parser_param[2] = tmp_parser_param[2];
-        if (parser_param[0] >= can_len) {
+        if (parser_param[0] >= var_size) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
           printf(
             C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"bit\" type parser_param error, "
             "parser_param[0] value need between 0-%d\n" C_END,
-            name.c_str(), var_name.c_str(), can_len - 1);
+            name.c_str(), var_name.c_str(), var_size - 1);
         }
         if (parser_param[1] < parser_param[2]) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
@@ -127,12 +140,12 @@ public:
             "parser_param[0] need <= parser_param[1]\n" C_END,
             name.c_str(), var_name.c_str());
         }
-        if (parser_param[0] >= can_len || parser_param[1] >= can_len) {
+        if (parser_param[0] >= var_size || parser_param[1] >= var_size) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
           printf(
             C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"var\" type parser_param error, "
             "parser_param[0] and parser_param[1] value need between 0-%d\n" C_END,
-            name.c_str(), var_name.c_str(), can_len - 1);
+            name.c_str(), var_name.c_str(), var_size - 1);
         }
       } else {
         error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_SIZE);
@@ -154,6 +167,7 @@ public:
   canid_t can_id;
   std::string var_name;
   std::string var_type;
+  uint8_t var_size;
   float var_zoom;
   std::string parser_type;
   uint8_t parser_param[3];

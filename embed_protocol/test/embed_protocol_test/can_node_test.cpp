@@ -22,10 +22,79 @@
 
 #define EVM cyberdog::embed
 
-
 typedef struct _can_data {
-  uint64_t example_data;
+  uint32_t example_data;
 }can_data;
+
+class CanControl {
+public:
+  CanControl(rclcpp::Logger l):logger_(l)
+  {
+    std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_receive.toml";
+    ptr_can_protocol = std::make_shared<EVM::Protocol<can_data>>(path, false);
+    ptr_can_protocol->LINK_VAR(ptr_can_protocol->GetData()->example_data);
+    ptr_can_protocol->SetDataCallback(std::bind(&CanControl::recv_can_callback, this, std::placeholders::_1, std::placeholders::_2));   
+  }
+private:
+  void recv_can_callback(std::string& name, std::shared_ptr<can_data> data)
+  {
+    ptr_can_data_ = data;
+    if(name == "example_data")
+    {
+      ptr_can_protocol->BREAK_VAR(ptr_can_protocol->GetData()->example_data);
+      // std::string out_put("");
+      // char one_data[32] = { 0 };
+      // snprintf(one_data, sizeof(one_data), "%08x", ptr_can_data_->example_data);
+      // out_put += one_data;    
+      // RCLCPP_INFO(logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(), name.c_str(), out_put.c_str());     
+      RCLCPP_INFO(logger_, "[%s]canid name:%s, data: '%08x'", CONTROLNAME.c_str(), name.c_str(), ptr_can_data_->example_data);    
+      ptr_can_protocol->LINK_VAR(ptr_can_protocol->GetData()->example_data);
+    }
+  }
+private:
+  rclcpp::Logger logger_;
+  std::shared_ptr<EVM::Protocol<can_data>> ptr_can_protocol;
+  std::shared_ptr<can_data> ptr_can_data_;
+  const std::string CONTROLNAME = "Can";  
+};
+
+typedef struct _test_data {
+  uint64_t example_data;
+  uint32_t test_data_array[2];
+}test_data;
+
+class TestControl {
+public:
+  TestControl(rclcpp::Logger l):logger_(l)
+  {
+    std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_receive.toml";
+    ptr_test_protocol = std::make_shared<EVM::Protocol<test_data>>(path, false);
+    ptr_test_protocol->LINK_VAR(ptr_test_protocol->GetData()->test_data_array);
+    ptr_test_protocol->SetDataCallback(std::bind(&TestControl::recv_test_callback, this, std::placeholders::_1, std::placeholders::_2));   
+  }
+private:
+  void recv_test_callback(std::string& name, std::shared_ptr<test_data> data)
+  {
+    ptr_test_data_ = data;
+    if(name == "test_data_array")
+    {
+      ptr_test_protocol->BREAK_VAR(ptr_test_protocol->GetData()->test_data_array);
+      std::string out_put("");
+      char one_data[32] = { 0 };
+      snprintf(one_data, sizeof(one_data), "%08x", ptr_test_data_->test_data_array[0]);
+      out_put += one_data;
+      snprintf(one_data, sizeof(one_data), "%08x", ptr_test_data_->test_data_array[1]);
+      out_put += one_data;      
+      RCLCPP_INFO(logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(), name.c_str(), out_put.c_str());     
+      ptr_test_protocol->LINK_VAR(ptr_test_protocol->GetData()->test_data_array);
+    }
+  }
+private:
+  rclcpp::Logger logger_;
+  std::shared_ptr<EVM::Protocol<test_data>> ptr_test_protocol;
+  std::shared_ptr<test_data> ptr_test_data_;
+  const std::string CONTROLNAME = "Test";  
+};
 
 typedef struct _ultrasonic_can {
   uint8_t ultrasonic_data_array[16];
@@ -233,12 +302,16 @@ public:
           break;
         }
       });
-    ultrasonic_control_ = std::make_unique<UltrasonicControl>(this->get_logger());
-    tof_control_ = std::make_unique<TofControl>(this->get_logger());
+    can_control_ = std::make_unique<CanControl>(this->get_logger());
+    // test_control_ = std::make_unique<TestControl>(this->get_logger());
+    // ultrasonic_control_ = std::make_unique<UltrasonicControl>(this->get_logger());
+    // tof_control_ = std::make_unique<TofControl>(this->get_logger());
   }
 
 private:
   rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr subscription_;
+  std::unique_ptr<CanControl> can_control_;
+  std::unique_ptr<TestControl> test_control_;
   std::unique_ptr<UltrasonicControl> ultrasonic_control_;
   std::unique_ptr<TofControl> tof_control_;
 };

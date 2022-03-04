@@ -467,7 +467,8 @@ TEST(CommonProtocolTest_CAN, initTest_failed_7) {
     0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8
   });
   ASSERT_NE(callback_data_testing_var, nullptr);
-  ASSERT_EQ(callback_data_testing_var->u64_var, 0xA1A2A3A4A5A6A7A8U);
+  // ASSERT_EQ(callback_data_testing_var->u64_var, 0xA1A2A3A4A5A6A7A8U);
+  ASSERT_EQ(callback_data_testing_var->u64_var, 0xA8A7A6A5A4A3A2A1U);
   for (int a = 0; a < 8; a++) {
     ASSERT_EQ(callback_data_testing_var->u8_array[a], 0xB1U + a);
   }
