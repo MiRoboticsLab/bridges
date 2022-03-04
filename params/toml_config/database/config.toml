@@ -1,0 +1,15 @@
+DB_URL = "/home/mi/black_box.db"
+DB_size = 500 # MB
+topic_names = ["touch_status"]
+
+[[tables]]
+topic = "touch_status"
+name = "TouchStatus"
+fields = [["timestamp", "INT", "NOT NULL"], ["touch_state", "INT", "NOT NULL"]]
+key = "timestamp"
+
+[[tables]]
+topic = "test"
+name = "Test"
+fields = [["id", "INT", "NOT NULL"],["content", "INT", "NOT NULL"]]
+key = "id"
