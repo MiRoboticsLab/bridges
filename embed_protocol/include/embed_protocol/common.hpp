@@ -105,11 +105,13 @@ public:
     this->addr = addr;
     loaded = false;
     array_expect = 0;
+    size_cursor = 0;
   }
   uint8_t len;
   void * addr;
   bool loaded;
   int array_expect;
+  uint8_t size_cursor;
 };  // class ProtocolData
 
 class StateCollector

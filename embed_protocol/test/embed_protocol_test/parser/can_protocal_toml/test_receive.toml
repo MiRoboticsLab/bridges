@@ -11,5 +11,14 @@ timeout_us = 1234567
 description = ""
 can_id = "0x0c020100"
 var_name = "example_data"
-var_type = "u64"
-parser_param = [0, 7]
+# var_type = "u64"
+# parser_param = [0, 7]
+var_type = "u32"
+parser_param = [0, 3]
+
+[[array]]
+description = ""
+can_package_num = 2
+can_id = ["0x0c020101", "0x0c020102"]
+array_size = [4]
+array_name = "test_data_array"

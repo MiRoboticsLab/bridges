@@ -162,7 +162,7 @@ public:
 };
 
 std::shared_ptr<testing_full_var> callback_data = nullptr;
-void callback(std::string&, std::shared_ptr<testing_full_var> data)
+void callback(std::string &, std::shared_ptr<testing_full_var> data)
 {
   callback_data = data;
 }
@@ -443,7 +443,7 @@ public:
 };
 
 std::shared_ptr<testing_var> callback_data_testing_var = nullptr;
-void testing_var_callback(std::string& name, std::shared_ptr<testing_var> data)
+void testing_var_callback(std::string & name, std::shared_ptr<testing_var> data)
 {
   ASSERT_NE(name, "unkown");
   callback_data_testing_var = data;
@@ -467,7 +467,8 @@ TEST(CommonProtocolTest_CAN, initTest_failed_7) {
     0xB3, 0xB4, 0xB5, 0xB6, 0xB7, 0xB8
   });
   ASSERT_NE(callback_data_testing_var, nullptr);
-  ASSERT_EQ(callback_data_testing_var->u64_var, 0xA1A2A3A4A5A6A7A8U);
+  // ASSERT_EQ(callback_data_testing_var->u64_var, 0xA1A2A3A4A5A6A7A8U);
+  ASSERT_EQ(callback_data_testing_var->u64_var, 0xA8A7A6A5A4A3A2A1U);
   for (int a = 0; a < 8; a++) {
     ASSERT_EQ(callback_data_testing_var->u8_array[a], 0xB1U + a);
   }
