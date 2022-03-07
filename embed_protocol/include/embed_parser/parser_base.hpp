@@ -71,18 +71,19 @@ public:
     parser_type = toml_at<std::string>(table, "parser_type", "auto");
     auto tmp_parser_param = toml_at<std::vector<uint8_t>>(table, "parser_param", error_clct);
     size_t param_size = tmp_parser_param.size();
-    if(param_size >= 2) {
+    if (param_size >= 2) {
       auto range_right = std::max(tmp_parser_param[0], tmp_parser_param[1]) + 1;
-      if(var_size < range_right && range_right <= can_len) {
+      if (var_size < range_right && range_right <= can_len) {
         printf(
           C_YELLOW "[PARSER_BASE][WARN][%s][var:%s] No var_size field or get var size = %d not qualified parser_param range "
-          "%d-%d. now adjust to %d\n" C_END, name.c_str(), var_name.c_str(), 
-          var_size, tmp_parser_param[0], tmp_parser_param[1], range_right);        
-        var_size = std::min(range_right, can_len); 
+          "%d-%d. now adjust to %d\n" C_END,
+          name.c_str(), var_name.c_str(),
+          var_size, tmp_parser_param[0], tmp_parser_param[1], range_right);
+        var_size = std::min(range_right, can_len);
       } else {
         var_size = can_len;
       }
-    }    
+    }
     if (parser_type == "auto") {
       if (param_size == 3) {
         parser_type = "bit";

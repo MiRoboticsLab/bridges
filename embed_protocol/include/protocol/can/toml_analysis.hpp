@@ -21,48 +21,49 @@ namespace cyberdog
 {
 namespace embed
 {
-enum class Field {
-	VARFIELD,
-	ARRAYFIELD,
-	CMDFIELD,
-	STRUCTFIELD
+enum class Field
+{
+  VARFIELD,
+  ARRAYFIELD,
+  CMDFIELD,
+  STRUCTFIELD
 };
 
 typedef struct _base_region
 {
-    std::string description;
-}base_region;
+  std::string description;
+} base_region;
 
 typedef struct _var_region : base_region
 {
-    std::string var_name;
-    std::string can_id;
-    std::string var_type;
-    std::vector<uint8_t> parser_param;
-    std::string parser_type;
-    double var_zoom;
-}var_region;
+  std::string var_name;
+  std::string can_id;
+  std::string var_type;
+  std::vector<uint8_t> parser_param;
+  std::string parser_type;
+  double var_zoom;
+} var_region;
 
 
 template<typename TDataClass>
 class TomlAnalysis
 {
 public:
-    explicit TomlAnalysis(std::string file_name)
-    {
-        try {
-            v = toml::parse(file_name);
-        } catch (const toml::exception & e) {
-            std::cerr << e.what() << '\n';
-        } catch (const std::exception & e) {
-            std::cerr << e.what() << '\n';
-        } catch (...) {
-            std::cerr << "toml analysis unkown exception." << '\n';
-        }
+  explicit TomlAnalysis(std::string file_name)
+  {
+    try {
+      v = toml::parse(file_name);
+    } catch (const toml::exception & e) {
+      std::cerr << e.what() << '\n';
+    } catch (const std::exception & e) {
+      std::cerr << e.what() << '\n';
+    } catch (...) {
+      std::cerr << "toml analysis unkown exception." << '\n';
     }
-    
+  }
+
 private:
-    toml::value v;
+  toml::value v;
 }; // class CanParser
 } // namespace embed
 } // namespace cyberdog

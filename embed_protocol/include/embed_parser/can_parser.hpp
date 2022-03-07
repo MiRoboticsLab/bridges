@@ -70,24 +70,24 @@ public:
           name.c_str());
       }
       array_size = 0;
-      auto tmp_array_size_vec = toml_at<std::vector<std::uint8_t>>(table, "array_size", std::vector<std::uint8_t>(0));
+      auto tmp_array_size_vec = toml_at<std::vector<std::uint8_t>>(
+        table, "array_size",
+        std::vector<std::uint8_t>(0));
       auto array_size_num = tmp_array_size_vec.size();
-      if(array_size_num == 0) {
+      if (array_size_num == 0) {
         array_size = can_package_num * can_len;
-      }
-      else if(array_size_num == 1) {
+      } else if (array_size_num == 1) {
         array_size = can_package_num * tmp_array_size_vec[0];
-      }
-      else if(array_size_num == can_package_num) {
-        for(auto & elem_size : tmp_array_size_vec)
+      } else if (array_size_num == can_package_num) {
+        for (auto & elem_size : tmp_array_size_vec) {
           array_size += elem_size;
-      }
-      else {
+        }
+      } else {
         printf(
           C_YELLOW "[CAN_PARSER][ERROR][%s] array_size size:%ld error, not equal to zero、one or can_package_num:%ld."
           "now set it to %ld\n" C_END,
-          array_name.c_str(), array_size, can_package_num, can_package_num*can_len);
-          array_size = can_package_num * can_len;     
+          array_name.c_str(), array_size, can_package_num, can_package_num * can_len);
+        array_size = can_package_num * can_len;
       }
       auto tmp_can_id = toml_at<std::vector<std::string>>(table, "can_id", error_clct);
       auto canid_num = tmp_can_id.size();
@@ -255,7 +255,9 @@ public:
     }
     // get array rule
     for (auto & array : array_list) {
-      auto single_array = ArrayRule(error_clct_->CreatChild(), array, name_, CAN_LEN(MAX_LEN), extended_);
+      auto single_array = ArrayRule(
+        error_clct_->CreatChild(), array, name_, CAN_LEN(
+          MAX_LEN), extended_);
       if (single_array.warn_flag) {warn_num_++;}
       if (single_array.error_clct->GetSelfStateTimesNum() == 0) {
         // check error and warning
@@ -291,7 +293,11 @@ public:
 
   int GetInitErrorNum() {return error_clct_->GetAllStateTimesNum();}
   int GetInitWarnNum() {return warn_num_;}
-  uint8_t CAN_LEN(size_t len) {return canfd_ ? (len < CANFD_MAX_DLEN ? len:CANFD_MAX_DLEN) : (len < CAN_MAX_DLEN ? len:CAN_MAX_DLEN);}
+  uint8_t CAN_LEN(size_t len)
+  {
+    return canfd_ ? (len < CANFD_MAX_DLEN ? len : CANFD_MAX_DLEN) : (len <
+           CAN_MAX_DLEN ? len : CAN_MAX_DLEN);
+  }
   bool IsCanfd() {return canfd_;}
 
   std::vector<canid_t> GetRecvList()
@@ -309,7 +315,9 @@ public:
     bool & error_flag,
     std::string & id_name)
   {
-    return Decode(protocol_data_map, rx_frame->can_id, rx_frame->data, rx_frame->len, error_flag, id_name);
+    return Decode(
+      protocol_data_map, rx_frame->can_id, rx_frame->data, rx_frame->len, error_flag,
+      id_name);
   }
   // return true when finish all package
   bool Decode(
@@ -318,7 +326,9 @@ public:
     bool & error_flag,
     std::string & id_name)
   {
-    return Decode(protocol_data_map, rx_frame->can_id, rx_frame->data, rx_frame->can_dlc, error_flag, id_name);
+    return Decode(
+      protocol_data_map, rx_frame->can_id, rx_frame->data, rx_frame->can_dlc,
+      error_flag, id_name);
   }
 
   bool Encode(can_frame & tx_frame, const std::string & CMD, const std::vector<uint8_t> & data)
@@ -676,7 +686,9 @@ private:
       for (int a = 0; a < CAN_LEN(MAX_LEN) && a < static_cast<int>(cmd->ctrl_data.size()); a++) {
         can_data[a] = cmd->ctrl_data[a];
       }
-      for (int a = ctrl_len; a < CAN_LEN(MAX_LEN) && a - ctrl_len < static_cast<int>(data.size()); a++) {
+      for (int a = ctrl_len; a < CAN_LEN(MAX_LEN) && a - ctrl_len < static_cast<int>(data.size());
+        a++)
+      {
         can_data[a] = data[a - ctrl_len];
       }
       can_len = ctrl_len + static_cast<uint8_t>(data.size());
@@ -711,16 +723,16 @@ private:
     uint64_t result = 0;
     if (rule.parser_type == "var") {
       // var
-      if(net_order) {
+      if (net_order) {
         for (int a = rule.parser_param[0]; a <= rule.parser_param[1]; a++) {
           if (a != rule.parser_param[0]) {result <<= 8;}
           result |= can_data[a];
-        } 
+        }
       } else {
         for (int a = rule.parser_param[1]; a >= rule.parser_param[0]; --a) {
           if (a != rule.parser_param[1]) {result <<= 8;}
           result |= can_data[a];
-        }           
+        }
       }
     } else if (rule.parser_type == "bit") {
       // bit
@@ -776,14 +788,14 @@ private:
       uint64_t * hex = reinterpret_cast<uint64_t *>(&target);
       uint8_t min = rule.parser_param[0];
       uint8_t max = rule.parser_param[1];
-      if(net_order) {
+      if (net_order) {
         for (int a = min; a <= max; a++) {
           can_data[a] = (*hex >> (max - a) * 8) & 0xFF;
         }
       } else {
         for (int a = min; a <= max; a++) {
           can_data[a] = (*hex >> (a - min) * 8) & 0xFF;
-        }        
+        }
       }
     }
     if (no_error == false) {no_error_flag = false;}
@@ -876,9 +888,11 @@ private:
       checker.insert(
         std::pair<canid_t, std::vector<uint8_t>>(
           rule.can_id, std::vector<uint8_t>(CAN_LEN(rule.var_size))));
-    }
-    else {
-      checker[rule.can_id].resize(std::max(CAN_LEN(rule.var_size), static_cast<uint8_t>(checker[rule.can_id].size())));
+    } else {
+      checker[rule.can_id].resize(
+        std::max(
+          CAN_LEN(rule.var_size),
+          static_cast<uint8_t>(checker[rule.can_id].size())));
     }
     if (rule.parser_type == "bit") {
       uint8_t data_index = rule.parser_param[0];
