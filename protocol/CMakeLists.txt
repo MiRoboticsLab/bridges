@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.8)
 project(protocol)
 
 
-
-
-
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
@@ -23,6 +20,7 @@ find_package(builtin_interfaces REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   # msg
+  "ros/msg/Bms.msg"
   "ros/msg/ManagerState.msg"
   "ros/msg/Heartbeats.msg"
   "ros/msg/TouchStatus.msg"
@@ -31,6 +29,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "ros/msg/Tof.msg"
   "ros/msg/MultipleTof.msg"
   # srv
+  "ros/srv/BmsInfo.srv"
   "ros/srv/ManagerInit.srv"
   "ros/srv/LedExecute.srv"
   "ros/srv/ConnectorStatus.srv"
