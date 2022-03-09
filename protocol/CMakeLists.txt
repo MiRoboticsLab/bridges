@@ -18,13 +18,17 @@ find_package(builtin_interfaces REQUIRED)
 
 include(compile_ros.cmake.in)
 
+
 set(protocol_list)                # 协议列表
 get_ros_protocol_file("msg")      # 加载 msg 协议
 get_ros_protocol_file("srv")      # 加载 srv 协议
 # get_ros_protocol_file("action") # 加载 action 协议
+
 rosidl_generate_interfaces(${PROJECT_NAME} ${protocol_list}
   DEPENDENCIES builtin_interfaces sensor_msgs
 )
+
+# lcm-gen -x motion_cmd.lcm 
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
