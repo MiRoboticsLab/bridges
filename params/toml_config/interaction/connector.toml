@@ -1,0 +1,28 @@
+[hz] # float
+update_status = 1.0
+check_internet = 0.5
+auto_connection = 1.0
+reset_touch = 1.0
+
+[cmd] # string
+check_internet_cmd = "ping -c 3 baidu.com; echo $?"
+
+[timeout_s] # int
+wifi_service = 10
+ip_service = 1
+touch_signal_ffective = 10
+
+[topic] # string
+connector = "connector_state"
+touch = "touch_state"
+camera = "/camera/color/image_raw"
+wifi = "wifi_state"
+
+[service] # string
+led = "led_state"
+wifi = "wifi_state"
+ip = "ip_state"
+
+[wifi] # string
+ssid = "ssid"
+password = "password"

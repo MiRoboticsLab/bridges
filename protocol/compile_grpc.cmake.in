@@ -1,0 +1,99 @@
+# 尚未完成，有待补充
+set(compile_dir_path  ${CMAKE_CURRENT_SOURCE_DIR}/interface)
+set(compile_hdrs_path ${CMAKE_CURRENT_SOURCE_DIR}/include/${PROJECT_NAME})
+set(compile_src_path  ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+
+# proto 协议 c++ 接口文件
+set(interface_src "")
+set(interface_hdrc "")
+
+# set(PROTO_PACKAGE_PATH ${PROJECT_SOURCE_DIR}/proto)
+
+macro(compile_grpc PROTO_PACKAGE_PATH)
+    # CMAKE_INCLUDE_CURRENT_DIR: 自动添加 CMAKE_CURRENT_BINARY_DIR 和 CMAKE_CURRENT_SOURCE_DIR 到当前处理的 CMakeLists.txt。
+    # CMAKE_CURRENT_SOURCE_DIR: 指的是当前处理的 CMakeLists.txt 所在的路径。
+    # CMAKE_CURRENT_BINARY_DIR: 如果是 in-source 编译,它跟 CMAKE_CURRENT_SOURCE_DIR 一致。
+    #                           如果是 out-of-source 编译,他指的是 target 编译目录。
+    #                           使用 ADD_SUBDIRECTORY(src bin)可以更改这个变量的值。
+    #                           使用 SET(EXECUTABLE_OUTPUT_PATH <新路径>)并不会对这个变量造成影响,它仅仅修改了最终目标文件存放的路径。
+    set(CMAKE_INCLUDE_CURRENT_DIR TRUE)
+
+    find_package(Protobuf 3 REQUIRED)
+
+    if(PROTOBUF_FOUND)
+        message(STATUS "已找到 Protobuf 库")
+    else()
+        message(FATAL_ERROR "需要 Protobuf 库，但找不到")
+    endif()
+
+    #设置输出路径
+    if(EXISTS "${compile_dir_path}" AND IS_DIRECTORY "${compile_dir_path}")
+        set(proto_meta_base_dir ${compile_dir_path})
+    else()
+        file(make_directory ${compile_dir_path})
+        set(proto_meta_base_dir ${compile_dir_path})
+    endif()
+
+    file(make_directory ${compile_hdrs_path})
+    file(make_directory ${compile_src_path})
+    message(STATUS "消息文件编译输出路径(.h):${compile_hdrs_path}")
+    message(STATUS "消息文件编译输出路径(.cpp):${compile_src_path}")
+
+    #设置 protoc 的搜索路径
+    list(APPEND proto_flags -I${PROTO_PACKAGE_PATH})  # A 所有接口在原来级目录下(注释后B生效)
+
+    # 接口文件子包
+    file(GLOB _toolset_protocol_list ${PROTO_PACKAGE_PATH}/*)
+
+    # 接口文件列表
+    set(_interface_file_list)
+    foreach(_loop_path_var IN LISTS _toolset_protocol_list)
+        list(APPEND proto_flags -I${_loop_path_var})          # B 所有接口在同一级目录下
+        file(GLOB _toolset_protocol_file_list ${_loop_path_var}/*.proto)
+        foreach(_loop_file_var IN LISTS _toolset_protocol_file_list)
+            list(APPEND _interface_file_list ${_loop_file_var})
+        endforeach()
+    endforeach()
+    list(LENGTH _interface_file_list _interface_file_list_number)
+
+    set(INTERFACE_INDEX 0)
+    foreach(_loop_interface_file_var ${_interface_file_list})
+        math(EXPR INTERFACE_INDEX "(${INTERFACE_INDEX}+1)")
+
+        # string(REGEX REPLACE ".*/\(.*\).proto" "\\1" _interface_name "${_loop_interface_file_var}")
+        get_filename_component(_interface_name ${_loop_interface_file_var} NAME_WE)
+
+        string(REGEX REPLACE
+            "${CMAKE_CURRENT_SOURCE_DIR}/proto/\(.*\)/${_interface_name}.proto"
+            "\\1"
+            _interface_path
+            "${_loop_interface_file_var}")
+        message(STATUS
+            "[${INTERFACE_INDEX}/${_interface_file_list_number}]协议缓冲区(C++)正在编译: ${_interface_path}/${_interface_name}")
+
+        execute_process(COMMAND sudo ${PROTOBUF_PROTOC_EXECUTABLE} ${proto_flags} --cpp_out=${compile_dir_path} ${_loop_interface_file_var})
+
+        set(_now_compile_hdrs ${compile_hdrs_path}/${_interface_path})
+        set(_now_compile_src ${compile_src_path}/${_interface_path})
+
+        if(NOT (EXISTS "${_now_compile_hdrs}" AND IS_DIRECTORY "${_now_compile_hdrs}"))
+            file(make_directory ${_now_compile_hdrs})
+        endif()
+
+        if(NOT (EXISTS "${_now_compile_src}" AND IS_DIRECTORY "${_now_compile_src}"))
+            file(make_directory ${_now_compile_src})
+        endif()
+
+        execute_process(COMMAND sudo mv ${compile_dir_path}/${_interface_path}/${_interface_name}.pb.h  ${_now_compile_hdrs})
+        execute_process(COMMAND sudo mv ${compile_dir_path}/${_interface_path}/${_interface_name}.pb.cc ${_now_compile_src})
+
+        list(APPEND interface_hdrc  ${_now_compile_hdrs}/${_interface_name}.pb.h)
+        list(APPEND interface_src   ${_now_compile_src}/${_interface_name}.pb.cc)
+    endforeach()
+
+    set_source_files_properties(${interface_hdrc} ${interface_src} PROPERTIES GENERATED TRUE)   # 设置文件属性为 GENERATED
+
+    execute_process(COMMAND sudo rm -r ${compile_dir_path})
+
+    message(STATUS "${PROTO_PACKAGE_PATH}下协议编译完毕")
+endmacro()

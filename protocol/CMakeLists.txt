@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 project(protocol)
 
-
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 14)
 endif()
@@ -17,26 +16,15 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
+# include(compile_grpc.cmake.in)
+include(compile_ros.cmake.in)
 
-rosidl_generate_interfaces(${PROJECT_NAME}
-  # msg
-  "ros/msg/Bms.msg"
-  "ros/msg/ManagerState.msg"
-  "ros/msg/Heartbeats.msg"
-  "ros/msg/TouchStatus.msg"
-  "ros/msg/ConnectorStatus.msg"
-  "ros/msg/GpsPayload.msg"
-  "ros/msg/Tof.msg"
-  "ros/msg/MultipleTof.msg"
-  # srv
-  "ros/srv/BmsInfo.srv"
-  "ros/srv/ManagerInit.srv"
-  "ros/srv/LedExecute.srv"
-  "ros/srv/ConnectorStatus.srv"
-  "ros/srv/Wifi.srv"
-  "ros/srv/IP.srv"
-  DEPENDENCIES   builtin_interfaces sensor_msgs std_msgs 
-
+set(protocol_list)                # 协议列表
+get_ros_protocol_file("msg")      # 加载 msg 协议
+get_ros_protocol_file("srv")      # 加载 srv 协议
+# get_ros_protocol_file("action") # 加载 action 协议
+rosidl_generate_interfaces(${PROJECT_NAME} ${protocol_list}
+  DEPENDENCIES builtin_interfaces sensor_msgs
 )
 
 if(BUILD_TESTING)
