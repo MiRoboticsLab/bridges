@@ -1,0 +1,31 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "battery"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+[[array]]
+description = ""
+can_package_num = 13
+can_id = ["0x0A842000", "0x0A842001", "0x0A842002", "0x0A842003", "0x0A842004", "0x0A842005", "0x0A842006", "0x0A842007", 
+          "0x0A842008", "0x0A842009", "0x0A84200A", "0x0A84200B", "0x0A84200C"]
+array_name = "bms_data_array"
+
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_power_supply"
+can_id = "0x0A850200"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_buzze"
+can_id = "0x0A850400"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_disable_charge"
+can_id = "0x01850800"
