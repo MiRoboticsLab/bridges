@@ -1,0 +1,19 @@
+set(log     0)        # 是否输出加载协议过程中的日至
+
+macro(get_ros_protocol_file _PROTOCOL_TYPE)
+file(GLOB_RECURSE _protocol_list RELATIVE ${PROJECT_SOURCE_DIR} ros/${_PROTOCOL_TYPE}/*.${_PROTOCOL_TYPE})  # 以相对路径方式递归包含目标文件
+list(LENGTH _protocol_list _protocol_list_number)
+if(_protocol_list_number)
+  list(APPEND protocol_list ${_protocol_list})
+  if(log)
+    message("\n┏━[${_PROTOCOL_TYPE}]> 搜索到${_protocol_list_number}个${_PROTOCOL_TYPE}协议文件")
+    set(_loop_var_index 1)
+    foreach(_loop_var IN LISTS _protocol_list)
+      message("┠─[${_loop_var_index}]─> ${_loop_var}")
+      math(EXPR _loop_var_index "(${_loop_var_index}+1)")
+    endforeach()
+    list(LENGTH protocol_list protocol_list_number)
+    message("┗━[ROS]> 共计${protocol_list_number}个ROS协议文件")
+  endif()
+endif()
+endmacro()
