@@ -15,6 +15,8 @@
 #ifndef PROTOCOL__CAN__TOML_ANALYSIS_HPP_
 #define PROTOCOL__CAN__TOML_ANALYSIS_HPP_
 
+#include <string>
+#include <vector>
 #include "toml/toml.hpp"
 
 namespace cyberdog
@@ -64,8 +66,8 @@ public:
 
 private:
   toml::value v;
-}; // class CanParser
-} // namespace embed
-} // namespace cyberdog
+};  // class CanParser
+}  // namespace embed
+}  // namespace cyberdog
 
-#endif
+#endif  // PROTOCOL__CAN__TOML_ANALYSIS_HPP_

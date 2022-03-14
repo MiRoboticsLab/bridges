@@ -84,7 +84,8 @@ public:
         }
       } else {
         printf(
-          C_YELLOW "[CAN_PARSER][ERROR][%s] array_size size:%ld error, not equal to zero、one or can_package_num:%ld."
+          C_YELLOW "[CAN_PARSER][ERROR][%s] array_size size:%ld error, "
+          "not equal to zero、one or can_package_num:%ld."
           "now set it to %ld\n" C_END,
           array_name.c_str(), array_size, can_package_num, can_package_num * can_len);
         array_size = can_package_num * can_len;

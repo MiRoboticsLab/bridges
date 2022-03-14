@@ -344,4 +344,4 @@ bool toml_parse(toml::value & toml, const std::string & path)
 }  // namespace embed
 }  // namespace cyberdog
 
-#endif  // EMBED_PROTOCOL__EMBED_HPP_
+#endif  // EMBED_PROTOCOL__COMMON_HPP_
