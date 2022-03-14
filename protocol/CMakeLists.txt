@@ -16,7 +16,6 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
-# include(compile_grpc.cmake.in)
 include(compile_ros.cmake.in)
 
 set(protocol_list)                # 协议列表
