@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 
 #include "toml/toml.hpp"
 #include "embed_protocol/common.hpp"
@@ -75,7 +76,8 @@ public:
       auto range_right = std::max(tmp_parser_param[0], tmp_parser_param[1]) + 1;
       if (var_size < range_right && range_right <= can_len) {
         printf(
-          C_YELLOW "[PARSER_BASE][WARN][%s][var:%s] No var_size field or get var size = %d not qualified parser_param range "
+          C_YELLOW "[PARSER_BASE][WARN][%s][var:%s] No var_size field or get var size = %d "
+          "not qualified parser_param range "
           "%d-%d. now adjust to %d\n" C_END,
           name.c_str(), var_name.c_str(),
           var_size, tmp_parser_param[0], tmp_parser_param[1], range_right);

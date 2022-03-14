@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string>
+#include <vector>
 #include <memory>
+#include <map>
 #include <functional>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/u_int16.hpp"
@@ -30,7 +33,7 @@ typedef struct _can_data
 class CanControl
 {
 public:
-  CanControl(rclcpp::Logger l)
+  explicit CanControl(rclcpp::Logger l)
   : logger_(l)
   {
     std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_receive.toml";
@@ -52,7 +55,8 @@ private:
       // char one_data[32] = { 0 };
       // snprintf(one_data, sizeof(one_data), "%08x", ptr_can_data_->example_data);
       // out_put += one_data;
-      // RCLCPP_INFO(logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(), name.c_str(), out_put.c_str());
+      // RCLCPP_INFO(logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
+      //    name.c_str(), out_put.c_str());
       RCLCPP_INFO(
         logger_, "[%s]canid name:%s, data: '%08x'", CONTROLNAME.c_str(),
         name.c_str(), ptr_can_data_->example_data);
@@ -76,7 +80,7 @@ typedef struct _test_data
 class TestControl
 {
 public:
-  TestControl(rclcpp::Logger l)
+  explicit TestControl(rclcpp::Logger l)
   : logger_(l)
   {
     std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_receive.toml";
@@ -128,15 +132,16 @@ typedef struct _ultrasonic_can
 class UltrasonicControl
 {
 public:
-  UltrasonicControl(rclcpp::Logger l)
+  explicit UltrasonicControl(rclcpp::Logger l)
   : logger_(l)                                  /*, is_stop_(false) */
   {
     // std::string path = std::string(PASER_PATH) + "/can_protocal_toml/ultrasonic.toml";
     std::string path = ament_index_cpp::get_package_share_directory("params") +
       "/toml_config/sensors/ultrasonic.toml";
     ptr_ultrasonic_protocol = std::make_shared<EVM::Protocol<ultrasonic_can>>(path, false);
-    // ptr_ultrasonic_protocol->Operate("enable_on", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-    // // pro->Operate("enable_off", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    // ptr_ultrasonic_protocol->Operate("enable_on",
+    //  std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+    // // pro->Operate("enable_off", std::vector<uint8_t>{0x00});
     // ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->enable_on_ack);
     ptr_ultrasonic_protocol->SetDataCallback(
       std::bind(
@@ -146,11 +151,14 @@ public:
     //   // std::string path = std::string(PASER_PATH) + "/can_protocal_toml/test_receive.toml";
     //   // auto pro = std::make_shared<EVM::Protocol<can_data>>(path, false);
     //   // pro->LINK_VAR(pro->GetData()->example_data);
-    //   // pro->SetDataCallback(std::bind(&CanNode::recv_callback, this, std::placeholders::_1, std::placeholders::_2));
+    //   // pro->SetDataCallback(std::bind(&CanNode::recv_callback, this, std::placeholders::_1,
+    //   // std::placeholders::_2));
     //   while(!is_stop_)
     //   {
     //     std::unique_lock<std::mutex> lck(data_mutex_);
-    //     data_cond_.wait(lck, [this] {return (is_stop_ || (!(ptr_ultrasonic_protocol->IsRxTimeout() || ptr_ultrasonic_protocol->IsRxError())) );});
+    //     data_cond_.wait(lck, [this] {return (is_stop_
+    //                      || (!(ptr_ultrasonic_protocol->IsRxTimeout()
+    //                      || ptr_ultrasonic_protocol->IsRxError())) );});
     //     lck.unlock();
     //     if(ptr_ultrasonic_protocol->IsRxTimeout() || ptr_ultrasonic_protocol->IsRxError())
     //       continue;
@@ -263,7 +271,7 @@ typedef struct _tof_can
 class TofControl
 {
 public:
-  TofControl(rclcpp::Logger l)
+  explicit TofControl(rclcpp::Logger l)
   : logger_(l)
   {
     std::string path = ament_index_cpp::get_package_share_directory("params") +
