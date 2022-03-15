@@ -32,8 +32,6 @@ parser_param = [4, 7]
 description = "this is example named ultrasonic_data_clock"
 
 
-
-
 [[var]]
 description = ""
 can_id = "0x01820200"

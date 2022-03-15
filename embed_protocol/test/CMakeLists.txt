@@ -24,6 +24,13 @@ ament_target_dependencies(can_node_test ${dependencies})
 target_compile_definitions(can_node_test PRIVATE
   "PASER_PATH=\"${CMAKE_SOURCE_DIR}/test/embed_protocol_test/parser\""
 )
+
+add_executable(bms_test_node embed_protocol_test/bms_test_node.cpp)
+ament_target_dependencies(bms_test_node ${dependencies})
+target_compile_definitions(bms_test_node PRIVATE
+  "PASER_PATH=\"${CMAKE_SOURCE_DIR}/test/embed_protocol_test/parser\""
+)
+
 add_executable(sensor_simulator_node embed_protocol_test/sensor_simulator_node.cpp)
 ament_target_dependencies(sensor_simulator_node ${dependencies})
 target_compile_definitions(sensor_simulator_node PRIVATE

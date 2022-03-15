@@ -101,14 +101,14 @@ description = "this is powerboard_status"
 [[cmd]]
 description = ""
 cmd_name = "cmd_power_supply"
-can_id = "0x0A850200"
+can_id = "0x05850200"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_buzze"
-can_id = "0x0A850400"
+can_id = "0x05850400"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_disable_charge"
-can_id = "0x01850800"
+can_id = "0x05850800"

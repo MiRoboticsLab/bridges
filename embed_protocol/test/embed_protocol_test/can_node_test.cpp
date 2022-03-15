@@ -199,8 +199,7 @@ private:
       ptr_ultrasonic_protocol->BREAK_VAR(ptr_ultrasonic_protocol->GetData()->enable_on_ack);
       // ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_array);
       ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data);
-      ptr_ultrasonic_protocol->LINK_VAR(
-        ptr_ultrasonic_protocol->GetData()->ultrasonic_data_intensity);
+      ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_intensity);
       ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_clock);
       // pro->LINK_VAR(pro->GetData()->ultrasonic_clock);
       // pro->LINK_VAR(pro->GetData()->enable_off_ack);
@@ -225,13 +224,13 @@ private:
         ptr_ultrasonic_data_->ultrasonic_data,
         ptr_ultrasonic_data_->ultrasonic_data_intensity,
         ptr_ultrasonic_data_->ultrasonic_data_clock);
+        
       ptr_ultrasonic_protocol->BREAK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data);
-      ptr_ultrasonic_protocol->BREAK_VAR(
-        ptr_ultrasonic_protocol->GetData()->ultrasonic_data_intensity);
+      ptr_ultrasonic_protocol->BREAK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_intensity);
       ptr_ultrasonic_protocol->BREAK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_clock);
+
       ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data);
-      ptr_ultrasonic_protocol->LINK_VAR(
-        ptr_ultrasonic_protocol->GetData()->ultrasonic_data_intensity);
+      ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_intensity);
       ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_clock);
     } else if (name == "enable_off_ack") {
       RCLCPP_INFO(
@@ -326,6 +325,9 @@ private:
   std::shared_ptr<tof_can> ptr_tof_data_;
   const std::string CONTROLNAME = "Tof";
 };
+
+
+
 
 class CanNode : public rclcpp::Node
 {
