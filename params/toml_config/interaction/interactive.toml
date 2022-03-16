@@ -1,0 +1,15 @@
+[connector.offline] # WiFi 连接:掉线
+led = 1
+audio = 1
+
+[connector.auto_connection] # WiFi 连接:自动连接
+led = 1
+audio = 1
+
+[connector.manual_connection] # WiFi 连接:手动连接
+led = 1
+audio = 1
+
+[connector.communication] # WiFi 连接:通信
+led = 1
+audio = 1
