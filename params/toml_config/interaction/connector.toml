@@ -17,6 +17,7 @@ connector = "connector_state"
 touch = "touch_state"
 camera = "/camera/color/image_raw"
 wifi = "wifi_state"
+grpc = "ip_notify"
 
 [service] # string
 led = "led_state"
