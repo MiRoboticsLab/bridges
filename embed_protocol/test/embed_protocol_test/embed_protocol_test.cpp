@@ -520,5 +520,6 @@ TEST(CommonProtocolTest_CAN, initTest_failed_9) {
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
+  LOGGER_MAIN_INSTANCE("embed_protocol_test");
   return RUN_ALL_TESTS();
 }

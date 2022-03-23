@@ -42,9 +42,9 @@ public:
   void SetDataCallback(std::function<void(std::string &, std::shared_ptr<TDataClass>)> callback)
   {
     if (for_send_) {
-      printf(
-        C_YELLOW "[PROTOCOL][WARN][%s] for_send protocol not need callback function, "
-        "please check the code\n" C_END, name_.c_str());
+      WARN(
+        "[PROTOCOL][WARN][%s] for_send protocol not need callback function, "
+        "please check the code", name_.c_str());
     }
     if (callback != nullptr) {protocol_data_callback_ = callback;}
   }
@@ -53,8 +53,8 @@ public:
   {
     if (protocol_data_map_.find(name) != protocol_data_map_.end()) {
       error_clct_->LogState(ErrorCode::RUNTIME_SAMELINK_ERROR);
-      printf(
-        C_RED "[PROTOCOL][ERROR][%s] LINK_VAR error, get same name:\"%s\"\n" C_END,
+      ERROR(
+        "[PROTOCOL][%s] LINK_VAR error, get same name:\"%s\"",
         name_.c_str(), name.c_str());
       return;
     }
@@ -68,8 +68,8 @@ public:
       return;
     }
     error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
-    printf(
-      C_RED "[PROTOCOL][ERROR][%s] BREAK_VAR error, not find same name:\"%s\". erase error\n" C_END,
+    ERROR(
+      "[PROTOCOL][%s] BREAK_VAR error, not find same name:\"%s\". erase error",
       name_.c_str(), name.c_str());
   }
 

@@ -22,6 +22,7 @@
 
 #include "embed_protocol/protocol_base.hpp"
 #include "embed_protocol/can_protocol.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 
 #define XNAME(x) (#x)
 #define LINK_VAR(var) LinkVar( \
@@ -44,8 +45,8 @@ public:
     toml::value toml_config;
     if (toml_parse(toml_config, protocol_toml_path) == false) {
       error_clct_.LogState(ErrorCode::INIT_ERROR);
-      printf(
-        C_RED "[PROTOCOL][ERROR] toml file:\"%s\" error, load prebuilt file\n" C_END,
+      ERROR(
+        "[PROTOCOL] toml file:\"%s\" error, load prebuilt file",
         protocol_toml_path.c_str());
       // TBD toml_config = LoadPrebuilt();
     }
@@ -53,8 +54,8 @@ public:
     Init(toml_config, for_send, protocol_toml_path);
     if (base_ == nullptr || base_->GetInitErrorNum() != 0) {
       error_clct_.LogState(ErrorCode::INIT_ERROR);
-      printf(
-        C_RED "[PROTOCOL][ERROR] toml file:\"%s\" init error, load prebuilt file\n" C_END,
+      ERROR(
+        "[PROTOCOL] toml file:\"%s\" init error, load prebuilt file",
         protocol_toml_path.c_str());
       // TBD Init(LoadPrebuilt(), for_send);
     }
@@ -129,8 +130,8 @@ private:
     auto protocol = toml::find_or<std::string>(toml_config, "protocol", "#unknow");
     auto name = toml::find_or<std::string>(toml_config, "name", "#unknow");
     if (protocol_toml_path != "") {
-      printf(
-        "[PROTOCOL][INFO] Creat embed protocol[%s], protocol:\"%s\", path:\"%s\"\n",
+      INFO(
+        "[PROTOCOL][INFO] Creat embed protocol[%s], protocol:\"%s\", path:\"%s\"",
         name.c_str(), protocol.c_str(), protocol_toml_path.c_str());
     }
 
@@ -140,15 +141,15 @@ private:
     } else if (protocol == "spi") {
       // todo when need
       error_clct_.LogState(ErrorCode::ILLEGAL_PROTOCOL);
-      printf(C_RED "[PROTOCOL][ERROR] protocol:\"%s\" not support yet\n" C_END, protocol.c_str());
+      ERROR("[PROTOCOL] protocol:\"%s\" not support yet", protocol.c_str());
     } else if (protocol == "iic" || protocol == "i2c") {
       // todo when need
       error_clct_.LogState(ErrorCode::ILLEGAL_PROTOCOL);
-      printf(C_RED "[PROTOCOL][ERROR] protocol:\"%s\" not support yet\n" C_END, protocol.c_str());
+      ERROR("[PROTOCOL] protocol:\"%s\" not support yet", protocol.c_str());
     } else {
       error_clct_.LogState(ErrorCode::ILLEGAL_PROTOCOL);
-      printf(
-        C_RED "[PROTOCOL][ERROR][%s] protocol:\"%s\" not support, parser path=\"%s\"\n" C_END,
+      ERROR(
+        "[PROTOCOL][%s] protocol:\"%s\" not support, parser path=\"%s\"",
         name.c_str(), protocol.c_str(), protocol_toml_path.c_str());
     }
   }
