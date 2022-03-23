@@ -16,11 +16,12 @@
 #include <string>
 #include <vector>
 #include "rclcpp/rclcpp.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 #include "std_msgs/msg/u_int16.hpp"
 #include "embed_protocol/embed_protocol.hpp"
 
-#define EVM cyberdog::embed
-
+#define   EVM   cyberdog::embed
+#define   NODE_NAME   "sensor_simulator_node"
 
 typedef struct _test_send_data
 {
@@ -125,13 +126,13 @@ private:
     ptr_ultrasonic_simulator_ = data;
     // 数据解析在这里进行
     if (name == "enable_on") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       ultrasonic_can_->BREAK_VAR(ultrasonic_can_->GetData()->enable_on);
       ultrasonic_can_->Operate("enable_on_ack", std::vector<uint8_t>{0x00});
       is_enable_ = true;
       ultrasonic_can_->LINK_VAR(ultrasonic_can_->GetData()->enable_off);
     } else if (name == "enable_off") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       ultrasonic_can_->BREAK_VAR(pro->GetData()->enable_off);
       ultrasonic_can_->Operate("enable_off_ack", std::vector<uint8_t>{0x00});
       is_enable_ = false;
@@ -229,13 +230,13 @@ private:
     ptr_tof_simulator_ = data;
     // 数据解析在这里进行
     if (name == "enable_on") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       tof_can_->BREAK_VAR(tof_can_->GetData()->enable_on);
       tof_can_->Operate("enable_on_ack", std::vector<uint8_t>{0x00});
       is_enable_ = true;
       tof_can_->LINK_VAR(tof_can_->GetData()->enable_off);
     } else if (name == "enable_off") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       tof_can_->BREAK_VAR(pro->GetData()->enable_off);
       tof_can_->Operate("enable_off_ack", std::vector<uint8_t>{0x00});
       is_enable_ = false;
@@ -264,7 +265,7 @@ class CanNode : public rclcpp::Node
 {
 public:
   CanNode()
-  : Node("sensor_simulator_node")
+  : Node(NODE_NAME)
   {
     test_ = std::make_unique<TestSenor>(this->get_logger());
     ultrasonic_ = std::make_unique<UltrasonicSenor>(this->get_logger());
@@ -291,6 +292,7 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
+  LOGGER_MAIN_INSTANCE(NODE_NAME);
   rclcpp::spin(std::make_shared<CanNode>());
   rclcpp::shutdown();
   return 0;

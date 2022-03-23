@@ -27,6 +27,7 @@
 
 #include "protocol/can/can_utils.hpp"
 #include "embed_parser/parser_base.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 
 #define  MAX_LEN   0x80
 
@@ -65,9 +66,7 @@ public:
       array_name = toml_at<std::string>(table, "array_name", error_clct);
       if (array_name == "") {
         error_clct->LogState(ErrorCode::RULEARRAY_ILLEGAL_ARRAYNAME);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s] array_name error, not support empty string\n" C_END,
-          name.c_str());
+        ERROR("[CAN_PARSER][%s] array_name error, not support empty string", name.c_str());
       }
       array_size = 0;
       auto tmp_array_size_vec = toml_at<std::vector<std::uint8_t>>(
@@ -83,10 +82,10 @@ public:
           array_size += elem_size;
         }
       } else {
-        printf(
-          C_YELLOW "[CAN_PARSER][ERROR][%s] array_size size:%ld error, "
+        WARN(
+          "[CAN_PARSER][%s] array_size size:%ld error, "
           "not equal to zero、one or can_package_num:%ld."
-          "now set it to %ld\n" C_END,
+          "now set it to %ld",
           array_name.c_str(), array_size, can_package_num, can_package_num * can_len);
         array_size = can_package_num * can_len;
       }
@@ -101,9 +100,9 @@ public:
             can_id.insert(std::pair<canid_t, int>(canid, index++));
           } else {
             error_clct->LogState(ErrorCode::RULEARRAY_SAMECANID_ERROR);
-            printf(
-              C_RED "[CAN_PARSER][ERROR][%s][array:%s] array error, "
-              "get same can_id:\"0x%x\"\n" C_END,
+            ERROR(
+              "[CAN_PARSER][%s][array:%s] array error, "
+              "get same can_id:\"0x%x\"",
               name.c_str(), array_name.c_str(), canid);
           }
         }
@@ -118,9 +117,9 @@ public:
           }
           if (id.first - last_id != 1) {
             warn_flag = true;
-            printf(
-              C_YELLOW "[CAN_PARSER][WARN][%s][array:%s] toml_array:\"can_id\" not "
-              "continuous increase\n" C_END,
+            WARN(
+              "[CAN_PARSER][%s][array:%s] toml_array:\"can_id\" not "
+              "continuous increase",
               name.c_str(), array_name.c_str());
             break;
           }
@@ -135,16 +134,16 @@ public:
           }
         } else {
           error_clct->LogState(ErrorCode::RULEARRAY_ILLEGAL_PARSERPARAM_VALUE);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s][array:%s] simple array method must follow: "
-            "(canid low to high) and (high - low + 1 == can_package_num)\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s][array:%s] simple array method must follow: "
+            "(canid low to high) and (high - low + 1 == can_package_num)",
             name.c_str(), array_name.c_str());
         }
       } else {
         error_clct->LogState(ErrorCode::RULEARRAY_ILLEGAL_PARSERPARAM_VALUE);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s][array:%s] toml_array:\"can_id\" length not match "
-          "can_package_num, toml_array:\"can_id\" length=%ld but can_package_num=%ld\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s][array:%s] toml_array:\"can_id\" length not match "
+          "can_package_num, toml_array:\"can_id\" length=%ld but can_package_num=%ld",
           name.c_str(), array_name.c_str(), canid_num, can_package_num);
       }
     }
@@ -178,8 +177,8 @@ public:
       cmd_name = toml_at<std::string>(table, "cmd_name", error_clct);
       if (cmd_name == "") {
         error_clct->LogState(ErrorCode::RULECMD_ILLEGAL_CMDNAME);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s] cmd_name error, not support empty string\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s] cmd_name error, not support empty string",
           name.c_str());
       }
       can_id = HEXtoUINT(toml_at<std::string>(table, "can_id", error_clct), error_clct);
@@ -191,9 +190,9 @@ public:
         auto uint_hex = HEXtoUINT(str, error_clct);
         if (uint_hex != (uint_hex & 0xFF)) {
           error_clct->LogState(ErrorCode::RULECMD_CTRLDATA_ERROR);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s][cmd:%s] ctrl_data HEX to uint8 overflow, "
-            "HEX_string:\"%s\"\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s][cmd:%s] ctrl_data HEX to uint8 overflow, "
+            "HEX_string:\"%s\"",
             name.c_str(), cmd_name.c_str(), str.c_str());
         }
         ctrl_data.push_back(static_cast<uint8_t>(uint_hex & 0xFF));
@@ -201,9 +200,9 @@ public:
       int size = ctrl_data.size();
       if (ctrl_len < size) {
         error_clct->LogState(ErrorCode::RULECMD_CTRLDATA_ERROR);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s][cmd:%s] ctrl_data overflow, "
-          "ctrl_len:%d < ctrl_data.size:%d\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s][cmd:%s] ctrl_data overflow, "
+          "ctrl_len:%d < ctrl_data.size:%d",
           name.c_str(), cmd_name.c_str(), ctrl_len, size);
       }
     }
@@ -274,8 +273,8 @@ public:
       if (single_cmd.error_clct->GetSelfStateTimesNum() == 0) {
         if (single_cmd.ctrl_len > CAN_LEN(MAX_LEN)) {
           error_clct_->LogState(ErrorCode::RULECMD_CTRLDATA_ERROR);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s] cmd_name:\"%s\", ctrl_len:%d > MAX_CAN_DATA:%d\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s] cmd_name:\"%s\", ctrl_len:%d > MAX_CAN_DATA:%d",
             name_.c_str(), single_cmd.cmd_name.c_str(), single_cmd.ctrl_len, CAN_LEN(MAX_LEN));
           continue;
         }
@@ -284,8 +283,8 @@ public:
           parser_cmd_map_.insert(std::pair<std::string, CmdRule>(cmd_name, single_cmd));
         } else {
           error_clct_->LogState(ErrorCode::RULECMD_SAMECMD_ERROR);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s] get same cmd_name:\"%s\"\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s] get same cmd_name:\"%s\"",
             name_.c_str(), cmd_name.c_str());
         }
       }
@@ -336,8 +335,8 @@ public:
   {
     if (canfd_ == true) {
       error_clct_->LogState(ErrorCode::CAN_MIXUSING_ERROR);
-      printf(
-        C_RED "[CAN_PARSER][ERROR][%s][cmd:%s] Can't encode std_can via fd_can params\n" C_END,
+      ERROR(
+        "[CAN_PARSER][%s][cmd:%s] Can't encode std_can via fd_can params",
         name_.c_str(), CMD.c_str());
       return false;
     }
@@ -348,8 +347,8 @@ public:
   {
     if (canfd_ == false) {
       error_clct_->LogState(ErrorCode::CAN_MIXUSING_ERROR);
-      printf(
-        C_RED "[CAN_PARSER][ERROR][%s][cmd:%s] Can't encode fd_can via std_can params\n" C_END,
+      ERROR(
+        "[CAN_PARSER][%s][cmd:%s] Can't encode fd_can via std_can params",
         name_.c_str(), CMD.c_str());
       return false;
     }
@@ -386,9 +385,9 @@ public:
         if (protocol_data_map.find(var_name) == protocol_data_map.end()) {
           no_error = false;
           error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s] Can't find var_name:\"%s\" in protocol_data_map\n"
-            "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s] Can't find var_name:\"%s\" in protocol_data_map\n"
+            "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map",
             name_.c_str(), var_name.c_str());
           continue;
         }
@@ -404,8 +403,8 @@ public:
           } else {
             no_error = false;
             error_clct_->LogState(ErrorCode::DOUBLE_SIMPLIFY_ERROR);
-            printf(
-              C_RED "[CAN_PARSER][ERROR][%s] size %d can't send double\n" C_END,
+            ERROR(
+              "[CAN_PARSER][%s] size %d can't send double",
               name_.c_str(), u8_num);
           }
         } else if (rule.var_type == "float") {
@@ -417,8 +416,8 @@ public:
           } else {
             no_error = false;
             error_clct_->LogState(ErrorCode::FLOAT_SIMPLIFY_ERROR);
-            printf(
-              C_RED "[CAN_PARSER][ERROR][%s] size %d can't send float\n" C_END,
+            ERROR(
+              "[CAN_PARSER][%s] size %d can't send float",
               name_.c_str(), u8_num);
           }
         } else if (rule.var_type == "bool") {
@@ -446,13 +445,13 @@ public:
         if (fd_frame == nullptr || can_op->send_can_message(*fd_frame) == false) {
           no_error = false;
           error_clct_->LogState(ErrorCode::CAN_FD_SEND_ERROR);
-          printf(C_RED "[CAN_PARSER][ERROR][%s] Send fd_frame error\n" C_END, name_.c_str());
+          ERROR("[CAN_PARSER][%s] Send fd_frame error", name_.c_str());
         }
       } else {
         if (std_frame == nullptr || can_op->send_can_message(*std_frame) == false) {
           no_error = false;
           error_clct_->LogState(ErrorCode::CAN_STD_SEND_ERROR);
-          printf(C_RED "[CAN_PARSER][ERROR][%s] Send std_frame error\n" C_END, name_.c_str());
+          ERROR("[CAN_PARSER][%s] Send std_frame error", name_.c_str());
         }
       }
       // clear data buff
@@ -465,9 +464,9 @@ public:
       if (protocol_data_map.find(array_name) == protocol_data_map.end()) {
         no_error = false;
         error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s] Can't find array_name:\"%s\" in protocol_data_map\n"
-          "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s] Can't find array_name:\"%s\" in protocol_data_map\n"
+          "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map",
           name_.c_str(), array_name.c_str());
         continue;
       }
@@ -476,9 +475,9 @@ public:
       if (frame_num * CAN_LEN(MAX_LEN) != var->len) {
         no_error = false;
         error_clct_->LogState(ErrorCode::RULEARRAY_ILLEGAL_PARSERPARAM_VALUE);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s] array_name:\"%s\" size not match, "
-          "can't write to can frame data for send\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s] array_name:\"%s\" size not match, "
+          "can't write to can frame data for send",
           name_.c_str(), array_name.c_str());
       }
       auto ids = std::vector<canid_t>(frame_num);
@@ -495,13 +494,13 @@ public:
           if (fd_frame == nullptr || can_op->send_can_message(*fd_frame) == false) {
             no_error = false;
             error_clct_->LogState(ErrorCode::CAN_FD_SEND_ERROR);
-            printf(C_RED "[CAN_PARSER][ERROR][%s] Send fd_frame error\n" C_END, name_.c_str());
+            ERROR("[CAN_PARSER][%s] Send fd_frame error", name_.c_str());
           }
         } else {
           if (std_frame == nullptr || can_op->send_can_message(*std_frame) == false) {
             no_error = false;
             error_clct_->LogState(ErrorCode::CAN_STD_SEND_ERROR);
-            printf(C_RED "[CAN_PARSER][ERROR][%s] Send std_frame error\n" C_END, name_.c_str());
+            ERROR("[CAN_PARSER][%s] Send std_frame error", name_.c_str());
           }
         }
       }
@@ -551,8 +550,8 @@ private:
             } else {
               error_flag = true;
               error_clct_->LogState(ErrorCode::DOUBLE_SIMPLIFY_ERROR);
-              printf(
-                C_RED "[CAN_PARSER][ERROR][%s] size %d can't get double\n" C_END,
+              ERROR(
+                "[CAN_PARSER][%s] size %d can't get double",
                 name_.c_str(), u8_num);
             }
             zoom_var<double>(var, rule.var_zoom);
@@ -565,8 +564,8 @@ private:
             } else {
               error_flag = true;
               error_clct_->LogState(ErrorCode::FLOAT_SIMPLIFY_ERROR);
-              printf(
-                C_RED "[CAN_PARSER][ERROR][%s] size %d can't get float\n" C_END,
+              ERROR(
+                "[CAN_PARSER][%s] size %d can't get float",
                 name_.c_str(), u8_num);
             }
             zoom_var<float>(var, rule.var_zoom);
@@ -592,9 +591,9 @@ private:
         } else {
           error_flag = true;
           error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s] Can't find var_name:\"%s\" in protocol_data_map\n"
-            "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s] Can't find var_name:\"%s\" in protocol_data_map\n"
+            "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map",
             name_.c_str(), rule.var_name.c_str());
         }
       }
@@ -609,8 +608,8 @@ private:
         if (var->len < rule.array_size) {
           error_flag = true;
           error_clct_->LogState(ErrorCode::RULEARRAY_ILLEGAL_PARSERPARAM_VALUE);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s] array_name:\"%s\" length overflow\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s] array_name:\"%s\" length overflow",
             name_.c_str(), rule.array_name.c_str());
           continue;
         }
@@ -641,17 +640,17 @@ private:
           var->size_cursor = 0;
           error_flag = true;
           error_clct_->LogState(ErrorCode::RUNTIME_UNEXPECT_ORDERPACKAGE);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s] array_name:\"%s\", expect can frame 0x%x, "
-            "but get 0x%x, reset expect can_id and you need send array in order\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s] array_name:\"%s\", expect can frame 0x%x, "
+            "but get 0x%x, reset expect can_id and you need send array in order",
             name_.c_str(), rule.array_name.c_str(), expect_id, can_id);
         }
       } else {
         error_flag = true;
         error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s] Can't find array_name:\"%s\" in protocol_data_map\n"
-          "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s] Can't find array_name:\"%s\" in protocol_data_map\n"
+          "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map",
           name_.c_str(), rule.array_name.c_str());
       }
     }
@@ -679,9 +678,9 @@ private:
       if (ctrl_len + data.size() > CAN_LEN(MAX_LEN)) {
         no_warn = false;
         error_clct_->LogState(ErrorCode::RULEARRAY_ILLEGAL_PARSERPARAM_VALUE);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s][cmd:%s] CMD data overflow, "
-          "ctrl_len:%d + data_len:%ld > max_can_len:%d\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s][cmd:%s] CMD data overflow, "
+          "ctrl_len:%d + data_len:%ld > max_can_len:%d",
           name_.c_str(), CMD.c_str(), ctrl_len, data.size(), CAN_LEN(MAX_LEN));
       }
       for (int a = 0; a < CAN_LEN(MAX_LEN) && a < static_cast<int>(cmd->ctrl_data.size()); a++) {
@@ -696,8 +695,8 @@ private:
       return no_warn;
     } else {
       error_clct_->LogState(ErrorCode::RULECMD_MISSING_ERROR);
-      printf(
-        C_RED "[CAN_PARSER][ERROR][%s] can't find cmd:\"%s\"\n" C_END,
+      ERROR(
+        "[CAN_PARSER][%s] can't find cmd:\"%s\"",
         name_.c_str(), CMD.c_str());
       return false;
     }
@@ -715,9 +714,9 @@ private:
     if (sizeof(Target) > var->len) {
       error_flag = true;
       error_clct_->LogState(ErrorCode::RUNTIME_SIZEOVERFLOW);
-      printf(
-        C_RED "[CAN_PARSER][ERROR][%s] var_name:\"%s\" size overflow, "
-        "can't write to protocol TDataClass\n" C_END,
+      ERROR(
+        "[CAN_PARSER][%s] var_name:\"%s\" size overflow, "
+        "can't write to protocol TDataClass",
         parser_name.c_str(), rule.var_name.c_str());
       return;
     }
@@ -777,9 +776,9 @@ private:
       if (sizeof(Target) != u8_num) {
         no_error = false;
         error_clct_->LogState(ErrorCode::RUNTIME_SIZENOTMATCH);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s] var_name:\"%s\" size not match, Target need:%ld - get:%d"
-          ", can't write to can frame data for send\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s] var_name:\"%s\" size not match, Target need:%ld - get:%d"
+          ", can't write to can frame data for send",
           parser_name.c_str(), rule.var_name.c_str(), sizeof(Target), u8_num);
       }
       Target target;
@@ -845,8 +844,8 @@ private:
   {
     if (checker.find(name) != checker.end()) {
       error_clct_->LogState(ErrorCode::RULE_SAMENAME_ERROR);
-      printf(
-        C_RED "[CAN_PARSER][ERROR][%s] get same var_name:\"%s\"\n" C_END,
+      ERROR(
+        "[CAN_PARSER][%s] get same var_name:\"%s\"",
         name_.c_str(), name.c_str());
       return true;
     } else {checker.insert(name);}
@@ -868,14 +867,14 @@ private:
         if (first_index) {
           first_index = false;
           error_clct_->LogState(ErrorCode::DATA_AREA_CONFLICT);
-          printf(
-            C_RED "[CAN_PARSER][ERROR][%s] data area decode/encode many times at pos'*':\n"
-            "\tcan_id[0x%08x],DATA[%d]%s\n" C_END,
+          ERROR(
+            "[CAN_PARSER][%s] data area decode/encode many times at pos'*':\n"
+            "\tcan_id[0x%08x],DATA[%d]%s",
             name_.c_str(),
             can_id, index, show_conflict(conflict).c_str());
         } else {
-          printf(
-            C_RED "\t                   DATA[%d]%s\n" C_END,
+          ERROR(
+            "\t                   DATA[%d]%s",
             index, show_conflict(mask).c_str());
         }
       }
@@ -901,9 +900,9 @@ private:
       uint8_t conflict = checker.at(rule.can_id)[data_index] & mask;
       if (conflict != 0x0) {
         error_clct_->LogState(ErrorCode::DATA_AREA_CONFLICT);
-        printf(
-          C_RED "[CAN_PARSER][ERROR][%s] data area decode/encode many times at pos'*':\n"
-          "\tcan_id[0x%08x],DATA[%d]%s\n" C_END,
+        ERROR(
+          "[CAN_PARSER][%s] data area decode/encode many times at pos'*':\n"
+          "\tcan_id[0x%08x],DATA[%d]%s",
           name_.c_str(), rule.can_id, data_index, show_conflict(conflict).c_str());
       }
       checker.at(rule.can_id)[data_index] |= mask;

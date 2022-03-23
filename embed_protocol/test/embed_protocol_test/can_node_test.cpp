@@ -19,8 +19,12 @@
 #include <functional>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/u_int16.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 #include "embed_protocol/embed_protocol.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
+
+
+#define   NODE_NAME   "can_node_test"
 
 
 #define EVM cyberdog::embed
@@ -57,8 +61,8 @@ private:
       // out_put += one_data;
       // RCLCPP_INFO(logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
       //    name.c_str(), out_put.c_str());
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%08x'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%08x'", CONTROLNAME.c_str(),
         name.c_str(), ptr_can_data_->example_data);
       ptr_can_protocol->LINK_VAR(ptr_can_protocol->GetData()->example_data);
     }
@@ -104,8 +108,8 @@ private:
       out_put += one_data;
       snprintf(one_data, sizeof(one_data), "%08x", ptr_test_data_->test_data_array[1]);
       out_put += one_data;
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
         name.c_str(), out_put.c_str());
       ptr_test_protocol->LINK_VAR(ptr_test_protocol->GetData()->test_data_array);
     }
@@ -201,8 +205,8 @@ private:
     // }
     // 数据解析在这里进行
     if (name == "enable_on_ack") {
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
         name.c_str(), ptr_ultrasonic_data_->enable_on_ack);
       ptr_ultrasonic_protocol->BREAK_VAR(ptr_ultrasonic_protocol->GetData()->enable_on_ack);
       // ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_array);
@@ -221,14 +225,14 @@ private:
           ptr_ultrasonic_data_->ultrasonic_data_array[i]);
         out_put += one_data;
       }
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
         name.c_str(), out_put.c_str());
       ptr_ultrasonic_protocol->BREAK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_array);
       ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_array);
     } else if (name == "ultrasonic_data_clock") {
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%4x', intensity: '%4x', clock: '%8x'",
+      INFO(
+        "[%s]canid name:%s, data: '%4x', intensity: '%4x', clock: '%8x'",
         CONTROLNAME.c_str(), name.c_str(),
         ptr_ultrasonic_data_->ultrasonic_data,
         ptr_ultrasonic_data_->ultrasonic_data_intensity,
@@ -242,8 +246,8 @@ private:
         ptr_ultrasonic_protocol->GetData()->ultrasonic_data_intensity);
       ptr_ultrasonic_protocol->LINK_VAR(ptr_ultrasonic_protocol->GetData()->ultrasonic_data_clock);
     } else if (name == "enable_off_ack") {
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
         name.c_str(), ptr_ultrasonic_data_->enable_off_ack);
       ptr_ultrasonic_protocol->BREAK_VAR(ptr_ultrasonic_protocol->GetData()->enable_off_ack);
     }
@@ -303,8 +307,8 @@ private:
     ptr_tof_data_ = data;
     // 数据解析在这里进行
     if (name == "enable_on_ack") {
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
         name.c_str(), ptr_tof_data_->enable_on_ack);
       ptr_tof_protocol->BREAK_VAR(ptr_tof_protocol->GetData()->enable_on_ack);
       ptr_tof_protocol->LINK_VAR(ptr_tof_protocol->GetData()->tof_data_array);
@@ -315,14 +319,14 @@ private:
         snprintf(one_data, sizeof(one_data), "%02x", ptr_tof_data_->tof_data_array[i]);
         out_put += one_data;
       }
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%s'", CONTROLNAME.c_str(),
         name.c_str(), out_put.c_str());
       ptr_tof_protocol->BREAK_VAR(ptr_tof_protocol->GetData()->tof_data_array);
       ptr_tof_protocol->LINK_VAR(ptr_tof_protocol->GetData()->tof_data_array);
     } else if (name == "enable_off_ack") {
-      RCLCPP_INFO(
-        logger_, "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
+      INFO(
+        "[%s]canid name:%s, data: '%02x'", CONTROLNAME.c_str(),
         name.c_str(), ptr_tof_data_->enable_off_ack);
       ptr_tof_protocol->BREAK_VAR(ptr_tof_protocol->GetData()->enable_off_ack);
     }
@@ -339,7 +343,7 @@ class CanNode : public rclcpp::Node
 {
 public:
   CanNode()
-  : Node("can_node_test")
+  : Node(NODE_NAME)
   {
     subscription_ = this->create_subscription<std_msgs::msg::UInt16>(
       "can_protocol_test",
@@ -348,8 +352,8 @@ public:
         std::map<int16_t, std::string> m_cmd {{1, "tof on"}, {2, "tof off"},
           {3, "ultrasonic on"}, {4, "ultrasonic off"}};
         if (m_cmd.find(msg->data) != m_cmd.end()) {
-          RCLCPP_INFO(
-            this->get_logger(), "{Command}: '%d' - %s", msg->data,
+          INFO(
+            "{Command}: '%d' - %s", msg->data,
             m_cmd[msg->data].c_str());
         }
         switch (msg->data) {
@@ -386,6 +390,7 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
+  LOGGER_MAIN_INSTANCE(NODE_NAME);
   rclcpp::spin(std::make_shared<CanNode>());
   rclcpp::shutdown();
   return 0;

@@ -18,9 +18,11 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(toml REQUIRED)
+find_package(cyberdog_common REQUIRED)
 
 set(dependencies
   toml
+  cyberdog_common
 )
 
 install(

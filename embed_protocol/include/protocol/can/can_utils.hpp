@@ -27,6 +27,7 @@
 
 #include "socket_can_receiver.hpp"
 #include "socket_can_sender.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 
 #define C_END "\033[m"
 #define C_RED "\033[0;32;31m"
@@ -132,8 +133,8 @@ private:
       isthreadrunning_ = true;
       main_T_ = std::make_unique<std::thread>(std::bind(&CanRxDev::main_recv_func, this));
     } catch (const std::exception & ex) {
-      printf(
-        C_RED "[CAN_RX][ERROR][%s] %s receiver creat error! %s\n" C_END,
+      ERROR(
+        "[CAN_RX][%s] %s receiver creat error! %s",
         name_.c_str(), interface_.c_str(), ex.what());
       return;
     }
@@ -163,22 +164,22 @@ private:
           is_timeout_ = true;
           return false;
         }
-        printf(
-          C_RED "[CAN_RX %s][ERROR][%s] Error receiving CAN %s message: %s - %s\n" C_END,
+        ERROR(
+          "[CAN_RX %s][%s] Error receiving CAN %s message: %s - %s",
           can_type.c_str(), name_.c_str(), can_type.c_str(), interface_.c_str(), ex.what());
       }
     } else {
       isthreadrunning_ = false;
-      printf(
-        C_RED "[CAN_RX %s][ERROR][%s] Error receiving CAN %s message: %s, "
-        "no receiver init\n" C_END,
+      ERROR(
+        "[CAN_RX %s][%s] Error receiving CAN %s message: %s, "
+        "no receiver init",
         can_type.c_str(), name_.c_str(), can_type.c_str(), interface_.c_str());
     }
     return false;
   }
   void main_recv_func()
   {
-    printf("[CAN_RX][INFO][%s] Start recv thread: %s\n", interface_.c_str(), name_.c_str());
+    INFO("[CAN_RX][INFO][%s] Start recv thread: %s", interface_.c_str(), name_.c_str());
     while (isthreadrunning_ && ready_) {
       if (wait_for_can_data()) {
         if (!canfd_ && can_std_callback_ != nullptr) {
@@ -186,7 +187,7 @@ private:
         } else if (canfd_ && can_fd_callback_ != nullptr) {can_fd_callback_(rx_fd_frame_);}
       }
     }
-    printf("[CAN_RX][INFO][%s] Exit recv thread: %s\n", interface_.c_str(), name_.c_str());
+    INFO("[CAN_RX][INFO][%s] Exit recv thread: %s", interface_.c_str(), name_.c_str());
   }
 };  // class CanRxDev
 
@@ -212,8 +213,8 @@ public:
       sender_ = std::make_unique<cyberdog::embed::SocketCanSender>(interface_);
       sender_->enable_canfd(canfd_on);
     } catch (const std::exception & ex) {
-      printf(
-        C_RED "[CAN_TX][ERROR][%s] %s sender creat error! %s\n" C_END,
+      ERROR(
+        "[CAN_TX][%s] %s sender creat error! %s",
         name_.c_str(), interface_.c_str(), ex.what());
       return;
     }
@@ -251,9 +252,9 @@ private:
     bool self_fd = (fd_frame != nullptr);
     std::string can_type = self_fd ? "FD" : "STD";
     if (canfd_on_ != self_fd) {
-      printf(
-        C_RED "[CAN_TX %s][ERROR][%s] Error sending CAN message: %s - "
-        "Not support can/canfd frame mixed\n" C_END,
+      ERROR(
+        "[CAN_TX %s][%s] Error sending CAN message: %s - "
+        "Not support can/canfd frame mixed",
         can_type.c_str(), name_.c_str(), interface_.c_str());
       return false;
     }
@@ -289,14 +290,14 @@ private:
           return false;
         }
         result = false;
-        printf(
-          C_RED "[CAN_TX %s][ERROR][%s] Error sending CAN message: %s - %s\n" C_END,
+        ERROR(
+          "[CAN_TX %s][%s] Error sending CAN message: %s - %s",
           can_type.c_str(), name_.c_str(), interface_.c_str(), ex.what());
       }
     } else {
       result = false;
-      printf(
-        C_RED "[CAN_TX %s][ERROR][%s] Error sending CAN message: %s - No device\n" C_END,
+      ERROR(
+        "[CAN_TX %s][%s] Error sending CAN message: %s - No device",
         can_type.c_str(), name_.c_str(), interface_.c_str());
     }
     return result;

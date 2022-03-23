@@ -22,6 +22,7 @@
 
 #include "toml/toml.hpp"
 #include "embed_protocol/common.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 
 namespace cyberdog
 {
@@ -46,25 +47,33 @@ public:
     CanidRangeCheck(can_id, extended, var_name, name, error_clct);
     if (var_name == "") {
       error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_VARNAME);
-      printf(
-        C_RED "[PARSER_BASE][ERROR][%s] var_name error, not support empty string\n" C_END,
+      ERROR(
+        "[PARSER_BASE][%s] var_name error, not support empty string",
         name.c_str());
     }
     if (common_type.find(var_type) == common_type.end()) {
       error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_VARTYPE);
-      printf(
-        C_RED "[PARSER_BASE][ERROR][%s][var:%s] var_type error, type:\"%s\" not support; "
-        "only support:[", name.c_str(), var_name.c_str(), var_type.c_str());
+      std::string str_out("");
+      str_out += "[PARSER_BASE][";
+      str_out += name;
+      str_out += "][var:";
+      str_out += var_name;
+      str_out += "] var_type error, type:\"";
+      str_out += name;
+      str_out += "\" not support; ";
+      str_out += "only support:[";
       for (auto & t : common_type) {
-        printf("%s, ", t.c_str());
+        str_out += t;
+        str_out += ", ";
       }
-      printf("]\n" C_END);
+      str_out += "]";
+      ERROR("%s", str_out.c_str());
     }
     if (table.find("var_zoom") == table.end()) {var_zoom = 1.0;} else {
       if (var_type != "float" && var_type != "double") {
         warn_flag = true;
-        printf(
-          C_YELLOW "[PARSER_BASE][WARN][%s][var:%s] Only double/float need var_zoom\n" C_END,
+        WARN(
+          "[PARSER_BASE][WARN][%s][var:%s] Only double/float need var_zoom",
           name.c_str(), var_name.c_str());
       }
       var_zoom = toml_at<float>(table, "var_zoom", error_clct);
@@ -75,10 +84,10 @@ public:
     if (param_size >= 2) {
       auto range_right = std::max(tmp_parser_param[0], tmp_parser_param[1]) + 1;
       if (var_size < range_right && range_right <= can_len) {
-        printf(
-          C_YELLOW "[PARSER_BASE][WARN][%s][var:%s] No var_size field or get var size = %d "
+        WARN(
+          "[PARSER_BASE][WARN][%s][var:%s] No var_size field or get var size = %d "
           "not qualified parser_param range "
-          "%d-%d. now adjust to %d\n" C_END,
+          "%d-%d. now adjust to %d",
           name.c_str(), var_name.c_str(),
           var_size, tmp_parser_param[0], tmp_parser_param[1], range_right);
         var_size = std::min(range_right, can_len);
@@ -93,9 +102,9 @@ public:
         parser_type = "var";
       } else {
         error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_SIZE);
-        printf(
-          C_RED "[PARSER_BASE][ERROR][%s][var:%s] Can't get parser_type via parser_param, "
-          "only param_size == 2 or 3, but get param_size = %ld\n" C_END,
+        ERROR(
+          "[PARSER_BASE][%s][var:%s] Can't get parser_type via parser_param, "
+          "only param_size == 2 or 3, but get param_size = %ld",
           name.c_str(), var_name.c_str(), param_size);
       }
     }
@@ -106,30 +115,30 @@ public:
         parser_param[2] = tmp_parser_param[2];
         if (parser_param[0] >= var_size) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
-          printf(
-            C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"bit\" type parser_param error, "
-            "parser_param[0] value need between 0-%d\n" C_END,
+          ERROR(
+            "[PARSER_BASE][%s][var:%s] \"bit\" type parser_param error, "
+            "parser_param[0] value need between 0-%d",
             name.c_str(), var_name.c_str(), var_size - 1);
         }
         if (parser_param[1] < parser_param[2]) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
-          printf(
-            C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"bit\" type parser_param error, "
-            "parser_param[1] need >= parser_param[2]\n" C_END,
+          ERROR(
+            "[PARSER_BASE][%s][var:%s] \"bit\" type parser_param error, "
+            "parser_param[1] need >= parser_param[2]",
             name.c_str(), var_name.c_str());
         }
         if (parser_param[1] >= 8 || parser_param[2] >= 8) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
-          printf(
-            C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"bit\" type parser_param error, "
-            "parser_param[1] and parser_param[2] value need between 0-7\n" C_END,
+          ERROR(
+            "[PARSER_BASE][%s][var:%s] \"bit\" type parser_param error, "
+            "parser_param[1] and parser_param[2] value need between 0-7",
             name.c_str(), var_name.c_str());
         }
       } else {
         error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_SIZE);
-        printf(
-          C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"bit\" type parser error, "
-          "parser[bit] need 3 parser_param, but get %d\n" C_END,
+        ERROR(
+          "[PARSER_BASE][%s][var:%s] \"bit\" type parser error, "
+          "parser[bit] need 3 parser_param, but get %d",
           name.c_str(), var_name.c_str(), static_cast<uint8_t>(param_size));
       }
     } else if (parser_type == "var") {
@@ -138,30 +147,30 @@ public:
         parser_param[1] = tmp_parser_param[1];
         if (parser_param[0] > parser_param[1]) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
-          printf(
-            C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"var\" type parser_param error, "
-            "parser_param[0] need <= parser_param[1]\n" C_END,
+          ERROR(
+            "[PARSER_BASE][%s][var:%s] \"var\" type parser_param error, "
+            "parser_param[0] need <= parser_param[1]",
             name.c_str(), var_name.c_str());
         }
         if (parser_param[0] >= var_size || parser_param[1] >= var_size) {
           error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_VALUE);
-          printf(
-            C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"var\" type parser_param error, "
-            "parser_param[0] and parser_param[1] value need between 0-%d\n" C_END,
+          ERROR(
+            "[PARSER_BASE][%s][var:%s] \"var\" type parser_param error, "
+            "parser_param[0] and parser_param[1] value need between 0-%d",
             name.c_str(), var_name.c_str(), var_size - 1);
         }
       } else {
         error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERPARAM_SIZE);
-        printf(
-          C_RED "[PARSER_BASE][ERROR][%s][var:%s] \"var\" type parser error, "
-          "parser[var] need 2 parser_param, but get %d\n" C_END,
+        ERROR(
+          "[PARSER_BASE][%s][var:%s] \"var\" type parser error, "
+          "parser[var] need 2 parser_param, but get %d",
           name.c_str(), var_name.c_str(), static_cast<uint8_t>(param_size));
       }
     } else if (parser_type != "auto") {
       error_clct->LogState(ErrorCode::RULEVAR_ILLEGAL_PARSERTYPE);
-      printf(
-        C_RED "[PARSER_BASE][ERROR][%s][var:%s] var can parser error, "
-        "only support \"bit/var\", but get %s\n" C_END,
+      ERROR(
+        "[PARSER_BASE][%s][var:%s] var can parser error, "
+        "only support \"bit/var\", but get %s",
         name.c_str(), var_name.c_str(), parser_type.c_str());
     }
   }
