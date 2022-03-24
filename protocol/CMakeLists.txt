@@ -16,19 +16,21 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 
+include(compile_lcm.cmake.in)
 include(compile_ros.cmake.in)
 
+set(lcm_protocol_list)                            # lcm 协议列表
+get_lcm_protocol_file(${PROJECT_NAME} "*")        # 加载 lcm 协议
+# get_lcm_protocol_file(${PROJECT_NAME} "motion")   # 仅加载 motion.lcm 协议
+lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list})
 
-set(protocol_list)                # 协议列表
-get_ros_protocol_file("msg")      # 加载 msg 协议
-get_ros_protocol_file("srv")      # 加载 srv 协议
-# get_ros_protocol_file("action") # 加载 action 协议
-
-rosidl_generate_interfaces(${PROJECT_NAME} ${protocol_list}
+set(ros_protocol_list)                            # ros 协议列表
+get_ros_protocol_file(${PROJECT_NAME} "msg")      # 加载 msg 协议
+get_ros_protocol_file(${PROJECT_NAME} "srv")      # 加载 srv 协议
+# get_ros_protocol_file("action")                   # 加载 action 协议
+rosidl_generate_interfaces(${PROJECT_NAME} ${ros_protocol_list}
   DEPENDENCIES builtin_interfaces sensor_msgs
 )
-
-# lcm-gen -x motion_cmd.lcm 
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

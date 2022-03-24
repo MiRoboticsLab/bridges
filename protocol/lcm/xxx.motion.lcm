@@ -1,4 +1,4 @@
-struct robot_xxx_lcmt {
+struct robot_control_response_lcmt {
     int8_t  mode;
     int8_t  gait_id;
     int8_t  contact;
