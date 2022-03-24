@@ -69,7 +69,8 @@ Cyberdog_app::Cyberdog_app()
 : Node("motion_test_server"), ticks_(0), can_process_messages(false),
   heartbeat_err_cnt(0), heart_beat_thread_(nullptr), app_server_thread_(nullptr),
   server_(nullptr), app_stub(nullptr), app_disconnected(true),
-  destory_grpc_server_thread_(nullptr)
+  destory_grpc_server_thread_(nullptr), battery_capacity_(0),
+  wifi_strength_(0)
 {
   RCLCPP_INFO(get_logger(), "Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
@@ -84,6 +85,9 @@ Cyberdog_app::Cyberdog_app()
     app_server_thread_ = std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
   heart_beat_thread_ = std::make_shared<std::thread>(&Cyberdog_app::HeartBeat, this);
+
+  Bms_subscriber = this->create_subscription<protocol::msg::Bms>(
+    "bms_recv", rclcpp::SystemDefaultsQoS(), std::bind(&Cyberdog_app::set_bms, this, _1));
 }
 
 void Cyberdog_app::HeartBeat()
@@ -92,7 +96,7 @@ void Cyberdog_app::HeartBeat()
   std::string ipv4;
   while (true) {
     if (can_process_messages && app_stub) {
-      if (!app_stub->SetHeartBeat(local_ip)) {
+      if (!app_stub->SetHeartBeat(local_ip, wifi_strength_, battery_capacity_)) {
         if (heartbeat_err_cnt++ >= APP_CONNECTED_FAIL_CNT) {
           if (!app_disconnected) {
             destroyGrpc();
@@ -256,4 +260,16 @@ void Cyberdog_app::ProcessMsg(
       break;
   }
 }
+
+void Cyberdog_app::set_bms(const protocol::msg::Bms::SharedPtr msg)
+{
+  RCLCPP_INFO(get_logger(), "get bms :%d", msg->batt_soc);
+  battery_capacity_ = msg->batt_soc;
+}
+
+void Cyberdog_app::set_rssi(const protocol::msg::Wifi::SharedPtr msg)
+{
+  wifi_strength_ = msg->strength;
+}
+
 }  // namespace athena_cyberdog_app

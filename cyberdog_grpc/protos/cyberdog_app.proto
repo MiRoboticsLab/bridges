@@ -28,6 +28,8 @@ service GrpcApp {
 
 message Ticks{
     string ip = 1;
+    fixed32 wifi_strength = 2;
+    fixed32 battery_soc = 3;
 }
 
 message SendRequest {

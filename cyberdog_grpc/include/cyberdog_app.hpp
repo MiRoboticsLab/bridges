@@ -34,6 +34,8 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "cyberdog_app_client.hpp"
+#include "protocol/msg/bms.hpp"
+#include "protocol/msg/wifi.hpp"
 #include "threadsafe_queue.hpp"
 #include "msgdispatcher.hpp"
 #include "net_avalible.hpp"
@@ -79,6 +81,14 @@ private:
   void sendMsg(
     const ::grpcapi::SendRequest * request,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  rclcpp::Subscription<protocol::msg::Bms>::SharedPtr Bms_subscriber;
+  void set_bms(const protocol::msg::Bms::SharedPtr msg);
+  int battery_capacity_;
+
+  rclcpp::Subscription<protocol::msg::Wifi>::SharedPtr wifi_rssi;
+  void set_rssi(const protocol::msg::Wifi::SharedPtr msg);
+  int wifi_strength_;
 };
 }  // namespace athena_cyberdog_app
 

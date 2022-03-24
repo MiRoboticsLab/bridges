@@ -27,7 +27,7 @@ Cyberdog_App_Client::~Cyberdog_App_Client()
 {
 }
 
-bool Cyberdog_App_Client::SetHeartBeat(std::string ip)
+bool Cyberdog_App_Client::SetHeartBeat(std::string ip, int wifi_strength, int battery_soc)
 {
   ClientContext context;
   gpr_timespec timespec;
@@ -39,6 +39,9 @@ bool Cyberdog_App_Client::SetHeartBeat(std::string ip)
   Ticks ticks_;
   // std::cout << "before SetHeartBeat." << std::endl
   ticks_.set_ip(ip);
+  ticks_.set_wifi_strength(wifi_strength);
+  ticks_.set_battery_soc(battery_soc);
+
   Status status = stub_->heartbeat(&context, ticks_, &result);
   if (!status.ok()) {
     std::cout << "SetHeartBeat error code: " << status.error_code() << std::endl;

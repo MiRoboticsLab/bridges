@@ -41,7 +41,7 @@ class Cyberdog_App_Client
 public:
   explicit Cyberdog_App_Client(std::shared_ptr<Channel> channel);
   ~Cyberdog_App_Client();
-  bool SetHeartBeat(std::string ip);
+  bool SetHeartBeat(std::string ip, int wifi_strength, int battery_soc);
 
 private:
   std::unique_ptr<grpcapi::GrpcApp::Stub> stub_;
