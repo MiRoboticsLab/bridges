@@ -1,0 +1,11 @@
+string ssid
+string pwd
+---
+uint8 STATUS_WIFI_SUCCESS = 7
+uint8 STATUS_WIFI_ERR_PWD = 5
+uint8 STATUS_WIFI_NO_SSID = 4
+uint8 TATUS_WIFI_INTERRUPT = 14
+uint8 STATUS_WIFI_TIMEOUT = 15
+uint8 STATUS_WIFI_OTHER = 6
+
+uint8 result
