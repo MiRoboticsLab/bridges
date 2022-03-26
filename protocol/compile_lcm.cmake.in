@@ -31,21 +31,27 @@ macro(get_lcm_protocol_file target)
 endmacro()
 
 #
-# 功能说明: 编译指定的 lcm 文件
+# 功能说明: 编译指定的 lcm 文件生成相应语言接口文件(默认 c++)
 # :param target: 待统计协议类型
 # :type target: 字符串
 # :param ARGN: lcm 文件/列表
 # :type ARGN: 字符串列表
+# :param C: 如果设置 C 则生成 c 接口文件
+# :type C: 选项
+# :param PYTHON: 如果设置 PYTHON 则生成 python 接口文件
+# :type PYTHON: 选项
 # :param LOG: 如果设置 LOG 则打印日志
 # :type LOG: 选项
 # 举例:
 #   准备输入: set(lcm_protocol_list)
 #            get_lcm_protocol_file(${PROJECT_NAME} "*")
-# 1. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list})      # 编译指定的 lcm 文件
-# 2. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} LOG)  # 编译指定的 lcm 文件，并输出日志
+# 1. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list})          # 编译指定的 lcm 文件，输出 c++ 接口文件
+# 2. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} LOG)      # 编译指定的 lcm 文件，输出 c++ 接口文件，并输出日志
+# 3. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} C)        # 编译指定的 lcm 文件，输出 c++、C 接口文件，
+# 4. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} C PYTHON) # 编译指定的 lcm 文件，输出 c++、C、python 接口文件
 #
 macro(lcm_generate_interfaces target)
-  cmake_parse_arguments(_ARG "SKIP_INSTALL;LOG" "" "" ${ARGN})
+  cmake_parse_arguments(_ARG "C;PYTHON;LOG" "" "" ${ARGN})
   
   if(NOT _ARG_UNPARSED_ARGUMENTS)
     message(FATAL_ERROR "lcmidl_generate_interfaces() 没有任何接口文件的情况下调用了")
@@ -83,11 +89,34 @@ macro(lcm_generate_interfaces target)
     stamp("${_abs_interface}")
   endforeach()
 
+  set(_ARG_CPP true)   # 默认生成 hpp
+  
   if(_ARG_LOG)
-    message("\n┏━[缓存路径]>:${CMAKE_CURRENT_BINARY_DIR}/ament_cmake_core/stamps/")
-    message("┗━[安装路径]>:${CMAKE_INSTALL_PREFIX}/include/protocol/lcm")
+    message("\n┏━[缓存路径]>:${CMAKE_CURRENT_BINARY_DIR}/ament_cmake_core/stamps")
+    message("┗━[安装路径]>:${CMAKE_INSTALL_PREFIX}")
   endif()
 
-  execute_process(COMMAND lcm-gen -x ${_interface_files} --cpp-hpath ${CMAKE_INSTALL_PREFIX}/include/protocol/lcm)
+  execute_process(COMMAND mkdir -p ${CMAKE_INSTALL_PREFIX}/include/protocol/lcm/detail)
+  
+  if(_ARG_C)
+    if(_ARG_LOG)
+      message("\n┏━[.h 文件路径]>:${CMAKE_INSTALL_PREFIX}/include/protocol/lcm")
+      message("┗━[.c 文件路径]>:${CMAKE_INSTALL_PREFIX}/include/protocol/lcm/detail")
+    endif()
+    execute_process(COMMAND lcm-gen -c ${_interface_files} --c-hpath ${CMAKE_INSTALL_PREFIX}/include/protocol/lcm --c-cpath ${CMAKE_INSTALL_PREFIX}/include/protocol/lcm/detail)
+  endif()
 
+  if(_ARG_CPP)
+    if(_ARG_LOG)
+      message("\n● [.hpp 文件路径]>:${CMAKE_INSTALL_PREFIX}/include/protocol/lcm")
+    endif()
+    execute_process(COMMAND lcm-gen -x ${_interface_files} --cpp-hpath ${CMAKE_INSTALL_PREFIX}/include/protocol/lcm)
+  endif()
+
+  if(_ARG_PYTHON)
+    if(_ARG_LOG)
+      message("\n● [.py 文件路径]>:${CMAKE_INSTALL_PREFIX}/lib/python3.8/site-packages/protocol/lcm")
+    endif()
+    execute_process(COMMAND lcm-gen -p ${_interface_files} --ppath ${CMAKE_INSTALL_PREFIX}/lib/python3.8/site-packages/protocol/lcm)
+  endif()
 endmacro()
