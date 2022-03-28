@@ -1,6 +1,6 @@
 [dylidar]
-port = "/dev/ttyUSB0"
 frame_id = "laser_frame"
+port = "/dev/ttyUSB0"
 ignore_array = ""
 baudrate = 230400
 lidar_type = 1

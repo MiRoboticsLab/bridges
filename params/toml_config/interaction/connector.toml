@@ -16,12 +16,12 @@ camera_signal_effective = 1
 connector = "connector_state"
 touch = "touch_state"
 camera = "/camera/color/image_raw"
-wifi = "wifi_state"
+wifi = "wifi_status"
 grpc = "ip_notify"
 
 [service] # string
 led = "led_state"
-wifi = "wifi_state"
+wifi = "connect_wifi"
 ip = "ip_state"
 
 [wifi] # string

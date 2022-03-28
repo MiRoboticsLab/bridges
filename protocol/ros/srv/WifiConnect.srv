@@ -1,11 +1,13 @@
-string ssid
-string pwd
----
-uint8 STATUS_WIFI_SUCCESS = 7
-uint8 STATUS_WIFI_ERR_PWD = 5
-uint8 STATUS_WIFI_NO_SSID = 4
-uint8 TATUS_WIFI_INTERRUPT = 14
-uint8 STATUS_WIFI_TIMEOUT = 15
-uint8 STATUS_WIFI_OTHER = 6
+# 该服务用于请求wifi连接服务及表征连接响应信息的接口约束
 
-uint8 result
+string ssid                  # wifi名称
+string pwd                   # 密码
+---
+uint8 result                 # 返回结果，取值范围受下述 RESULT_* 值约束，反之无效
+# ---------------------------
+uint8 RESULT_NO_SSID = 4     # 没找到请求的wifi
+uint8 RESULT_ERR_PWD = 5     # 密码错误
+uint8 RESULT_OTHER = 6       # 其它情况
+uint8 RESULT_SUCCESS = 7     # 连接成功
+uint8 RESULT_INTERRUPT = 14  # 过程被中断
+uint8 RESULT_TIMEOUT = 15    # 连接超时
