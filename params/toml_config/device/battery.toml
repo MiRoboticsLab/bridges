@@ -7,108 +7,95 @@ extended_frame = true
 canfd_enable = false
 timeout_us = 1234567
 
-[[var]]
-can_id = "0x05842000"
-var_name = "batt_volt"
-var_type = "u16"
-parser_param = [0, 1]
-description = "this is batt_volt"
+[[array]]
+description = ""
+can_package_num = 8
+can_id = ["0x08842000", "0x08842001", "0x08842002", "0x08842003", "0x08842004", "0x08842005", "0x08842006", "0x08842007"]
+array_name = "battery_status"
+
+[[array]]
+description = ""
+can_package_num = 6
+can_id = ["0x08852000", "0x08852001", "0x08852002", "0x08852003", "0x08852004", "0x08852005"]
+array_name = "abnormal_status"
+
+[[array]]
+description = ""
+can_package_num = 6
+can_id = ["0x08862000", "0x08862001", "0x08862002", "0x08862003", "0x08862004", "0x08862005"]
+array_name = "normal_status"
 
 [[var]]
-can_id = "0x05842001"
-var_name = "batt_curr"
-var_type = "i16"
-parser_param = [0, 1]
-description = "this is batt_curr"
-
-[[var]]
-can_id = "0x05842002"
-var_name = "batt_soc"
-var_type = "i16"
-parser_param = [0, 1]
-description = "this is batt_soc"
-
-[[var]]
-can_id = "0x05842003"
-var_name = "batt_temp"
-var_type = "i16"
-parser_param = [0, 1]
-description = "this is batt_temp"
-
-[[var]]
-can_id = "0x05842004"
-var_name = "batt_st"
+description = ""
+can_id = "0x08840200"
+var_name = "normal_mode"
 var_type = "u8"
 parser_param = [0, 0]
-description = "this is batt_st"
 
 [[var]]
-can_id = "0x05842005"
-var_name = "key_val"
+description = ""
+can_id = "0x08840400"
+var_name = "charging"
 var_type = "u8"
 parser_param = [0, 0]
-description = "this is key_val"
 
 [[var]]
-can_id = "0x05842006"
-var_name = "disable_charge"
+description = ""
+can_id = "0x08840800"
+var_name = "finished_charging"
 var_type = "u8"
 parser_param = [0, 0]
-description = "this is disable_charge"
 
 [[var]]
-can_id = "0x05842007"
-var_name = "power_supply"
+description = ""
+can_id = "0x08850000"
+var_name = "motor_power_down"
 var_type = "u8"
 parser_param = [0, 0]
-description = "this is power_supply"
 
 [[var]]
-can_id = "0x05842008"
-var_name = "buzze"
+description = ""
+can_id = "0x08850200"
+var_name = "soft_shutdown"
 var_type = "u8"
 parser_param = [0, 0]
-description = "this is buzze"
-
-[[var]]
-can_id = "0x05842009"
-var_name = "status"
-var_type = "u8"
-parser_param = [0, 0]
-description = "this is status"
-
-[[var]]
-can_id = "0x0584200A"
-var_name = "batt_health"
-var_type = "i8"
-parser_param = [0, 0]
-description = "this is batt_health"
-
-[[var]]
-can_id = "0x0584200B"
-var_name = "batt_loop_number"
-var_type = "i16"
-parser_param = [0, 1]
-description = "this is batt_loop_number"
-
-[[var]]
-can_id = "0x0584200C"
-var_name = "powerboard_status"
-var_type = "i8"
-parser_param = [0, 0]
-description = "this is powerboard_status"
 
 [[cmd]]
 description = ""
-cmd_name = "cmd_power_supply"
-can_id = "0x0A850200"
+cmd_name = "cmd_normal_mode"
+can_id = "0x08880000"
 
 [[cmd]]
 description = ""
-cmd_name = "cmd_buzze"
-can_id = "0x0A850400"
+cmd_name = "cmd_turn_off_motor"
+can_id = "0x08880200"
 
 [[cmd]]
 description = ""
-cmd_name = "cmd_disable_charge"
-can_id = "0x01850800"
+cmd_name = "cmd_low_power_consumption"
+can_id = "0x08880400"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_soft_shutdown"
+can_id = "0x08880800"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_file_transfer"
+can_id = "0x08890000"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_ota_upgrade"
+can_id = "0x08890200"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_test"
+can_id = "0x08890400"
+
+
+
+
+
