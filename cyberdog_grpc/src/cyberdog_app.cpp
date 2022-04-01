@@ -57,7 +57,7 @@ using grpc::ServerWriter;
 #define APP_CONNECTED_FAIL_CNT 3
 #define CYBER_CLIENT_LED 1
 using std::placeholders::_1;
-using std::literals::chrono_literals::operator""ms;
+using ms = std::literals::chrono_literals::operator""ms;
 using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
 using rapidjson::kObjectType;
