@@ -1,30 +1,120 @@
-[hz] # float
+[connector]                     # WiFi 连接
+[connector.initialization]                  # WiFi 连接:初始化
+[connector.initialization.hz] # float
 update_status = 1.0
 check_internet = 0.2
 reset_signal = 5.0
 
-[cmd] # string
+[connector.initialization.cmd] # string
 check_internet_cmd = "ping -c 3 baidu.com; echo $?"
 
-[timeout_s] # int
+[connector.initialization.timeout_s] # int
 wifi_service = 10
 ip_service = 1
 touch_signal_effective = 10
 camera_signal_effective = 1
 
-[topic] # string
+[connector.initialization.topic] # string
 connector = "connector_state"
 touch = "touch_state"
 camera = "/camera/color/image_raw"
 wifi = "wifi_status"
 grpc = "ip_notify"
+audio = "speech_play"
 
-[service] # string
+[connector.initialization.service] # string
 led = "led_state"
 wifi = "connect_wifi"
 ip = "ip_state"
 
-[wifi] # string
+[connector.initialization.wifi] # string
 ssid = "ssid"
 password = "password"
 provider = "provider"
+
+# ===========================>
+# ===========================>
+[connector.interactive]                     # WiFi 连接:交互
+[connector.interactive.offline]             # WiFi 连接:掉线
+[connector.interactive.auto_connection]     # WiFi 连接:自动连接
+[connector.interactive.manual_connection]   # WiFi 连接:手动连接
+[connector.interactive.communication]       # WiFi 连接:正在通信
+# ===========================>
+[[connector.interactive.offline.led]]       # WiFi 连接:掉线:LED
+target = "tail_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.offline.led]]       # WiFi 连接:掉线:LED
+target = "head_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.offline.led]]       # WiFi 连接:掉线:LED
+target = "mini_led"
+effect = ""
+priority = 0
+timeout = 0
+# --------------------------->
+[[connector.interactive.offline.audio]]       # WiFi 连接:掉线:LED
+play_id = 1
+
+# ===========================>
+[[connector.interactive.auto_connection.led]]       # WiFi 连接:掉线:LED
+target = "tail_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.auto_connection.led]]       # WiFi 连接:掉线:LED
+target = "head_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.auto_connection.led]]       # WiFi 连接:掉线:LED
+target = "mini_led"
+effect = ""
+priority = 0
+timeout = 0
+# --------------------------->
+[[connector.interactive.auto_connection.audio]]       # WiFi 连接:掉线:LED
+play_id = 2
+
+# ===========================>
+[[connector.interactive.manual_connection.led]]       # WiFi 连接:掉线:LED
+target = "tail_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.manual_connection.led]]       # WiFi 连接:掉线:LED
+target = "head_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.manual_connection.led]]       # WiFi 连接:掉线:LED
+target = "mini_led"
+effect = ""
+priority = 0
+timeout = 0
+# --------------------------->
+[[connector.interactive.manual_connection.audio]]       # WiFi 连接:掉线:LED
+play_id = 3
+
+# ===========================>
+[[connector.interactive.communication.led]]       # WiFi 连接:掉线:LED
+target = "tail_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.communication.led]]       # WiFi 连接:掉线:LED
+target = "head_led"
+effect = ""
+priority = 0
+timeout = 0
+[[connector.interactive.communication.led]]       # WiFi 连接:掉线:LED
+target = "mini_led"
+effect = ""
+priority = 0
+timeout = 0
+# --------------------------->
+[[connector.interactive.communication.audio]]       # WiFi 连接:掉线:LED
+play_id = 4
