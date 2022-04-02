@@ -37,13 +37,12 @@ bool Cyberdog_App_Client::SetHeartBeat(std::string ip)
   context.set_deadline(timespec);
   Result result;
   Ticks ticks_;
-  // std::cout << "before SetHeartBeat." << std::endl
   ticks_.set_ip(ip);
   Status status = stub_->heartbeat(&context, ticks_, &result);
   if (!status.ok()) {
-    std::cout << "SetHeartBeat error code: " << status.error_code() << std::endl;
+    INFO("SetHeartBeat error code:%d", status.error_code());
     return false;
   }
-  std::cout << "SetHeartBeat rpc success." << std::endl;
+  INFO("SetHeartBeat rpc success.");
   return true;
 }
