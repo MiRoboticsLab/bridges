@@ -115,7 +115,7 @@ std::string Cyberdog_app::getServiceIp()
 
 void Cyberdog_app::RunServer()
 {
-  RCLCPP_INFO(get_logger(), "run_server thread id is %d", gettid());
+  RCLCPP_INFO(get_logger(), "run_server thread id is %ld", gettid());
   std::string server_address("0.0.0.0:50051");
   CyberdogAppImpl service(server_address);
   service.SetRequesProcess(this);
@@ -127,8 +127,8 @@ void Cyberdog_app::RunServer()
   builder.AddChannelArgument(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 1000);
   builder.RegisterService(&service);
   server_ = std::move(builder.BuildAndStart());
-  std::cout << "Server listening on " << server_address << std::endl;
-  RCLCPP_INFO(get_logger(), "server thread id is %d", gettid());
+  RCLCPP_INFO(get_logger(), "Server listening on %s", server_address.c_str());
+  RCLCPP_INFO(get_logger(), "server thread id is %ld", gettid());
   server_->Wait();
   RCLCPP_INFO(get_logger(), "after wait");
 }

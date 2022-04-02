@@ -25,9 +25,8 @@ bool CyberdogAppImpl::isPeerAvalible(std::string peer)
   if (decision_ == NULL) {
     return false;
   }
-  std::cout << "peer:" << peer << "self_ip:" << decision_->getServiceIp() << std::endl;
+  // std::cout << "peer:" << peer << "self_ip:" << decision_->getServiceIp() << std::endl;
   return true;
-  //  (peer.find(decision_->getServiceIp()) != string::npos);
 }
 ::grpc::Status CyberdogAppImpl::sendMsg(
   ::grpc::ServerContext * context,

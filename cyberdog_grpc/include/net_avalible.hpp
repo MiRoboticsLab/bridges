@@ -20,7 +20,7 @@
 #include <string>
 #include <iostream>
 #include <thread>
-
+#include "cyberdog_common/cyberdog_log.hpp"
 class NetChecker
 {
 public:
@@ -64,12 +64,12 @@ private:
       if (need_ping) {
         std::string cmd = "ping -c 1 -w 2 " + ip_;
         if ((fp = popen(cmd.c_str(), "r")) == NULL) {
-          std::cout << "failed to popen" << std::endl;
+          ERROR("failed to popen");
           return;
         }
 
         while (fgets(buf, sizeof(buf), fp) != NULL) {
-          std::cout << buf << std::endl;
+          INFO_STREAM(buf);
         }
         pclose(fp);
       }

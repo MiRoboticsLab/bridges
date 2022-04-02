@@ -25,7 +25,6 @@ bool TimeInterval::check_once(uint32_t seconds)
   second = time(NULL);
 
   if (difftime(second, first) >= seconds) {
-    std::cout << "timer chec_onece return true" << std::endl;
     return true;
   }
   return false;

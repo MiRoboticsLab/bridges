@@ -21,6 +21,7 @@
 #include <limits>
 #include <fstream>
 #include <iostream>
+#include "cyberdog_common/cyberdog_log.hpp"
 
 class TimeInterval
 {
