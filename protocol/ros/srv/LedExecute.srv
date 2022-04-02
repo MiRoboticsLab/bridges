@@ -3,8 +3,10 @@ string OPEN_MINI_LED = "enable_on"
 string CLOSE_MINI_LED = "enable_off"
 string PIC_1 = "PIC_1"
 string PIC_2 = "PIC_2"
-string PIC_ANIMATION = "PIC_ANIMATION“
+string PIC_ANIMATION = "PIC_ANIMATION"
 
+uint64 COMMAND_OFF = 0
+uint64 COMMAND_ALWAYSON = 0xFFFFFFFFFFFFFFFF
 
 # request
 string client # "BMS";"BLUETOOTH";"AUDIO" ..;
@@ -12,10 +14,6 @@ string target # "tail_led", "head_led","mini_led" ...
 uint8 priority #  response priority
 uint64 timeout 
 string effect
-
-
-uint64 COMMAND_OFF = 0
-uint64 COMMAND_ALWAYSON = 0xFFFFFFFFFFFFFFFF
 
 ---
 
