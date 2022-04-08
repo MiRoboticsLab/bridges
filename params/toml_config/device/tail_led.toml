@@ -16,9 +16,6 @@ extended_frame = true
 canfd_enable = false
 timeout_us = 1000000
 
-
-
-
 ##
 #[[var]]
 #can_id = "0x0301'00'00"

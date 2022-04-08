@@ -7,23 +7,32 @@ extended_frame = true
 canfd_enable = false
 timeout_us = 1234567
 
+
+
 [[array]]
 description = ""
-can_package_num = 8
-can_id = ["0x08842000", "0x08842001", "0x08842002", "0x08842003", "0x08842004", "0x08842005", "0x08842006", "0x08842007"]
+can_package_num = 1
+can_id = ["0x00822100"]
+array_size = [8]
 array_name = "battery_status"
 
-[[array]]
-description = ""
-can_package_num = 6
-can_id = ["0x08852000", "0x08852001", "0x08852002", "0x08852003", "0x08852004", "0x08852005"]
-array_name = "abnormal_status"
 
 [[array]]
 description = ""
-can_package_num = 6
-can_id = ["0x08862000", "0x08862001", "0x08862002", "0x08862003", "0x08862004", "0x08862005"]
+can_package_num = 1
+can_id = ["0x00828100"]
+array_size = [6]
 array_name = "normal_status"
+
+
+[[array]]
+description = ""
+can_package_num = 1
+can_id = ["0x00828200"]
+array_size = [6]
+array_name = "abnormal_status"
+
+
 
 [[var]]
 description = ""
@@ -63,37 +72,37 @@ parser_param = [0, 0]
 [[cmd]]
 description = ""
 cmd_name = "cmd_normal_mode"
-can_id = "0x08880000"
+can_id = "0x00830100"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_turn_off_motor"
-can_id = "0x08880200"
+can_id = "0x00830200"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_low_power_consumption"
-can_id = "0x08880400"
+can_id = "0x00830400"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_soft_shutdown"
-can_id = "0x08880800"
+can_id = "0x00830800"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_file_transfer"
-can_id = "0x08890000"
+can_id = "0x00834000"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_ota_upgrade"
-can_id = "0x08890200"
+can_id = "0x00836000"
 
 [[cmd]]
 description = ""
 cmd_name = "cmd_test"
-can_id = "0x08890400"
+can_id = "0x00838100"
 
 
 
