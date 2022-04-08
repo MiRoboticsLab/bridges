@@ -323,7 +323,7 @@ T toml_at(const toml::table & table, const std::string & key, T default_value = 
   try {
     return toml::get<T>(table.at(key));
   } catch (toml::type_error & ex) {
-    printf(C_RED "[TOML] %s\n" C_END, ex.what());
+    ERROR("[TOML] %s", ex.what());
   }
   return default_value;
 }
