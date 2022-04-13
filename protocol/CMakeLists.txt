@@ -15,6 +15,7 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
+find_package(action_msgs REQUIRED)
 
 include(compile_lcm.cmake.in)
 include(compile_ros.cmake.in)
@@ -27,9 +28,9 @@ lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list})
 set(ros_protocol_list)                            # ros 协议列表
 get_ros_protocol_file(${PROJECT_NAME} "msg")      # 加载 msg 协议
 get_ros_protocol_file(${PROJECT_NAME} "srv")      # 加载 srv 协议
-# get_ros_protocol_file("action")                   # 加载 action 协议
+get_ros_protocol_file(${PROJECT_NAME} "action")                   # 加载 action 协议
 rosidl_generate_interfaces(${PROJECT_NAME} ${ros_protocol_list}
-  DEPENDENCIES builtin_interfaces sensor_msgs
+  DEPENDENCIES builtin_interfaces sensor_msgs action_msgs
 )
 
 if(BUILD_TESTING)
