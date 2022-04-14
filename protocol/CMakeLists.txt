@@ -17,8 +17,8 @@ find_package(std_msgs REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(action_msgs REQUIRED)
 
-include(compile_lcm.cmake.in)
-include(compile_ros.cmake.in)
+include(compile_lcm.cmake)
+include(compile_ros.cmake)
 
 set(lcm_protocol_list)                            # lcm 协议列表
 get_lcm_protocol_file(${PROJECT_NAME} "*")        # 加载 lcm 协议

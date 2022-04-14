@@ -1,3 +1,17 @@
+# Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 #
 # 功能说明: 统计该工程下指定类型的 lcm 文件
 # :param target: 待统计协议类型
@@ -45,10 +59,14 @@ endmacro()
 # 举例:
 #   准备输入: set(lcm_protocol_list)
 #            get_lcm_protocol_file(${PROJECT_NAME} "*")
-# 1. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list})          # 编译指定的 lcm 文件，输出 c++ 接口文件
-# 2. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} LOG)      # 编译指定的 lcm 文件，输出 c++ 接口文件，并输出日志
-# 3. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} C)        # 编译指定的 lcm 文件，输出 c++、C 接口文件，
-# 4. lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} C PYTHON) # 编译指定的 lcm 文件，输出 c++、C、python 接口文件
+# 1. 编译指定的 lcm 文件，输出 c++ 接口文件
+#     lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list})
+# 2. 编译指定的 lcm 文件，输出 c++ 接口文件，并输出日志
+#     lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} LOG)
+# 3. 编译指定的 lcm 文件，输出 c++、C 接口文件，
+#     lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} C)
+# 4. 编译指定的 lcm 文件，输出 c++、C、python 接口文件
+#     lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list} C PYTHON)
 #
 macro(lcm_generate_interfaces target)
   cmake_parse_arguments(_ARG "C;PYTHON;LOG" "" "" ${ARGN})
