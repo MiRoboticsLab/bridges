@@ -23,6 +23,7 @@ grpc = "ip_notify"
 audio = "speech_play"
 
 [connector.initialization.service] # string
+connection = "connect"
 led = "led_state"
 wifi = "connect_wifi"
 ip = "ip_state"
