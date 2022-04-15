@@ -38,8 +38,18 @@
 #include "msgdispatcher.hpp"
 #include "net_avalible.hpp"
 #include "time_interval.hpp"
+#include "protocol/msg/motion_servo_cmd.hpp"
+#include "protocol/msg/motion_servo_response.hpp"
+#include "protocol/srv/motion_result_cmd.hpp"
+#include "rapidjson/document.h"
+#include "rapidjson/prettywriter.h"
+#include "rapidjson/stringbuffer.h"
+#include "cyberdog_common/cyberdog_json.hpp"
 using string = std::string;
-namespace athena_cyberdog_app
+using cyberdog::common::CyberdogJson;
+using rapidjson::Document;
+using rapidjson::kObjectType;
+namespace carpo_cyberdog_app
 {
 class Cyberdog_app : public rclcpp::Node
 {
@@ -79,7 +89,27 @@ private:
   void sendMsg(
     const ::grpcapi::SendRequest * request,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  // ros interaction codes
+  rclcpp::CallbackGroup::SharedPtr callback_group_;
+  rclcpp::Subscription<protocol::msg::MotionServoResponse>::SharedPtr motion_servo_response_sub_;
+  rclcpp::Publisher<protocol::msg::MotionServoCmd>::SharedPtr motion_servo_request_pub_;
+  void motion_servo_rsp_callback(const protocol::msg::MotionServoResponse::SharedPtr msg);
+  rclcpp::Client<protocol::srv::MotionResultCmd>::SharedPtr motion_ressult_client_;
+  void callMotionServoCmd(
+    const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
+    protocol::srv::MotionResultCmd::Response & rep);
+  void retrunErrorGrpc(::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  // visual program
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr visual_request_pub_;
+  void backend_message_callback(const std_msgs::msg::String::SharedPtr msg);
+
+  // commcon code
+  void send_grpc_msg(int code, const std::string & msg);
+  void send_grpc_msg(int code, const Document & doc);
 };
-}  // namespace athena_cyberdog_app
+}  // namespace carpo_cyberdog_app
 
 #endif  // CYBERDOG_APP_HPP_

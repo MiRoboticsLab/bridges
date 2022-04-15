@@ -36,6 +36,11 @@ message SendRequest {
     enum name_code{
         INVALID = 0;
         GET_DEVICE_INFO = 1001;
+        MOTION_SERVO_REQUEST = 1002;
+        MOTION_SERVO_RESPONSE = 1003;
+        MOTION_CMD_REQUEST = 1004;
+        VISUAL_BACKEND_MSG = 2001;
+        VISUAL_FRONTEND_MSG = 2002;
     }
 }
 

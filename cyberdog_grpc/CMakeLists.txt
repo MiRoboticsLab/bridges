@@ -22,6 +22,7 @@ find_package(rclcpp_action REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(cyberdog_common REQUIRED)
+find_package(protocol REQUIRED)
 include_directories(include)
 # Proto file
 get_filename_component(rg_proto "./protos/cyberdog_app.proto" ABSOLUTE)
@@ -42,6 +43,7 @@ set(dependencies
   rclcpp_action
   std_msgs
   cyberdog_common
+  protocol
 )
 
 add_custom_command(

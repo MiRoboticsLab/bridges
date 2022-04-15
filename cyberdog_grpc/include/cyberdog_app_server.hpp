@@ -44,7 +44,7 @@ class CyberdogAppImpl final : public grpcapi::GrpcApp::Service
 {
 public:
   explicit CyberdogAppImpl(const std::string & db);
-  void SetRequesProcess(athena_cyberdog_app::Cyberdog_app * decision)
+  void SetRequesProcess(carpo_cyberdog_app::Cyberdog_app * decision)
   {
     decision_ = decision;
   }
@@ -57,7 +57,7 @@ public:
 
 private:
   bool isPeerAvalible(std::string peer);
-  athena_cyberdog_app::Cyberdog_app * decision_;
+  carpo_cyberdog_app::Cyberdog_app * decision_;
 };
 
 #endif  // CYBERDOG_APP_SERVER_HPP_
