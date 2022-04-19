@@ -282,7 +282,7 @@ void Cyberdog_app::callMotionServoCmd(
 //  for visual
 void Cyberdog_app::backend_message_callback(const std_msgs::msg::String::SharedPtr msg)
 {
-  send_grpc_msg(::grpcapi::SendRequest::MOTION_SERVO_RESPONSE, msg->data);
+  send_grpc_msg(::grpcapi::SendRequest::VISUAL_BACKEND_MSG, msg->data);
 }
 
 //  commcon code
