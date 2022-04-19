@@ -19,7 +19,7 @@
 using grpcapi::Result;
 using grpcapi::Ticks;
 using std::placeholders::_1;
-Cyberdog_App_Client::Cyberdog_App_Client(std::shared_ptr<Channel> channel)
+Cyberdog_App_Client::Cyberdog_App_Client(std::shared_ptr<grpc::Channel> channel)
 : stub_(grpcapi::GrpcApp::NewStub(channel))
 {
 }
@@ -27,11 +27,34 @@ Cyberdog_App_Client::~Cyberdog_App_Client()
 {
 }
 
-bool Cyberdog_App_Client::SetHeartBeat(std::string ip)
+bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
+{
+  grpc::ClientContext context;
+  // gpr_timespec timespec;
+  // timespec.tv_sec = 2;
+  // timespec.tv_nsec = 0;
+  // timespec.clock_type = GPR_TIMESPAN;
+  // context.set_deadline(timespec);
+  ::grpcapi::RecResponse rsp;
+  std::unique_ptr<grpc::ClientReader<::grpcapi::RecResponse>> reader(
+    stub_->sendMsg(&context, msg));
+
+  while (reader->Read(&rsp)) {}
+
+  Status status = reader->Finish();
+
+  if (!status.ok()) {
+    INFO("sendMsg error code:%d", status.error_code());
+    return false;
+  }
+  INFO("sendMsg rpc success.");
+  return true;
+}
+bool Cyberdog_App_Client::sendHeartBeat(const std::string & ip)
 {
   ClientContext context;
   gpr_timespec timespec;
-  timespec.tv_sec = 1;
+  timespec.tv_sec = 2;
   timespec.tv_nsec = 0;
   timespec.clock_type = GPR_TIMESPAN;
   context.set_deadline(timespec);
