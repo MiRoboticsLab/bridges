@@ -242,7 +242,6 @@ void Cyberdog_app::motion_servo_rsp_callback(
 {
   Document json_response(kObjectType);
   CyberdogJson::Add(json_response, "motion_id", msg->motion_id);
-  CyberdogJson::Add(json_response, "cmd_id", msg->cmd_id);
   CyberdogJson::Add(json_response, "order_process_bar", msg->order_process_bar);
   CyberdogJson::Add(json_response, "status", msg->status);
   CyberdogJson::Add(json_response, "result", msg->result);
@@ -350,7 +349,7 @@ void Cyberdog_app::ProcessMsg(
       {
         protocol::msg::MotionServoCmd motion_servo_cmd;
         CyberdogJson::Get(json_resquest, "motion_id", motion_servo_cmd.motion_id);
-        CyberdogJson::Get(json_resquest, "cmd_id", motion_servo_cmd.cmd_id);
+        CyberdogJson::Get(json_resquest, "cmd_type", motion_servo_cmd.cmd_type);
         CyberdogJson::Get(json_resquest, "vel_des", motion_servo_cmd.vel_des);
         CyberdogJson::Get(json_resquest, "rpy_des", motion_servo_cmd.rpy_des);
         CyberdogJson::Get(json_resquest, "pos_des", motion_servo_cmd.pos_des);
