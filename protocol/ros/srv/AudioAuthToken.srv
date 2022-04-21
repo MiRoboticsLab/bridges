@@ -1,0 +1,12 @@
+# request
+uint64 uid
+string title
+string token_access
+string token_fresh
+uint64 token_expirein
+string token_deviceid
+
+---
+
+# response
+bool result

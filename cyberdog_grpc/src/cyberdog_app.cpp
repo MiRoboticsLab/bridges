@@ -90,6 +90,12 @@ Cyberdog_app::Cyberdog_app()
 
   visual_request_pub_ = this->create_publisher<std_msgs::msg::String>(
     "frontend_message", rclcpp::SystemDefaultsQoS());
+
+  // code for audio program
+  audio_auth_request = this->create_client<protocol::srv::AudioAuthId>(
+    "get_authenticate_didsn");
+  audio_auth_response = this->create_client<protocol::srv::AudioAuthToken>(
+    "set_authenticate_token");
 }
 
 void Cyberdog_app::HeartBeat()
@@ -319,9 +325,10 @@ void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  RCLCPP_INFO(get_logger(), "ProcessMsg %d", grpc_request->namecode());
+  RCLCPP_INFO(
+    get_logger(), "ProcessMsg %d %s", grpc_request->namecode(),
+    grpc_request->params().c_str());
   ::grpcapi::RecResponse grpc_respond;
-  RCLCPP_INFO(get_logger(), "ProcessMsg %s", grpc_request->params().c_str());
   Document json_resquest(kObjectType);
   Document json_response(kObjectType);
   std::string rsp_string;
@@ -402,9 +409,77 @@ void Cyberdog_app::ProcessMsg(
       break;
 
     case ::grpcapi::SendRequest::VISUAL_FRONTEND_MSG:
-      std_msgs::msg::String msg;
-      msg.data = grpc_request->params();
-      visual_request_pub_->publish(msg);
+      {
+        std_msgs::msg::String msg;
+        msg.data = grpc_request->params();
+        visual_request_pub_->publish(msg);
+      }
+      break;
+
+    case ::grpcapi::SendRequest::AUDIO_AUTHENTICATION_REQUEST:
+      {
+        if (!audio_auth_request->wait_for_service()) {
+          RCLCPP_INFO(get_logger(), "callAuthenticateRequest server not avalible");
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioAuthId::Request>();
+        protocol::srv::AudioAuthId::Response rsp;
+        auto future_result = audio_auth_request->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(get_logger(), "success to call authenticate request services.");
+        } else {
+          RCLCPP_INFO(get_logger(), "Failed to call authenticate request  services.");
+        }
+        rsp.did = future_result.get()->did;
+        rsp.sn = future_result.get()->sn;
+        CyberdogJson::Add(json_response, "did", rsp.did);
+        CyberdogJson::Add(json_response, "sn", rsp.sn);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          RCLCPP_ERROR(get_logger(), "error while encoding authenticate request to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_namecode(grpc_request->namecode());
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+      }
+      break;
+
+    case ::grpcapi::SendRequest::AUDIO_AUTHENTICATION_RESPONSE:
+      {
+        if (!audio_auth_response->wait_for_service()) {
+          RCLCPP_INFO(get_logger(), "callAuthenticateResponse server not avalible");
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioAuthToken::Request>();
+        protocol::srv::AudioAuthToken::Response rsp;
+        CyberdogJson::Get(json_resquest, "uid", req->uid);
+        CyberdogJson::Get(json_resquest, "title", req->title);
+        CyberdogJson::Get(json_resquest, "token_access", req->token_access);
+        CyberdogJson::Get(json_resquest, "token_fresh", req->token_fresh);
+        CyberdogJson::Get(json_resquest, "token_expirein", req->token_expirein);
+        CyberdogJson::Get(json_resquest, "token_deviceid", req->token_deviceid);
+        auto future_result = audio_auth_response->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(get_logger(), "success to call authenticate response services.");
+        } else {
+          RCLCPP_INFO(get_logger(), "Failed to call authenticate response services.");
+        }
+        rsp.result = future_result.get()->result;
+        CyberdogJson::Add(json_response, "result", rsp.result);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_namecode(grpc_request->namecode());
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+      }
       break;
   }
 }
