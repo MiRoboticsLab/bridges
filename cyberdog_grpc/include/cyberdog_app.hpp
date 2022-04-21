@@ -41,6 +41,8 @@
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
 #include "protocol/srv/motion_result_cmd.hpp"
+#include "protocol/srv/audio_auth_id.hpp"
+#include "protocol/srv/audio_auth_token.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -105,6 +107,10 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr visual_request_pub_;
   void backend_message_callback(const std_msgs::msg::String::SharedPtr msg);
+
+  // audio program
+  rclcpp::Client<protocol::srv::AudioAuthId>::SharedPtr audio_auth_request;
+  rclcpp::Client<protocol::srv::AudioAuthToken>::SharedPtr audio_auth_response;
 
   // commcon code
   void send_grpc_msg(int code, const std::string & msg);
