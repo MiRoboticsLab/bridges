@@ -7,8 +7,8 @@ int16       footpos_error
 int32[]     motor_error
 
 # switch_status macro value
-int8 kNORMAL = 0
-int8 kTRANSITIONING = 1
-int8 kESTOP = 2
-int8 kEDAMP = 3
-int8 kBAN_TRANS = 4
+int8 NORMAL = 0
+int8 TRANSITIONING = 1
+int8 ESTOP = 2
+int8 EDAMP = 3
+int8 BAN_TRANS = 4
