@@ -33,6 +33,7 @@
 // Interfaces
 
 #include "rclcpp/rclcpp.hpp"
+#include "std_srvs/srv/set_bool.hpp"
 #include "cyberdog_app_client.hpp"
 #include "threadsafe_queue.hpp"
 #include "msgdispatcher.hpp"
@@ -115,6 +116,9 @@ private:
   // commcon code
   void send_grpc_msg(int code, const std::string & msg);
   void send_grpc_msg(int code, const Document & doc);
+
+  // image_transmission
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr image_trans_activation_;
 };
 }  // namespace carpo_cyberdog_app
 
