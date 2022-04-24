@@ -96,6 +96,10 @@ Cyberdog_app::Cyberdog_app()
     "get_authenticate_didsn");
   audio_auth_response = this->create_client<protocol::srv::AudioAuthToken>(
     "set_authenticate_token");
+
+  // image_transmission
+  image_trans_activation_ = create_client<std_srvs::srv::SetBool>(
+    "activate_image_transmission");
 }
 
 void Cyberdog_app::HeartBeat()
@@ -480,6 +484,36 @@ void Cyberdog_app::ProcessMsg(
         grpc_respond.set_data(rsp_string);
         writer->Write(grpc_respond);
       }
+      break;
+    case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST:
+      {
+        std::chrono::seconds timeout(10);
+        if (!image_trans_activation_->wait_for_service(timeout)) {
+          RCLCPP_INFO(get_logger(), "activate_image_transmission server not avalible");
+          return;
+        }
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        CyberdogJson::Get(json_resquest, "enable", req->data);
+        auto res = image_trans_activation_->async_send_request(req);
+        auto status = res.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(get_logger(), "success to call activate_image_transmission services.");
+        } else {
+          RCLCPP_INFO(get_logger(), "Failed to call activate_image_transmission services.");
+        }
+        CyberdogJson::Add(json_response, "success", res.get()->success);
+        CyberdogJson::Add(json_response, "message", res.get()->message);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_namecode(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST);
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+      }
+      break;
+    default:
       break;
   }
 }

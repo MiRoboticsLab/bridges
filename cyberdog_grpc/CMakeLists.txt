@@ -21,6 +21,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(builtin_interfaces REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(cyberdog_common REQUIRED)
 find_package(protocol REQUIRED)
 include_directories(include)
@@ -42,6 +43,7 @@ set(dependencies
   rclcpp
   rclcpp_action
   std_msgs
+  std_srvs
   cyberdog_common
   protocol
 )
