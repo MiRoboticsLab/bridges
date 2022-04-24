@@ -51,8 +51,12 @@ parser_param = [0, 0]
 description = ""
 cmd_name = "enable_on"
 can_id = "0x01830200"
+ctrl_len = 1
+ctrl_data = ["0x00"]
 
 [[cmd]]
 description = ""
 cmd_name = "enable_off"
 can_id = "0x01830400"
+ctrl_len = 1
+ctrl_data = ["0x00"]

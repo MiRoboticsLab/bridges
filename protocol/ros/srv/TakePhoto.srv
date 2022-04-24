@@ -1,0 +1,6 @@
+# 该服务用于启动相机拍一张图片
+
+---
+string message        # 拍照结果描述
+bool result           # 是否成功
+sensor_msgs/Image img # 图片消息

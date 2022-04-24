@@ -1,4 +1,0 @@
-string ssid
-string pwd
----
-uint8 result

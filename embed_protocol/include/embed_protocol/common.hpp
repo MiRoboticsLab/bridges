@@ -25,6 +25,7 @@
 #include <algorithm>
 
 #include "toml/toml.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 
 namespace cyberdog
 {
@@ -177,21 +178,21 @@ public:
   }
   void PrintfSelfStateStr()
   {
-    if (state_map_.size() == 0) {printf("[STATE_COLLECTOR] NoStateCode\n");} else {
-      printf("[STATE_COLLECTOR] StateType:%ld\n", state_map_.size());
+    if (state_map_.size() == 0) {INFO("[STATE_COLLECTOR] NoStateCode");} else {
+      INFO("[STATE_COLLECTOR] StateType:%ld", state_map_.size());
     }
     for (auto & a : state_map_) {
-      printf("[STATE_COLLECTOR] StateCode[%3d]-times:%d\n", a.first, a.second);
+      INFO("[STATE_COLLECTOR] StateCode[%3d]-times:%d", a.first, a.second);
     }
   }
   void PrintfAllStateStr()
   {
     auto all_map = GetAllStateMap();
-    if (all_map.size() == 0) {printf("[STATE_COLLECTOR] NoStateCode\n");} else {
-      printf("[STATE_COLLECTOR] StateType:%ld\n", all_map.size());
+    if (all_map.size() == 0) {INFO("[STATE_COLLECTOR] NoStateCode");} else {
+      INFO("[STATE_COLLECTOR] StateType:%ld", all_map.size());
     }
     for (auto & a : all_map) {
-      printf("[STATE_COLLECTOR] StateCode[%3d]-times:%d\n", a.first, a.second);
+      INFO("[STATE_COLLECTOR] StateCode[%3d]-times:%d", a.first, a.second);
     }
   }
 
@@ -226,9 +227,9 @@ std::string get_var_name(const std::string & full_name, StateCollector & clct)
       if (c == '>' || c == '.') {
         if (get == true) {
           clct.LogState(ErrorCode::RUNTIME_ILLEGAL_LINKVAR);
-          printf(
-            C_RED "[PROTOCOL_BASE][ERROR] Not support class or struct "
-            "in TDataClass:\"%s\"\n" C_END,
+          ERROR(
+            "[PROTOCOL_BASE] Not support class or struct "
+            "in TDataClass:\"%s\"",
             full_name.c_str());
         }
         var_name = "";
@@ -238,7 +239,7 @@ std::string get_var_name(const std::string & full_name, StateCollector & clct)
   }
   if (get == false) {
     clct.LogState(ErrorCode::RUNTIME_ILLEGAL_LINKVAR);
-    printf(C_YELLOW "[PROTOCOL_BASE][WARN] LINK_VAR(x) may get error var\n" C_END);
+    WARN("[PROTOCOL_BASE][WARN] LINK_VAR(x) may get error var");
     return full_name;
   }
   return var_name;
@@ -260,9 +261,9 @@ unsigned int HEXtoUINT(const std::string & str, CHILD_STATE_CLCT clct)
         id += ch - 'A' + 10;
       } else {
         if (clct != nullptr) {clct->LogState(ErrorCode::HEXTOUINT_ILLEGAL_CHAR);}
-        printf(
-          C_RED "[PROTOCOL_BASE][ERROR] HEX string:\"%s\" format error, "
-          "illegal char:\"%c\"\n" C_END, str.c_str(), ch);
+        ERROR(
+          "[PROTOCOL_BASE] HEX string:\"%s\" format error, "
+          "illegal char:\"%c\"", str.c_str(), ch);
         return 0x0;
       }
     }
@@ -270,8 +271,8 @@ unsigned int HEXtoUINT(const std::string & str, CHILD_STATE_CLCT clct)
   }
   if (start == false) {
     if (clct != nullptr) {clct->LogState(ErrorCode::HEXTOUINT_ILLEGAL_START);}
-    printf(
-      C_RED "[PROTOCOL_BASE][ERROR] HEX string:\"%s\" format error, need start with \"0x\"\n" C_END,
+    ERROR(
+      "[PROTOCOL_BASE] HEX string:\"%s\" format error, need start with \"0x\"",
       str.c_str());
   }
   return id;
@@ -285,8 +286,8 @@ bool CanidRangeCheck(
 {
   if (can_id > (extended ? CAN_EXT_MAX_ID : CAN_STD_MAX_ID)) {
     if (clct != nullptr) {clct->LogState(ErrorCode::CAN_ID_OUTOFRANGE);}
-    printf(
-      C_RED "[CAN_PARSER][ERROR][%s][%s] CAN_ID:0x%x out of range, %s\n" C_END,
+    ERROR(
+      "[CAN_PARSER][%s][%s] CAN_ID:0x%x out of range, %s",
       name.c_str(), sub_name.c_str(), can_id, std::string(
         extended ? "Extend ID:(0x0000'0000~0x1FFF'FFFF)" :
         "Stand ID:(0x000~0x7FF)").c_str());
@@ -300,17 +301,17 @@ T toml_at(const toml::table & table, const std::string & key, CHILD_STATE_CLCT c
 {
   if (table.find(key) == table.end()) {
     if (clct != nullptr) {clct->LogState(ErrorCode::TOML_NOKEY_ERROR);}
-    printf(C_RED "[TOML][ERROR] Can't find key:\"%s\"\n" C_END, key.c_str());
+    ERROR("[TOML] Can't find key:\"%s\"", key.c_str());
     return T();
   }
   try {
     return toml::get<T>(table.at(key));
   } catch (toml::type_error & ex) {
     if (clct != nullptr) {clct->LogState(ErrorCode::TOML_TYPE_ERROR);}
-    printf(C_RED "[TOML][ERROR] %s\n" C_END, ex.what());
+    ERROR("[TOML] %s", ex.what());
   } catch (std::exception & ex) {
     if (clct != nullptr) {clct->LogState(ErrorCode::TOML_OTHER_ERROR);}
-    printf(C_RED "[TOML][ERROR] %s\n" C_END, ex.what());
+    ERROR("[TOML] %s", ex.what());
   }
   return T();
 }
@@ -322,7 +323,7 @@ T toml_at(const toml::table & table, const std::string & key, T default_value = 
   try {
     return toml::get<T>(table.at(key));
   } catch (toml::type_error & ex) {
-    printf(C_RED "[TOML][ERROR] %s\n" C_END, ex.what());
+    ERROR("[TOML] %s", ex.what());
   }
   return default_value;
 }
@@ -333,15 +334,15 @@ bool toml_parse(toml::value & toml, const std::string & path)
     toml = toml::parse(path);
     return true;
   } catch (toml::syntax_error & ex) {
-    printf(C_RED "[PROTOCOL][ERROR] %s\n" C_END, ex.what());
+    ERROR("[PROTOCOL] %s", ex.what());
   } catch (std::runtime_error & ex) {
-    printf(C_RED "[PROTOCOL][ERROR] %s\n" C_END, ex.what());
+    ERROR("[PROTOCOL] %s", ex.what());
   } catch (...) {
-    printf(C_RED "[PROTOCOL][ERROR] Some unknow error\n" C_END);
+    ERROR("[PROTOCOL] Some unknow error");
   }
   return false;
 }
 }  // namespace embed
 }  // namespace cyberdog
 
-#endif  // EMBED_PROTOCOL__EMBED_HPP_
+#endif  // EMBED_PROTOCOL__COMMON_HPP_

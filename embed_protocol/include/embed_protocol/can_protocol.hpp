@@ -23,6 +23,7 @@
 #include "embed_protocol/common.hpp"
 #include "embed_protocol/protocol_base.hpp"
 #include "embed_parser/can_parser.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 
 namespace cyberdog
 {
@@ -50,16 +51,16 @@ public:
 
     can_parser_ = std::make_shared<CanParser>(
       this->error_clct_->CreatChild(), toml_config, this->name_);
-    printf(
-      "[CAN_PROTOCOL][INFO] Creat can protocol[%s]: %d error, %d warning\n",
+    INFO(
+      "[CAN_PROTOCOL][INFO] Creat can protocol[%s]: %d error, %d warning",
       this->name_.c_str(), can_parser_->GetInitErrorNum(), can_parser_->GetInitWarnNum());
     auto recv_list = can_parser_->GetRecvList();
     int recv_num = recv_list.size();
     bool send_only = (recv_num == 0) ? true : this->for_send_;
 
     if (send_only) {
-      printf(
-        "[CAN_PROTOCOL][INFO][%s] No recv canid, enable send-only mode\n",
+      INFO(
+        "[CAN_PROTOCOL][INFO][%s] No recv canid, enable send-only mode",
         this->name_.c_str());
       can_op_ = std::make_shared<CanDev>(
         can_interface,
@@ -107,8 +108,8 @@ public:
         return true;
       } else {
         this->error_clct_->LogState(ErrorCode::RUNTIME_OPERATE_ERROR);
-        printf(
-          C_RED "[CAN_PROTOCOL][ERROR][%s] Operate CMD:\"%s\" sending data error 0\n" C_END,
+        ERROR(
+          "[CAN_PROTOCOL][%s] Operate CMD:\"%s\" sending data error 0",
           this->name_.c_str(), CMD.c_str());
       }
     } else {
@@ -119,8 +120,8 @@ public:
         return true;
       } else {
         this->error_clct_->LogState(ErrorCode::RUNTIME_OPERATE_ERROR);
-        printf(
-          C_RED "[CAN_PROTOCOL][ERROR][%s] Operate CMD:\"%s\" sending data error 1\n" C_END,
+        ERROR(
+          "[CAN_PROTOCOL][%s] Operate CMD:\"%s\" sending data error 1",
           this->name_.c_str(), CMD.c_str());
       }
     }
@@ -130,9 +131,9 @@ public:
   bool SendSelfData() override
   {
     if (this->for_send_ == false) {
-      printf(
-        C_YELLOW "[CAN_PROTOCOL][WARN][%s] Protocol not in sending mode, "
-        "should not send data from data class, except for test\n" C_END,
+      WARN(
+        "[CAN_PROTOCOL][WARN][%s] Protocol not in sending mode, "
+        "should not send data from data class, except for test",
         this->name_.c_str());
     }
     return can_parser_->Encode(this->protocol_data_map_, can_op_);

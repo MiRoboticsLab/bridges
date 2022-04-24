@@ -13,12 +13,15 @@
 // limitations under the License.
 
 #include <memory>
+#include <string>
+#include <vector>
 #include "rclcpp/rclcpp.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 #include "std_msgs/msg/u_int16.hpp"
 #include "embed_protocol/embed_protocol.hpp"
 
-#define EVM cyberdog::embed
-
+#define   EVM   cyberdog::embed
+#define   NODE_NAME   "sensor_simulator_node"
 
 typedef struct _test_send_data
 {
@@ -28,7 +31,7 @@ typedef struct _test_send_data
 class TestSenor
 {
 public:
-  TestSenor(rclcpp::Logger l)
+  explicit TestSenor(rclcpp::Logger l)
   : logger_(l), is_stop_(false)
   {
     auto func = [this]() {
@@ -40,8 +43,7 @@ public:
           // pro->Operate("example_data_1");
           // pro->Operate("example_data_2");
           // std::this_thread::sleep_for(std::chrono::microseconds(300));
-          // std::this_thread::sleep_for(std::chrono::seconds(10));
-          std::this_thread::sleep_for(std::chrono::seconds(1));
+          std::this_thread::sleep_for(std::chrono::seconds(10));
         }
       };
     thread_ = std::make_unique<std::thread>(func);
@@ -69,7 +71,7 @@ typedef struct _ultrasonic_can_simulator
 class UltrasonicSenor
 {
 public:
-  UltrasonicSenor(rclcpp::Logger l)
+  explicit UltrasonicSenor(rclcpp::Logger l)
   : logger_(l), is_enable_(false), is_stop_(false)
   {
     auto func = [this]() {
@@ -78,8 +80,8 @@ public:
         ultrasonic_can_->LINK_VAR(ultrasonic_can_->GetData()->enable_on);
         ultrasonic_can_->SetDataCallback(
           std::bind(
-            &UltrasonicSenor::recv_ultrasonic_callback, this,
-            std::placeholders::_1, std::placeholders::_2));
+            &UltrasonicSenor::recv_ultrasonic_callback,
+            this, std::placeholders::_1, std::placeholders::_2));
         while (!is_stop_) {
           // // pro->LINK_VAR(pro->GetData()->u64_var);
           // pro->Operate("example_data");
@@ -91,14 +93,16 @@ public:
           while (is_enable_) {
             std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
             std::chrono::system_clock::duration duration_since_epoch = now.time_since_epoch();
-            int64_t mcrosec = std::chrono::duration_cast<std::chrono::microseconds>(
-              duration_since_epoch).count();
-            std::vector<uint8_t> u_data( ((uint8_t *)&i_cnt), (((uint8_t *)&i_cnt) + 8) );
-            std::vector<uint8_t> u_data_time( ((uint8_t *)&mcrosec), (((uint8_t *)&mcrosec) + 8) );
+            int64_t mcrosec =
+              std::chrono::duration_cast<std::chrono::microseconds>(duration_since_epoch).count();
+            std::vector<uint8_t> u_data(reinterpret_cast<uint8_t *>(&i_cnt),
+              reinterpret_cast<uint8_t *>(&i_cnt) + 7);
+            std::vector<uint8_t> u_data_time(reinterpret_cast<uint8_t *>(&mcrosec),
+              reinterpret_cast<uint8_t *>(&mcrosec) + 7);
             ultrasonic_can_->Operate("ultrasonic_data", u_data);
-            ultrasonic_can_->Operate("ultrasonic_data_clock", u_data_time);
+            // ultrasonic_can_->Operate("ultrasonic_data_clock", u_data_time);
             ++i_cnt;
-            std::this_thread::sleep_for(std::chrono::microseconds(300));
+            std::this_thread::sleep_for(std::chrono::microseconds(1000000));
           }
         }
       };
@@ -122,17 +126,18 @@ private:
     ptr_ultrasonic_simulator_ = data;
     // 数据解析在这里进行
     if (name == "enable_on") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       ultrasonic_can_->BREAK_VAR(ultrasonic_can_->GetData()->enable_on);
       ultrasonic_can_->Operate("enable_on_ack", std::vector<uint8_t>{0x00});
       is_enable_ = true;
       ultrasonic_can_->LINK_VAR(ultrasonic_can_->GetData()->enable_off);
     } else if (name == "enable_off") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       ultrasonic_can_->BREAK_VAR(pro->GetData()->enable_off);
       ultrasonic_can_->Operate("enable_off_ack", std::vector<uint8_t>{0x00});
       is_enable_ = false;
       ultrasonic_can_->LINK_VAR(ultrasonic_can_->GetData()->enable_on);
+    } else {
     }
     // ----------------
     {
@@ -150,7 +155,7 @@ private:
   std::condition_variable data_cond_;
   volatile bool is_enable_;
   bool is_stop_;
-}; // class UltrasonicSenor
+};  // class UltrasonicSenor
 
 typedef struct _tof_can_simulator
 {
@@ -161,7 +166,7 @@ typedef struct _tof_can_simulator
 class TofSenor
 {
 public:
-  TofSenor(rclcpp::Logger l)
+  explicit TofSenor(rclcpp::Logger l)
   : logger_(l), is_enable_(false), is_stop_(false)
   {
     auto func = [this]() {
@@ -185,10 +190,12 @@ public:
           while (is_enable_) {
             std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
             std::chrono::system_clock::duration duration_since_epoch = now.time_since_epoch();
-            int64_t mcrosec = std::chrono::duration_cast<std::chrono::microseconds>(
-              duration_since_epoch).count();
-            std::vector<uint8_t> u_data( ((uint8_t *)&i_cnt), (((uint8_t *)&i_cnt) + 7) );
-            std::vector<uint8_t> u_data_time( ((uint8_t *)&mcrosec), (((uint8_t *)&mcrosec) + 7) );
+            int64_t mcrosec =
+              std::chrono::duration_cast<std::chrono::microseconds>(duration_since_epoch).count();
+            std::vector<uint8_t> u_data(reinterpret_cast<uint8_t *>(&i_cnt),
+              reinterpret_cast<uint8_t *>(&i_cnt) + 7);
+            std::vector<uint8_t> u_data_time(reinterpret_cast<uint8_t *>(&mcrosec),
+              reinterpret_cast<uint8_t *>(&mcrosec) + 7);
             tof_can_->Operate("tof_data_one", u_data);
             tof_can_->Operate("tof_data_two", u_data);
             tof_can_->Operate("tof_data_three", u_data);
@@ -199,7 +206,7 @@ public:
             tof_can_->Operate("tof_data_eight", u_data);
             tof_can_->Operate("tof_data_clock", u_data_time);
             ++i_cnt;
-            std::this_thread::sleep_for(std::chrono::microseconds(300));
+            std::this_thread::sleep_for(std::chrono::microseconds(1000000));
           }
         }
       };
@@ -223,21 +230,18 @@ private:
     ptr_tof_simulator_ = data;
     // 数据解析在这里进行
     if (name == "enable_on") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       tof_can_->BREAK_VAR(tof_can_->GetData()->enable_on);
-      tof_can_->Operate(
-        "enable_on_ack", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-          0x00, 0x00});
+      tof_can_->Operate("enable_on_ack", std::vector<uint8_t>{0x00});
       is_enable_ = true;
       tof_can_->LINK_VAR(tof_can_->GetData()->enable_off);
     } else if (name == "enable_off") {
-      RCLCPP_INFO(logger_, "I heard name:%s", name.c_str());
+      INFO("I heard name:%s", name.c_str());
       tof_can_->BREAK_VAR(pro->GetData()->enable_off);
-      tof_can_->Operate(
-        "enable_off_ack", std::vector<uint8_t>{0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-          0x00, 0x00});
+      tof_can_->Operate("enable_off_ack", std::vector<uint8_t>{0x00});
       is_enable_ = false;
       tof_can_->LINK_VAR(tof_can_->GetData()->enable_on);
+    } else {
     }
     // ----------------
     {
@@ -255,29 +259,30 @@ private:
   std::condition_variable data_cond_;
   volatile bool is_enable_;
   bool is_stop_;
-}; // class TofSenor
+};  // class TofSenor
 
 class CanNode : public rclcpp::Node
 {
 public:
   CanNode()
-  : Node("sensor_simulator_node")
+  : Node(NODE_NAME)
   {
-    // test_ = std::make_unique<TestSenor>(this->get_logger());
+    test_ = std::make_unique<TestSenor>(this->get_logger());
     ultrasonic_ = std::make_unique<UltrasonicSenor>(this->get_logger());
     tof_ = std::make_unique<TofSenor>(this->get_logger());
-    subscription_ = this->create_subscription<std_msgs::msg::UInt16>(
-      "sensor_simulator",
-      10,
-      [this](std_msgs::msg::UInt16::SharedPtr msg) {
-        RCLCPP_INFO(this->get_logger(), "I heard: '%d'", msg->data);
-        if (msg->data == 0) {
-        }
-      });
+    // subscription_ = this->create_subscription<std_msgs::msg::UInt16>(
+    //   "sensor_simulator",
+    //   10,
+    //   [this](std_msgs::msg::UInt16::SharedPtr msg) {
+    //     RCLCPP_INFO(this->get_logger(), "I heard: '%d'", msg->data);
+    //     if(msg->data == 0)
+    //     {
+    //     }
+    //   });
   }
 
 private:
-  rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr subscription_;
+  // rclcpp::Subscription<std_msgs::msg::UInt16>::SharedPtr subscription_;
   std::unique_ptr<TestSenor> test_;
   std::unique_ptr<UltrasonicSenor> ultrasonic_;
   std::unique_ptr<TofSenor> tof_;
@@ -287,6 +292,7 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
+  LOGGER_MAIN_INSTANCE(NODE_NAME);
   rclcpp::spin(std::make_shared<CanNode>());
   rclcpp::shutdown();
   return 0;
