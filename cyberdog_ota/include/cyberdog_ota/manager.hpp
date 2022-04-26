@@ -23,18 +23,13 @@ public:
   Manager(const Manager&) = delete;
   Manager& operator=(const Manager&) = delete;
 
+  bool RunVersionQueryCommand(std::string& json_result);
+  bool RunStatusQueryCommand(std::string& json_result);
+  bool RunProcessQueryCommand(std::string& json_result);
+  bool RunStartUpgradeCommand(std::string& json_result);
+  bool RunStartDownloadCommand(std::string& json_result);
+  bool RunEstimateUpgradeTimeQueryCommand(std::string& json_result);
 
-// #define STATUS_QUERY_ID                   0x0001
-// #define VERSION_QUERY_ID                  0x0002
-// #define START_DOWNLOAD_ID                 0x0003
-// #define START_UPDATE_ID                   0x0004
-// #define DOWNLOAD_PROGRESS_QUERY_ID        0x0005
-// #define UPDATE_PROGRESS_QUERY_ID          0x0006
-// #define UPDATE_TIME_ID                    0x0007
-// #define ABORT_DOWNLOAD_ID                 0x0008
-
-  bool RunVersionQueryCommand();
-  bool RunStatusQueryCommand();
 
   // Update 
   //  -- MCU Update
@@ -46,14 +41,15 @@ public:
   // http download
   bool RunDownloadFilesCommand(); 
 
+
   std::shared_ptr<NxManager> GetNxManager();
   std::shared_ptr<McuManager> GetMcuManager();
+
+  
 
 private:
   std::shared_ptr<Server> server_;
   std::shared_ptr<Client> http_client_;
-
-  
 
   std::shared_ptr<Factory> factory_;
   std::shared_ptr<NxManager> nx_;

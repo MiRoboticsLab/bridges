@@ -85,7 +85,7 @@ bool Server::Initialize()
 bool Server::SendMessage(char* buf, size_t size)
 {
   int ret = 0;
-  int write_ok = 0;
+  size_t write_ok = 0;
 
   std::lock_guard<std::mutex> lock(mutex_);
   while (write_ok != size)
@@ -117,7 +117,7 @@ bool Server::SendMessage(char* buf, size_t size)
 bool Server::ReceiveMessage(char* buf, size_t size)
 {
   int ret = 0;
-  int read_ok = 0;
+  size_t read_ok = 0;
 
   while (read_ok != size)
   {
@@ -209,7 +209,7 @@ bool Server::HandleProtocolServerMessage(ServerMessage& msg)
   // auto request = std::get<0>(msg);
 
   unsigned int value;
-  int len = sizeof(unsigned int);
+  // int len = sizeof(unsigned int);
 
   if (!ReceiveMessage((char*)(&value), sizeof(unsigned int))) {
       std::cout << "recv data error" << std::endl;

@@ -39,12 +39,36 @@ Manager::~Manager()
   }
 }
 
-bool Manager::RunStartUpdateCommand()
+bool Manager::RunVersionQueryCommand(std::string& json_result)
 {
-  if (mcu_->IsRunning()) {
-    mcu_->RunCommand(McuManager::Mode::kStartUpgrade);
-  }
+  return true;
 }
+
+bool Manager::RunStatusQueryCommand(std::string& json_result)
+{
+  return true;
+}
+
+bool Manager::RunProcessQueryCommand(std::string& json_result)
+{
+  return true;
+}
+
+bool Manager::RunStartUpgradeCommand(std::string& json_result)
+{
+  return true;
+}
+
+bool Manager::RunStartDownloadCommand(std::string& json_result)
+{
+  return true;
+}
+
+bool Manager::RunEstimateUpgradeTimeQueryCommand(std::string& json_result)
+{
+  return true;
+}
+
 
 bool Manager::RunDownloadFilesCommand()
 {

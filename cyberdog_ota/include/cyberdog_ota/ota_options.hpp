@@ -8,6 +8,14 @@
 
 namespace cyberdog {
 
+const std::string kOTAGrpcServerName = "ota_grpc";
+
+const std::string kOTACommandStatusQuery = "ota_command_status_query";
+const std::string kOTACommandVersionQuery =  "ota_command_version_query";
+const std::string kOTACommandProcessQuery =  "ota_command_process_query";
+const std::string kOTACommandStartUpgrade = "ota_command_start_upgrade";
+const std::string kOTACommandStartDownload = "ota_command_start_download";
+const std::string kOTACommandEstimateUpgradeTimeQuery = "ota_command_estimate_upgrade_time_query";
 
 
 void CreateOTAOptions();
