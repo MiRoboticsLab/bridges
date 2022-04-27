@@ -9,6 +9,8 @@
 namespace cyberdog {
 
 const std::string kOTAGrpcServerName = "ota_grpc";
+const std::string kOTAReadyRequestTopic = "ota_ready_request";
+const std::string kOTAReadyResponseTopic = "ota_ready_response";
 
 const std::string kOTACommandStatusQuery = "ota_command_status_query";
 const std::string kOTACommandVersionQuery =  "ota_command_version_query";

@@ -5,6 +5,7 @@
 #include "cyberdog_common/cyberdog_json.hpp"
 
 #include <functional>
+#include <utility>
 
 namespace cyberdog
 {
@@ -17,10 +18,14 @@ using rapidjson::kObjectType;
 OTANode::OTANode()
 : rclcpp::Node(kNodeName)
 {
-
   grpc_server_ = this->create_service<protocol::srv::OtaServerCmd>(
     kOTAGrpcServerName, std::bind(&OTANode::HandleOTAGrpcCommand, this,
       std::placeholders::_1, std::placeholders::_2));
+
+  ota_ready_publisher_ =  this->create_publisher<std_msgs::msg::Bool>(kOTAReadyRequestTopic, 10);;
+  ota_ready_sub_ = this->create_subscription<protocol::msg::OtaReady>(kOTAReadyResponseTopic ,
+    rclcpp::SystemDefaultsQoS(),
+      std::bind(&OTANode::HandleAllWaitOtaReadyModuleMessages, this, std::placeholders::_1));
 
   manger_ = std::make_shared<Manager>();
   initialized_ = true;
@@ -91,6 +96,38 @@ void OTANode::HandleOTAGrpcCommand(
       response->response.value = status;
     }
   }
+}
+
+void OTANode::HandleAllWaitOtaReadyModuleMessages(const protocol::msg::OtaReady::SharedPtr msg)
+{
+  if (msg->name == "motion" && msg->ready) {
+    module_table_[msg->name] = true;
+  } else if (msg->name == "devices") {
+    module_table_[msg->name] = true;
+  } else if (msg->name == "sensors") {
+    module_table_[msg->name] = true;
+  } else if (msg->name == "manager") {
+    module_table_[msg->name] = true;
+  }
+}
+
+
+void OTANode::InitializeAllWaitOtaReadyModule()
+{
+  module_table_.emplace(std::make_pair("motion", false));
+  module_table_.emplace(std::make_pair("devices", false));
+  module_table_.emplace(std::make_pair("sensors", false));
+  module_table_.emplace(std::make_pair("manager", false));
+}
+
+bool OTANode::CheckAllReady()
+{
+  for (auto module : module_table_) {
+    if (!module.second) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool OTANode::Finished()

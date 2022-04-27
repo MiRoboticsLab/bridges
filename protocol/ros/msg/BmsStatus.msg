@@ -1,5 +1,3 @@
-std_msgs/Header header # Header timestamp
-
 uint16 batt_volt
 int16 batt_curr
 uint8 batt_soc
