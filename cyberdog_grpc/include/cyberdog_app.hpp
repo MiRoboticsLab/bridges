@@ -44,10 +44,12 @@
 #include "protocol/srv/motion_result_cmd.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
+#include "protocol/srv/ota_server_cmd.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 #include "cyberdog_common/cyberdog_json.hpp"
+
 using string = std::string;
 using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
@@ -119,6 +121,10 @@ private:
 
   // image_transmission
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr image_trans_activation_;
+
+  // ota 
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr ota_client_;
+
 };
 }  // namespace carpo_cyberdog_app
 
