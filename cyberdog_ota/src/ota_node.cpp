@@ -62,7 +62,16 @@ void OTANode::HandleOTAGrpcCommand(
     std::string version;
     Document json_response(kObjectType);
     bool ok = manger_->RunVersionQueryCommand(version);
+
     if (ok) {
+      common::CyberdogJson::Add(json_response, "current_version", "1.0.0.1");
+      common::CyberdogJson::Add(json_response, "newest_version", "1.0.0.2");
+
+      if (!common::CyberdogJson::Document2String(json_response, version)) {
+        ERROR("error while encoding json message to string");
+        return;
+      }
+
       response->response.key = kOTACommandStatusQuery;
       response->response.type = "JSON";
       response->response.value = version;
