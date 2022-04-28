@@ -22,11 +22,18 @@ OTANode::OTANode()
     kOTAGrpcServerName, std::bind(&OTANode::HandleOTAGrpcCommand, this,
       std::placeholders::_1, std::placeholders::_2));
 
+  // ota signial
   ota_ready_publisher_ =  this->create_publisher<std_msgs::msg::Bool>(kOTAReadyRequestTopic, 10);;
   ota_ready_sub_ = this->create_subscription<protocol::msg::OtaReady>(kOTAReadyResponseTopic ,
     rclcpp::SystemDefaultsQoS(),
       std::bind(&OTANode::HandleAllWaitOtaReadyModuleMessages, this, std::placeholders::_1));
 
+  // bms status
+  bms_status_sub_ = this->create_subscription<protocol::msg::BmsStatus>(kOTABmsStatusTopic ,
+    rclcpp::SystemDefaultsQoS(),
+      std::bind(&OTANode::HandleBmsStatusMessages, this, std::placeholders::_1));
+
+  // initialize all manager
   manger_ = std::make_shared<Manager>();
   initialized_ = true;
 }
@@ -40,8 +47,8 @@ void OTANode::HandleOTAGrpcCommand(
     const std::shared_ptr<protocol::srv::OtaServerCmd::Request> request,
     std::shared_ptr<protocol::srv::OtaServerCmd::Response> response)
 {
-  
   if (request->request.key == kOTACommandStatusQuery) {
+    INFO("OTA handle status query...");
     std::string status;
     Document json_response(kObjectType);
     bool ok = manger_->RunStatusQueryCommand(status);
@@ -51,15 +58,17 @@ void OTANode::HandleOTAGrpcCommand(
       response->response.value = status;
     }
   } else if (request->request.key == kOTACommandVersionQuery) { 
-      std::string version;
-      Document json_response(kObjectType);
-      bool ok = manger_->RunVersionQueryCommand(version);
-      if (ok) {
-        response->response.key = kOTACommandStatusQuery;
-        response->response.type = "JSON";
-        response->response.value = version;
-      }
+    INFO("OTA handle verison query...");
+    std::string version;
+    Document json_response(kObjectType);
+    bool ok = manger_->RunVersionQueryCommand(version);
+    if (ok) {
+      response->response.key = kOTACommandStatusQuery;
+      response->response.type = "JSON";
+      response->response.value = version;
+    }
   } else if (request->request.key == kOTACommandProcessQuery) {
+    INFO("OTA handle process query...");
     std::string status;
     Document json_response(kObjectType);
     bool ok = manger_->RunProcessQueryCommand(status);
@@ -69,15 +78,26 @@ void OTANode::HandleOTAGrpcCommand(
       response->response.value = status;
     }
   } else if (request->request.key == kOTACommandStartUpgrade) {
+    INFO("OTA handle start command ...");
     std::string status;
     Document json_response(kObjectType);
-    bool ok = manger_->RunStartUpgradeCommand(status);
-    if (ok) {
-      response->response.key = kOTACommandStartUpgrade;
-      response->response.type = "JSON";
+    bool bms_ok = CheckBatteryPowerConditions();
+    if (!bms_ok) {
+      ERROR("Current remaining battery <=  percentage 50 or not in charging.");
       response->response.value = status;
     }
+
+    bool ok = manger_->RunStartUpgradeCommand(status);
+    if (!ok) {
+      ERROR("upgrade error");
+      response->response.value = status;
+    }
+    response->response.key = kOTACommandStartUpgrade;
+    response->response.type = "JSON";
+    response->response.value = status;
+
   } else if (request->request.key == kOTACommandStartDownload) {
+    INFO("OTA handle start download ...");
     std::string status;
     Document json_response(kObjectType);
     bool ok = manger_->RunStartDownloadCommand(status);
@@ -87,6 +107,7 @@ void OTANode::HandleOTAGrpcCommand(
       response->response.value = status;
     }
   } else if (request->request.key == kOTACommandEstimateUpgradeTimeQuery) {
+    INFO("OTA handle esimate process time query...");
     std::string status;
     Document json_response(kObjectType);
     bool ok = manger_->RunEstimateUpgradeTimeQueryCommand(status);
@@ -111,6 +132,11 @@ void OTANode::HandleAllWaitOtaReadyModuleMessages(const protocol::msg::OtaReady:
   }
 }
 
+void OTANode::HandleBmsStatusMessages(const protocol::msg::BmsStatus::SharedPtr msg)
+{
+  std::lock_guard<std::mutex> lock(mutex_);
+  bms_status_ = *msg;
+}
 
 void OTANode::InitializeAllWaitOtaReadyModule()
 {
@@ -118,6 +144,13 @@ void OTANode::InitializeAllWaitOtaReadyModule()
   module_table_.emplace(std::make_pair("devices", false));
   module_table_.emplace(std::make_pair("sensors", false));
   module_table_.emplace(std::make_pair("manager", false));
+}
+
+bool OTANode::CheckBatteryPowerConditions()
+{
+  // battery power 50% or Charging
+  constexpr int remaining_battery_power = 50;
+  return bms_status_.batt_soc >= remaining_battery_power || bms_status_.power_supply;
 }
 
 bool OTANode::CheckAllReady()
@@ -135,9 +168,5 @@ bool OTANode::Finished()
   return true;
 }
 
-void OTANode::PublishState()
-{
-
-}
 
 }  // namespace cyberdog
