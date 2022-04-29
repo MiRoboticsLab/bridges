@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include "cyberdog_app_client.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -20,12 +21,8 @@ using grpcapi::Result;
 using grpcapi::Ticks;
 using std::placeholders::_1;
 Cyberdog_App_Client::Cyberdog_App_Client(std::shared_ptr<grpc::Channel> channel)
-: stub_(grpcapi::GrpcApp::NewStub(channel))
-{
-}
-Cyberdog_App_Client::~Cyberdog_App_Client()
-{
-}
+: stub_(grpcapi::GrpcApp::NewStub(channel)) {}
+Cyberdog_App_Client::~Cyberdog_App_Client() {}
 
 bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
 {
@@ -39,7 +36,8 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
   std::unique_ptr<grpc::ClientReader<::grpcapi::RecResponse>> reader(
     stub_->sendMsg(&context, msg));
 
-  while (reader->Read(&rsp)) {}
+  while (reader->Read(&rsp)) {
+  }
 
   Status status = reader->Finish();
 
@@ -66,6 +64,6 @@ bool Cyberdog_App_Client::sendHeartBeat(const std::string & ip)
     INFO("SetHeartBeat error code:%d", status.error_code());
     return false;
   }
-  INFO("SetHeartBeat rpc success.");
+  INFO_MILLSECONDS(2000, "SetHeartBeat rpc success.");
   return true;
 }
