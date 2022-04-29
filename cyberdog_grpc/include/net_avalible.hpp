@@ -16,17 +16,18 @@
 #define NET_AVALIBLE_HPP_
 #include <stdio.h>
 #include <unistd.h>
+
+#include <iostream>
 #include <memory>
 #include <string>
-#include <iostream>
 #include <thread>
+
 #include "cyberdog_common/cyberdog_log.hpp"
 class NetChecker
 {
 public:
   NetChecker()
-  : need_run_(true), thread_(NULL), need_ping(true)
-  {}
+  : need_run_(true), thread_(NULL), need_ping(true) {}
   ~NetChecker()
   {
     need_run_ = false;
@@ -73,7 +74,7 @@ private:
         }
         pclose(fp);
       }
-      sleep(1);
+      sleep(10);
     }
   }
   std::shared_ptr<std::thread> thread_;

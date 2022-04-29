@@ -24,6 +24,7 @@ find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(cyberdog_common REQUIRED)
 find_package(protocol REQUIRED)
+find_package(action_msgs REQUIRED)
 include_directories(include)
 # Proto file
 get_filename_component(rg_proto "./protos/cyberdog_app.proto" ABSOLUTE)
@@ -46,6 +47,7 @@ set(dependencies
   std_srvs
   cyberdog_common
   protocol
+  action_msgs
 )
 
 add_custom_command(
