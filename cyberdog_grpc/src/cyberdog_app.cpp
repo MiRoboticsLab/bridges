@@ -461,11 +461,11 @@ void Cyberdog_app::ProcessMsg(
         auto req = std::make_shared<protocol::srv::AudioAuthToken::Request>();
         protocol::srv::AudioAuthToken::Response rsp;
         CyberdogJson::Get(json_resquest, "uid", req->uid);
-        CyberdogJson::Get(json_resquest, "title", req->title);
+        // CyberdogJson::Get(json_resquest, "title", req->title);
         CyberdogJson::Get(json_resquest, "token_access", req->token_access);
         CyberdogJson::Get(json_resquest, "token_fresh", req->token_fresh);
-        CyberdogJson::Get(json_resquest, "token_expirein", req->token_expirein);
-        CyberdogJson::Get(json_resquest, "token_deviceid", req->token_deviceid);
+        CyberdogJson::Get(json_resquest, "token_expires_in", req->token_expirein);
+        // CyberdogJson::Get(json_resquest, "token_deviceid", req->token_deviceid);
         auto future_result = audio_auth_response->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
