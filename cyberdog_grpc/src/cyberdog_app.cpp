@@ -62,7 +62,7 @@ Cyberdog_app::Cyberdog_app()
   app_disconnected(true),
   destory_grpc_server_thread_(nullptr)
 {
-  RCLCPP_INFO(get_logger(), "Cyberdog_app Configuring");
+  INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
 
   ip_subscriber = this->create_subscription<std_msgs::msg::String>(
@@ -71,7 +71,7 @@ Cyberdog_app::Cyberdog_app()
 
   timer_interval.init();
 
-  RCLCPP_INFO(get_logger(), "Create server");
+  INFO("Create server");
   if (server_ == nullptr) {
     app_server_thread_ =
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
@@ -136,7 +136,7 @@ std::string Cyberdog_app::getServiceIp() {return *server_ip;}
 
 void Cyberdog_app::RunServer()
 {
-  RCLCPP_INFO(get_logger(), "run_server thread id is %ld", gettid());
+  INFO("run_server thread id is %ld", gettid());
   std::string server_address("0.0.0.0:50051");
   CyberdogAppImpl service(server_address);
   service.SetRequesProcess(this);
@@ -150,10 +150,10 @@ void Cyberdog_app::RunServer()
     GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 1000);
   builder.RegisterService(&service);
   server_ = std::move(builder.BuildAndStart());
-  RCLCPP_INFO(get_logger(), "Server listening on %s", server_address.c_str());
-  RCLCPP_INFO(get_logger(), "server thread id is %ld", gettid());
+  INFO("Server listening on %s", server_address.c_str());
+  INFO("server thread id is %ld", gettid());
   server_->Wait();
-  RCLCPP_INFO(get_logger(), "after wait");
+  INFO("after wait");
 }
 
 std::string Cyberdog_app::getDogIp(const string str, const string & split)
@@ -177,13 +177,13 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 }
 void Cyberdog_app::subscribeIp(const std_msgs::msg::String::SharedPtr msg)
 {
-  RCLCPP_INFO(get_logger(), "get ip :%s", msg->data.c_str());
-  RCLCPP_INFO(get_logger(), "old phoneip is:%s", (*server_ip).c_str());
+  INFO("get ip :%s", msg->data.c_str());
+  INFO("old phoneip is:%s", (*server_ip).c_str());
   app_disconnected = false;
   local_ip = getDogIp(msg->data, ":");
-  RCLCPP_INFO(get_logger(), "local_ip ip :%s", local_ip.c_str());
+  INFO("local_ip ip :%s", local_ip.c_str());
   std::string phoneIp = getPhoneIp(msg->data, ":");
-  RCLCPP_INFO(get_logger(), "phoneIp ip :%s", phoneIp.c_str());
+  INFO("phoneIp ip :%s", phoneIp.c_str());
   if (*server_ip != phoneIp) {
     server_ip = std::make_shared<std::string>(phoneIp);
     destroyGrpc();
@@ -194,9 +194,9 @@ void Cyberdog_app::subscribeIp(const std_msgs::msg::String::SharedPtr msg)
 void Cyberdog_app::destroyGrpcServer()
 {
   if (server_ != nullptr) {
-    RCLCPP_INFO(get_logger(), "close server");
+    INFO("close server");
     server_->Shutdown();
-    RCLCPP_INFO(get_logger(), "join server");
+    INFO("join server");
     app_server_thread_->join();
     server_ = nullptr;
   }
@@ -213,12 +213,12 @@ void Cyberdog_app::destroyGrpc()
 
 void Cyberdog_app::createGrpc()
 {
-  RCLCPP_INFO(get_logger(), "Create server");
+  INFO("Create server");
   if (server_ == nullptr) {
     app_server_thread_ =
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
-  RCLCPP_INFO(get_logger(), "Create client");
+  INFO("Create client");
   grpc::string ip = *server_ip + std::string(":8980");
   can_process_messages = false;
   heartbeat_err_cnt = 0;
@@ -244,12 +244,12 @@ string Cyberdog_app::GetFileConecxt(string path)
   _file = fopen(path.c_str(), "r");
   memset(buffer, 0, bufflen);
   if (NULL == _file) {
-    RCLCPP_INFO(get_logger(), "open failed");
+    INFO("open failed");
     return "";
   }
 
   fgets(buffer, bufflen, _file);
-  RCLCPP_INFO(get_logger(), "get file content:%s", buffer);
+  INFO("get file content:%s", buffer);
   fclose(_file);
   return string(buffer);
 }
@@ -271,22 +271,22 @@ void Cyberdog_app::callMotionServoCmd(
   const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
   protocol::srv::MotionResultCmd::Response & rsp)
 {
-  RCLCPP_INFO(get_logger(), "callMotionServoCmd.");
+  INFO("callMotionServoCmd.");
   std::chrono::seconds timeout(5);
 
   if (!motion_ressult_client_->wait_for_service()) {
-    RCLCPP_INFO(get_logger(), "callCameraService server not avalible");
+    INFO("callMotionServoCmd server not avalible");
     return;
   }
 
-  RCLCPP_INFO(get_logger(), "motion_id: %d.", req->motion_id);
+  INFO("motion_id: %d.", req->motion_id);
   auto future_result = motion_ressult_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(timeout);
 
   if (status == std::future_status::ready) {
-    RCLCPP_INFO(get_logger(), "success to call camera services.");
+    INFO("success to call callMotionServoCmd services.");
   } else {
-    RCLCPP_INFO(get_logger(), "Failed to call camera services.");
+    INFO("Failed to call callMotionServoCmd services.");
   }
 
   rsp.motion_id = future_result.get()->motion_id;
@@ -307,7 +307,7 @@ void Cyberdog_app::send_grpc_msg(int code, const Document & doc)
 {
   std::string rsp_string;
   if (!CyberdogJson::Document2String(doc, rsp_string)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding to json");
+    ERROR("error while encoding to json");
     return;
   }
   send_grpc_msg(code, rsp_string);
@@ -346,7 +346,7 @@ void Cyberdog_app::ProcessMsg(
   std::string rsp_string;
   json_resquest.Parse<0>(grpc_request->params().c_str());
   if (json_resquest.HasParseError()) {
-    RCLCPP_ERROR(get_logger(), "Parse Error");
+    ERROR("Parse Error");
     retrunErrorGrpc(writer);
     return;
   }
@@ -356,7 +356,7 @@ void Cyberdog_app::ProcessMsg(
       grpc_respond.set_namecode(grpc_request->namecode());
       CyberdogJson::Add(json_response, "ip", "192.168.55.1");
       if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-        RCLCPP_ERROR(get_logger(), "error while encoding to json");
+        ERROR("error while encoding to json");
         retrunErrorGrpc(writer);
         return;
       }
@@ -386,7 +386,7 @@ void Cyberdog_app::ProcessMsg(
       } break;
 
     case ::grpcapi::SendRequest::MOTION_CMD_REQUEST: {
-        RCLCPP_ERROR(get_logger(), "MOTION_CMD_REQUEST");
+        ERROR("MOTION_CMD_REQUEST");
         auto req = std::make_shared<protocol::srv::MotionResultCmd::Request>();
         protocol::srv::MotionResultCmd::Response rsp;
 
@@ -409,7 +409,7 @@ void Cyberdog_app::ProcessMsg(
         CyberdogJson::Add(json_response, "result", rsp.result);
         CyberdogJson::Add(json_response, "code", rsp.code);
         if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding to json");
+          ERROR("error while encoding to json");
           retrunErrorGrpc(writer);
           return;
         }

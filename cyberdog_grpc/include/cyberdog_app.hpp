@@ -15,7 +15,6 @@
 #ifndef CYBERDOG_APP_HPP_
 #define CYBERDOG_APP_HPP_
 
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -27,27 +26,28 @@
 #include <mutex>
 #include <string>
 #include <thread>
-#include <vector>
 #include <utility>
+#include <vector>
 
 // Interfaces
-
-#include "rclcpp/rclcpp.hpp"
-#include "std_srvs/srv/set_bool.hpp"
 #include "cyberdog_app_client.hpp"
-#include "threadsafe_queue.hpp"
+#include "cyberdog_common/cyberdog_json.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
 #include "msgdispatcher.hpp"
 #include "net_avalible.hpp"
-#include "time_interval.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
-#include "protocol/srv/motion_result_cmd.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
+#include "protocol/srv/motion_result_cmd.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
-#include "cyberdog_common/cyberdog_json.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp_action/rclcpp_action.hpp"
+#include "std_srvs/srv/set_bool.hpp"
+#include "threadsafe_queue.hpp"
+#include "time_interval.hpp"
 using string = std::string;
 using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
@@ -61,8 +61,7 @@ public:
   std::string getServiceIp();
   void ProcessMsg(
     const ::grpcapi::SendRequest * request,
-    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer
-  );
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
 private:
   uint32_t ticks_;
@@ -95,10 +94,14 @@ private:
 
   // ros interaction codes
   rclcpp::CallbackGroup::SharedPtr callback_group_;
-  rclcpp::Subscription<protocol::msg::MotionServoResponse>::SharedPtr motion_servo_response_sub_;
-  rclcpp::Publisher<protocol::msg::MotionServoCmd>::SharedPtr motion_servo_request_pub_;
-  void motion_servo_rsp_callback(const protocol::msg::MotionServoResponse::SharedPtr msg);
-  rclcpp::Client<protocol::srv::MotionResultCmd>::SharedPtr motion_ressult_client_;
+  rclcpp::Subscription<protocol::msg::MotionServoResponse>::SharedPtr
+    motion_servo_response_sub_;
+  rclcpp::Publisher<protocol::msg::MotionServoCmd>::SharedPtr
+    motion_servo_request_pub_;
+  void motion_servo_rsp_callback(
+    const protocol::msg::MotionServoResponse::SharedPtr msg);
+  rclcpp::Client<protocol::srv::MotionResultCmd>::SharedPtr
+    motion_ressult_client_;
   void callMotionServoCmd(
     const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
     protocol::srv::MotionResultCmd::Response & rep);
