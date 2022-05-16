@@ -1,6 +1,6 @@
-skip_download = false  # need in first line
+skip_download = false # need in first line
 onlyfirst_download = false
-tty = "/dev/ttyTHS0"
+spi = "/dev/spidev2.0"
 patch_path = "/usr/sbin/bream.patch"
 
 #uint8_t infMsgMask[6] = {0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
