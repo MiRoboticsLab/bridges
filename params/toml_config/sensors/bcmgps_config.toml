@@ -1,8 +1,7 @@
 skip_download = false # need in first line
 onlyfirst_download = false
 spi = "/dev/spidev2.0"
-patch_path = "/usr/sbin/bream.patch"
-
+patch_path = "/lib/firmware/brcm/bream.patch"
 #uint8_t infMsgMask[6] = {0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
 #full logging (GLLIO, GLLAPI, RAWDATA, DEVKF, USR2, )
 infMsgMask = [31, 31, 31, 31, 31, 31] 
