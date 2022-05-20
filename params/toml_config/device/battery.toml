@@ -17,6 +17,7 @@ array_size = [8]
 array_name = "battery_status"
 
 
+
 [[array]]
 description = ""
 can_package_num = 1
