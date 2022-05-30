@@ -1,0 +1,126 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "tof_simulator_head"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+[[var]]
+description = ""
+can_id = "0x020E2200"
+var_name = "enable_on"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x020E2400"
+var_name = "enable_off"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[cmd]]
+description = ""
+cmd_name = "enable_on_ack"
+can_id = "0x020F2200"
+
+[[cmd]]
+description = ""
+cmd_name = "enable_off_ack"
+can_id = "0x020F2400"
+
+
+# left tof
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_one"
+can_id = "0x02054000"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_two"
+can_id = "0x02054001"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_three"
+can_id = "0x02054002"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_four"
+can_id = "0x02054003"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_five"
+can_id = "0x02054004"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_six"
+can_id = "0x02054005"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_seven"
+can_id = "0x02054006"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_eight"
+can_id = "0x02054007"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_left_clock"
+can_id = "0x02054008"
+
+
+# right tof
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_one"
+can_id = "0x02074000"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_two"
+can_id = "0x02074001"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_three"
+can_id = "0x02074002"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_four"
+can_id = "0x02074003"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_five"
+can_id = "0x02074004"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_six"
+can_id = "0x02074005"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_seven"
+can_id = "0x02074006"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_eight"
+can_id = "0x02074007"
+
+[[cmd]]
+description = ""
+cmd_name = "tof_data_right_clock"
+can_id = "0x02074008"
