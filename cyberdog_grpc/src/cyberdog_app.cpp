@@ -477,7 +477,9 @@ void Cyberdog_app::ProcessMsg(
         // CyberdogJson::Get(json_resquest, "title", req->title);
         CyberdogJson::Get(json_resquest, "token_access", req->token_access);
         CyberdogJson::Get(json_resquest, "token_fresh", req->token_fresh);
-        CyberdogJson::Get(json_resquest, "token_expires_in", req->token_expirein);
+        std::string tei;
+        CyberdogJson::Get(json_resquest, "token_expires_in", tei);
+        req->token_expirein = stoul(tei);
         // CyberdogJson::Get(json_resquest, "token_deviceid",
         // req->token_deviceid);
         auto future_result = audio_auth_response->async_send_request(req);
