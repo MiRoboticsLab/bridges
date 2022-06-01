@@ -273,8 +273,6 @@ private:
 };  // class TofSenorHead
 
 
-
-
 class TofSenorRear
 {
 public:
@@ -385,7 +383,6 @@ private:
 };  // class TofSenorRear
 
 
-
 class CanNode : public rclcpp::Node
 {
 public:
@@ -414,7 +411,6 @@ private:
   std::unique_ptr<UltrasonicSenor> ultrasonic_;
   std::unique_ptr<TofSenorHead> tof_head;
   std::unique_ptr<TofSenorRear> tof_rear;
-
 };
 
 
