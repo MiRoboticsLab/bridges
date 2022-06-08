@@ -506,6 +506,10 @@ void Cyberdog_app::ProcessMsg(
         grpc_respond.set_data(rsp_string);
         writer->Write(grpc_respond);
       } break;
+    case ::grpcapi::SendRequest::AUDIO_VOICEPRINTTRAIN_START: {
+      } break;
+    case ::grpcapi::SendRequest::AUDIO_VOICEPRINTTRAIN_CANCEL: {
+      } break;
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST: {
         std::chrono::seconds timeout(10);
         if (!image_trans_activation_->wait_for_service(timeout)) {

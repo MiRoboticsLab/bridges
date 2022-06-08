@@ -1,0 +1,7 @@
+# request
+uint8 train_id
+VoicePrint voice_print
+
+---
+
+# response
