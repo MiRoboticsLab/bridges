@@ -37,14 +37,18 @@
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
+#include "protocol/msg/audio_voiceprint_result.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
 #include "protocol/srv/motion_result_cmd.hpp"
+#include "protocol/srv/audio_voiceprint_train.hpp"
+#include "protocol/srv/audio_voiceprints_set.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "threadsafe_queue.hpp"
 #include "time_interval.hpp"
@@ -115,7 +119,13 @@ private:
   // audio program
   rclcpp::Client<protocol::srv::AudioAuthId>::SharedPtr audio_auth_request;
   rclcpp::Client<protocol::srv::AudioAuthToken>::SharedPtr audio_auth_response;
-
+  rclcpp::Client<protocol::srv::AudioVoiceprintTrain>::SharedPtr audio_voiceprint_train;
+  rclcpp::Client<protocol::srv::AudioVoiceprintsSet>::SharedPtr voiceprints_data_notify;
+  rclcpp::Subscription<protocol::msg::AudioVoiceprintResult>::SharedPtr
+    audio_voiceprint_result_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr voiceprints_data_sub_;
+  void voiceprint_result_callback(const protocol::msg::AudioVoiceprintResult::SharedPtr msg);
+  void voiceprints_data_callback(const std_msgs::msg::Bool::SharedPtr msg);
   // commcon code
   void send_grpc_msg(int code, const std::string & msg);
   void send_grpc_msg(int code, const Document & doc);

@@ -1,4 +1,7 @@
 # request
+uint8 TID_START = 1      # 声纹训练开始
+uint8 TID_CANCEL = 2     # 声纹训练取消
+
 uint8 train_id
 VoicePrint voice_print
 
