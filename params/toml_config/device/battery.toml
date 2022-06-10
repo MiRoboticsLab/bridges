@@ -1,0 +1,64 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "battery"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+
+[[array]]
+description = ""
+can_package_num = 1
+can_id = ["0x00834100"]
+array_size = [8]
+array_name = "battery_status"
+
+[[array]]
+description = ""
+can_package_num = 1
+can_id = ["0x0083A100"]
+array_size = [6]
+array_name = "normal_status"
+
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_normal_mode"
+can_id = "0x00822100"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_turn_off_motor"
+can_id = "0x00822200"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_low_power_consumption"
+can_id = "0x00822400"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_soft_shutdown"
+can_id = "0x00822800"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_file_transfer"
+can_id = "0x00826000"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_ota_upgrade"
+can_id = "0x00828000"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_test"
+can_id = "0x0082A100"
+
+
+
+
+
