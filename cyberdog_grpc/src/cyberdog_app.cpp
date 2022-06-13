@@ -103,10 +103,24 @@ Cyberdog_app::Cyberdog_app()
     "frontend_message", rclcpp::SystemDefaultsQoS());
 
   // code for audio program
+  audio_voiceprint_result_sub_ =
+    this->create_subscription<protocol::msg::AudioVoiceprintResult>(
+    "audio_voiceprint_result", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::voiceprint_result_callback, this, _1));
+  voiceprints_data_sub_ =
+    this->create_subscription<std_msgs::msg::Bool>(
+    "voiceprints_data_require", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::voiceprints_data_callback, this, _1));
   audio_auth_request =
     this->create_client<protocol::srv::AudioAuthId>("get_authenticate_didsn");
   audio_auth_response = this->create_client<protocol::srv::AudioAuthToken>(
     "set_authenticate_token");
+  audio_voiceprint_train =
+    this->create_client<protocol::srv::AudioVoiceprintTrain>(
+    "voiceprint_train");
+  voiceprints_data_notify =
+    this->create_client<protocol::srv::AudioVoiceprintsSet>(
+    "voiceprints_data_notify");
 
   // image_transmission
   image_trans_activation_ =
@@ -299,6 +313,20 @@ void Cyberdog_app::backend_message_callback(
   const std_msgs::msg::String::SharedPtr msg)
 {
   send_grpc_msg(::grpcapi::SendRequest::VISUAL_BACKEND_MSG, msg->data);
+}
+
+//  for audio
+void Cyberdog_app::voiceprint_result_callback(
+  const protocol::msg::AudioVoiceprintResult::SharedPtr msg)
+{
+  Document json_response(kObjectType);
+  CyberdogJson::Add(json_response, "code", msg->code);
+  CyberdogJson::Add(json_response, "voiceprint_id", msg->voice_print.id);
+  send_grpc_msg(::grpcapi::SendRequest::AUDIO_VOICEPRINTTRAIN_RESULT, json_response);
+}
+void Cyberdog_app::voiceprints_data_callback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  send_grpc_msg(::grpcapi::SendRequest::AUDIO_VOICEPRINTS_DATA, "{}");
 }
 
 //  commcon code
@@ -507,8 +535,80 @@ void Cyberdog_app::ProcessMsg(
         writer->Write(grpc_respond);
       } break;
     case ::grpcapi::SendRequest::AUDIO_VOICEPRINTTRAIN_START: {
+        if (!audio_voiceprint_train->wait_for_service()) {
+          RCLCPP_INFO(
+            get_logger(),
+            "call voiceprint train start server not avalible");
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioVoiceprintTrain::Request>();
+        req->train_id = protocol::srv::AudioVoiceprintTrain::Request::TID_START;
+        CyberdogJson::Get(json_resquest, "nick_name", req->voice_print.name);
+        CyberdogJson::Get(json_resquest, "voiceprint_id", req->voice_print.id);
+        auto future_result = audio_voiceprint_train->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(
+            get_logger(),
+            "success to call voiceprint train start response services.");
+        } else {
+          RCLCPP_INFO(
+            get_logger(),
+            "Failed to call voiceprint train start response services.");
+          return;
+        }
+        grpc_respond.set_namecode(grpc_request->namecode());
+        grpc_respond.set_data("{}");
+        writer->Write(grpc_respond);
       } break;
     case ::grpcapi::SendRequest::AUDIO_VOICEPRINTTRAIN_CANCEL: {
+        if (!audio_voiceprint_train->wait_for_service()) {
+          RCLCPP_INFO(
+            get_logger(),
+            "call voiceprint train cancel server not avalible");
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioVoiceprintTrain::Request>();
+        req->train_id = protocol::srv::AudioVoiceprintTrain::Request::TID_CANCEL;
+        auto future_result = audio_voiceprint_train->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(
+            get_logger(),
+            "success to call voiceprint train cancel response services.");
+        } else {
+          RCLCPP_INFO(
+            get_logger(),
+            "Failed to call voiceprint train cancel response services.");
+          return;
+        }
+        grpc_respond.set_namecode(grpc_request->namecode());
+        grpc_respond.set_data("{}");
+        writer->Write(grpc_respond);
+      } break;
+    case ::grpcapi::SendRequest::AUDIO_VOICEPRINTS_DATA: {
+        if (!voiceprints_data_notify->wait_for_service()) {
+          RCLCPP_INFO(
+            get_logger(),
+            "call voiceprints data server not avalible");
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioVoiceprintsSet::Request>();
+        auto future_result = voiceprints_data_notify->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(
+            get_logger(),
+            "success to call voiceprints data response services.");
+        } else {
+          RCLCPP_INFO(
+            get_logger(),
+            "Failed to call voiceprints data response services.");
+          return;
+        }
       } break;
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST: {
         std::chrono::seconds timeout(10);
