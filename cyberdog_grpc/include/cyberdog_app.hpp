@@ -124,7 +124,7 @@ private:
   // image_transmission
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr image_trans_activation_;
 
-  // ota 
+  // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
 };
 }  // namespace carpo_cyberdog_app

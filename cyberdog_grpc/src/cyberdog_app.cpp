@@ -112,7 +112,7 @@ Cyberdog_app::Cyberdog_app()
   image_trans_activation_ =
     create_client<std_srvs::srv::SetBool>("activate_image_transmission");
 
-  // ota 
+  // ota
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 }
 
@@ -549,7 +549,7 @@ void Cyberdog_app::ProcessMsg(
         writer->Write(grpc_respond);
       } break;
 
-     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
+    case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
       {
         std::chrono::seconds timeout(10);
         if (!ota_client_->wait_for_service(timeout)) {
