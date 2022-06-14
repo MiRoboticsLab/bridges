@@ -40,6 +40,7 @@
 #include "protocol/msg/audio_voiceprint_result.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
+#include "protocol/srv/ota_server_cmd.hpp"
 #include "protocol/srv/motion_result_cmd.hpp"
 #include "protocol/srv/audio_voiceprint_train.hpp"
 #include "protocol/srv/audio_voiceprints_set.hpp"
@@ -132,6 +133,9 @@ private:
 
   // image_transmission
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr image_trans_activation_;
+
+  // ota
+  rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
 };
 }  // namespace carpo_cyberdog_app
 
