@@ -1,8 +1,8 @@
 
 # This message is  used to describe four tofs
 
-SingleTofPayload left_front
-SingleTofPayload left_back
-SingleTofPayload right_front
-SingleTofPayload right_back
+SingleTofPayload left_head
+SingleTofPayload left_rear
+SingleTofPayload right_head
+SingleTofPayload right_rear
 

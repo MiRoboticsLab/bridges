@@ -8,40 +8,37 @@ canfd_enable = false
 timeout_us = 1234567
 
 
-
-
-
 [[cmd]]
 description = ""
 cmd_name = "enable_on"
-can_id = "0x01030200"
+can_id = "0x02822200"
 ctrl_len = 1
 ctrl_data = ["0x00"]
 
 [[cmd]]
 description = ""
 cmd_name = "enable_off"
-can_id = "0x01030400"
+can_id = "0x02822400"
 ctrl_len = 1
 ctrl_data = ["0x00"]
 
 [[cmd]]
 description = ""
 cmd_name = "PIC_1"
-can_id = "0x01030600"
+can_id = "0x02822600"
 ctrl_len = 1
 ctrl_data = ["0x00"]
 
 [[cmd]]
 description = ""
 cmd_name = "PIC_2"
-can_id = "0x01030700"
+can_id = "0x02822700"
 ctrl_len = 1
 ctrl_data = ["0x00"]
 
 [[cmd]]
 description = ""
 cmd_name = "PIC_ANIMATION"
-can_id = "0x01030800"
+can_id = "0x02822800"
 ctrl_len = 1
 ctrl_data = ["0x00"]

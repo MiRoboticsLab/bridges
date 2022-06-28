@@ -7,10 +7,13 @@
 
 std_msgs/Header header # Header timestamp should be acquisition time of tof data
 
-uint8 LEFT_FRONT=0  #  the macro definition of tof serial number 
-uint8 RIGHT_FRONT=1 #  Used to set tof position
-uint8 LEFT_BACK=2
-uint8 RIGHT_BACK=3
+uint8 LEFT_HEAD=0  #  the macro definition of tof serial number 
+uint8 RIGHT_HEAD=1 #  Used to set tof position
+uint8 LEFT_REAR=2
+uint8 RIGHT_REAR=3
+
+uint8 HEAD=4
+uint8 REAR=5
 
 int32 TOF_DATA_NUM=64 # number of tof data 
 
@@ -19,6 +22,6 @@ float32 SCALE_FACTOR=0.001 # factor of tof data used to compute real distance
 bool data_available  # A flag that tof data is available
 
 uint8 tof_position   # location of tof sensor 
-                     # (LEFT_FRONT, RIGHT_FRONT, LEFT_BACK，RIGHT_BACK) [enum]
+                     # (LEFT_HEAD, RIGHT_HEAD, LEFT_REAR,RIGHT_REAR) [enum]
 
 float32[] data      # tof data , Unit: m    
