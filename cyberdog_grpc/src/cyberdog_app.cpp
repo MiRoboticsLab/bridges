@@ -123,8 +123,11 @@ Cyberdog_app::Cyberdog_app()
     "voiceprints_data_notify");
 
   // image_transmission
-  image_trans_activation_ =
-    create_client<std_srvs::srv::SetBool>("activate_image_transmission");
+  image_trans_pub_ = this->create_publisher<std_msgs::msg::String>(
+    "img_trans_signal_in", rclcpp::SystemDefaultsQoS());
+  image_trans_sub_ = this->create_subscription<std_msgs::msg::String>(
+    "img_trans_signal_out", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::image_transmission_callback, this, _1));
 
   // ota
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
@@ -330,6 +333,14 @@ void Cyberdog_app::voiceprint_result_callback(
 void Cyberdog_app::voiceprints_data_callback(const std_msgs::msg::Bool::SharedPtr msg)
 {
   send_grpc_msg(::grpcapi::SendRequest::AUDIO_VOICEPRINTS_DATA, "{}");
+}
+// for image transmission
+void Cyberdog_app::image_transmission_callback(
+  const std_msgs::msg::String::SharedPtr msg)
+{
+  Document json_response(kObjectType);
+  CyberdogJson::Add(json_response, "data", msg->data);
+  send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST, json_response);
 }
 
 //  commcon code
@@ -615,6 +626,7 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST: {
         std::chrono::seconds timeout(10);
+        /*
         if (!image_trans_activation_->wait_for_service(timeout)) {
           RCLCPP_INFO(
             get_logger(),
@@ -634,6 +646,11 @@ void Cyberdog_app::ProcessMsg(
             get_logger(),
             "Failed to call activate_image_transmission services.");
         }
+        */
+        std_msgs::msg::String it_msg;
+        CyberdogJson::Get(json_resquest, "data", it_msg.data);
+        image_trans_pub_->publish(it_msg);
+        /*
         CyberdogJson::Add(json_response, "success", res.get()->success);
         CyberdogJson::Add(json_response, "message", res.get()->message);
         if (!CyberdogJson::Document2String(json_response, rsp_string)) {
@@ -647,6 +664,7 @@ void Cyberdog_app::ProcessMsg(
           ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST);
         grpc_respond.set_data(rsp_string);
         writer->Write(grpc_respond);
+        */
       } break;
 
     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:

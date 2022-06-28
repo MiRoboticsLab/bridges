@@ -132,7 +132,9 @@ private:
   void send_grpc_msg(int code, const Document & doc);
 
   // image_transmission
-  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr image_trans_activation_;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr image_trans_pub_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr image_trans_sub_;
+  void image_transmission_callback(const std_msgs::msg::String::SharedPtr msg);
 
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
