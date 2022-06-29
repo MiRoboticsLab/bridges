@@ -338,9 +338,7 @@ void Cyberdog_app::voiceprints_data_callback(const std_msgs::msg::Bool::SharedPt
 void Cyberdog_app::image_transmission_callback(
   const std_msgs::msg::String::SharedPtr msg)
 {
-  Document json_response(kObjectType);
-  CyberdogJson::Add(json_response, "data", msg->data);
-  send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST, json_response);
+  send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST, msg->data);
 }
 
 //  commcon code
@@ -625,46 +623,15 @@ void Cyberdog_app::ProcessMsg(
         }
       } break;
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST: {
-        std::chrono::seconds timeout(10);
-        /*
-        if (!image_trans_activation_->wait_for_service(timeout)) {
-          RCLCPP_INFO(
-            get_logger(),
-            "activate_image_transmission server not avalible");
-          return;
-        }
-        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
-        CyberdogJson::Get(json_resquest, "enable", req->data);
-        auto res = image_trans_activation_->async_send_request(req);
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
-            "success to call activate_image_transmission services.");
-        } else {
-          RCLCPP_INFO(
-            get_logger(),
-            "Failed to call activate_image_transmission services.");
-        }
-        */
         std_msgs::msg::String it_msg;
-        CyberdogJson::Get(json_resquest, "data", it_msg.data);
-        image_trans_pub_->publish(it_msg);
-        /*
-        CyberdogJson::Add(json_response, "success", res.get()->success);
-        CyberdogJson::Add(json_response, "message", res.get()->message);
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+        if (!CyberdogJson::Document2String(json_resquest, rsp_string)) {
           RCLCPP_ERROR(
             get_logger(),
-            "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
+            "error while parse image transmission data to string");
           return;
         }
-        grpc_respond.set_namecode(
-          ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
-        */
+        it_msg.data = rsp_string;
+        image_trans_pub_->publish(it_msg);
       } break;
 
     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
