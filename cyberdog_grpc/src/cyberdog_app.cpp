@@ -123,8 +123,11 @@ Cyberdog_app::Cyberdog_app()
     "voiceprints_data_notify");
 
   // image_transmission
-  image_trans_activation_ =
-    create_client<std_srvs::srv::SetBool>("activate_image_transmission");
+  image_trans_pub_ = this->create_publisher<std_msgs::msg::String>(
+    "img_trans_signal_in", rclcpp::SystemDefaultsQoS());
+  image_trans_sub_ = this->create_subscription<std_msgs::msg::String>(
+    "img_trans_signal_out", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::image_transmission_callback, this, _1));
 
   // ota
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
@@ -330,6 +333,12 @@ void Cyberdog_app::voiceprint_result_callback(
 void Cyberdog_app::voiceprints_data_callback(const std_msgs::msg::Bool::SharedPtr msg)
 {
   send_grpc_msg(::grpcapi::SendRequest::AUDIO_VOICEPRINTS_DATA, "{}");
+}
+// for image transmission
+void Cyberdog_app::image_transmission_callback(
+  const std_msgs::msg::String::SharedPtr msg)
+{
+  send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST, msg->data);
 }
 
 //  commcon code
@@ -614,39 +623,15 @@ void Cyberdog_app::ProcessMsg(
         }
       } break;
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST: {
-        std::chrono::seconds timeout(10);
-        if (!image_trans_activation_->wait_for_service(timeout)) {
-          RCLCPP_INFO(
-            get_logger(),
-            "activate_image_transmission server not avalible");
-          return;
-        }
-        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
-        CyberdogJson::Get(json_resquest, "enable", req->data);
-        auto res = image_trans_activation_->async_send_request(req);
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
-            "success to call activate_image_transmission services.");
-        } else {
-          RCLCPP_INFO(
-            get_logger(),
-            "Failed to call activate_image_transmission services.");
-        }
-        CyberdogJson::Add(json_response, "success", res.get()->success);
-        CyberdogJson::Add(json_response, "message", res.get()->message);
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+        std_msgs::msg::String it_msg;
+        if (!CyberdogJson::Document2String(json_resquest, rsp_string)) {
           RCLCPP_ERROR(
             get_logger(),
-            "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
+            "error while parse image transmission data to string");
           return;
         }
-        grpc_respond.set_namecode(
-          ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
+        it_msg.data = rsp_string;
+        image_trans_pub_->publish(it_msg);
       } break;
 
     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
