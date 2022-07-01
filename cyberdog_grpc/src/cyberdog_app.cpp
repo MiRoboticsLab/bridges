@@ -124,9 +124,9 @@ Cyberdog_app::Cyberdog_app()
 
   // image_transmission
   image_trans_pub_ = this->create_publisher<std_msgs::msg::String>(
-    "img_trans_signal_in", rclcpp::SystemDefaultsQoS());
+    "img_trans_signal_in", 100);
   image_trans_sub_ = this->create_subscription<std_msgs::msg::String>(
-    "img_trans_signal_out", rclcpp::SystemDefaultsQoS(),
+    "img_trans_signal_out", 100,
     std::bind(&Cyberdog_app::image_transmission_callback, this, _1));
 
   // ota
