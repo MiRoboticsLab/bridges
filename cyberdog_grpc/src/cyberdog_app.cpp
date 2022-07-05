@@ -338,7 +338,11 @@ void Cyberdog_app::voiceprints_data_callback(const std_msgs::msg::Bool::SharedPt
 void Cyberdog_app::image_transmission_callback(
   const std_msgs::msg::String::SharedPtr msg)
 {
-  send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST, msg->data);
+  if (msg->data.find("is_closed") != std::string::npos) {
+    send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_CLOSE, msg->data);
+  } else {
+    send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST, msg->data);
+  }
 }
 
 //  commcon code
@@ -622,7 +626,8 @@ void Cyberdog_app::ProcessMsg(
           return;
         }
       } break;
-    case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST: {
+    case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST:
+    case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_CLOSE: {
         std_msgs::msg::String it_msg;
         if (!CyberdogJson::Document2String(json_resquest, rsp_string)) {
           RCLCPP_ERROR(
@@ -633,7 +638,6 @@ void Cyberdog_app::ProcessMsg(
         it_msg.data = rsp_string;
         image_trans_pub_->publish(it_msg);
       } break;
-
     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
       {
         std::chrono::seconds timeout(10);
