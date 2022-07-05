@@ -1,0 +1,4 @@
+[wifi]
+[wifi.ssid]
+password = "password"
+provider = "provider"
