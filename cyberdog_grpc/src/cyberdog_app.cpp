@@ -65,9 +65,12 @@ Cyberdog_app::Cyberdog_app()
   INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
 
-  ip_subscriber = this->create_subscription<std_msgs::msg::String>(
-    "ip_notify", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::subscribeIp, this, _1));
+  // ip_subscriber = this->create_subscription<std_msgs::msg::String>(
+  // "ip_notify", rclcpp::SystemDefaultsQoS(),
+  // std::bind(&Cyberdog_app::subscribeIp, this, _1));
+  connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
+    "connector_state", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
 
   timer_interval.init();
 
@@ -139,7 +142,7 @@ void Cyberdog_app::HeartBeat()
   std::string ipv4;
   while (true) {
     if (can_process_messages && app_stub) {
-      if (!app_stub->sendHeartBeat(local_ip)) {
+      if (!app_stub->sendHeartBeat(local_ip, is_internet)) {
         if (heartbeat_err_cnt++ >= APP_CONNECTED_FAIL_CNT) {
           if (!app_disconnected) {
             destroyGrpc();
@@ -195,19 +198,35 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
   }
   return result;
 }
-void Cyberdog_app::subscribeIp(const std_msgs::msg::String::SharedPtr msg)
+// void Cyberdog_app::subscribeIp(const std_msgs::msg::String::SharedPtr msg)
+// {
+// INFO("get ip :%s", msg->data.c_str());
+// INFO("old phoneip is:%s", (*server_ip).c_str());
+// app_disconnected = false;
+// local_ip = getDogIp(msg->data, ":");
+// INFO("local_ip ip :%s", local_ip.c_str());
+// std::string phoneIp = getPhoneIp(msg->data, ":");
+// INFO("phoneIp ip :%s", phoneIp.c_str());
+// if (*server_ip != phoneIp) {
+// server_ip = std::make_shared<std::string>(phoneIp);
+// destroyGrpc();
+// createGrpc();
+// }
+// }
+
+void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
-  INFO("get ip :%s", msg->data.c_str());
-  INFO("old phoneip is:%s", (*server_ip).c_str());
-  app_disconnected = false;
-  local_ip = getDogIp(msg->data, ":");
-  INFO("local_ip ip :%s", local_ip.c_str());
-  std::string phoneIp = getPhoneIp(msg->data, ":");
-  INFO("phoneIp ip :%s", phoneIp.c_str());
-  if (*server_ip != phoneIp) {
-    server_ip = std::make_shared<std::string>(phoneIp);
-    destroyGrpc();
-    createGrpc();
+  if (msg->is_connected) {
+    local_ip = msg->robot_ip;
+    std::string phoneIp = msg->provider_ip;
+    if (*server_ip != phoneIp) {
+      app_disconnected = false;
+      INFO("local_ip ip :%s,pheneIp ip :%s", local_ip.c_str(), phoneIp.c_str());
+      server_ip = std::make_shared<std::string>(phoneIp);
+      is_internet = msg->is_internet;
+      destroyGrpc();
+      createGrpc();
+    }
   }
 }
 

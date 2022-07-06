@@ -28,6 +28,7 @@ service GrpcApp {
 
 message Ticks{
     string ip = 1;
+	bool internet = 4;
 }
 
 message SendRequest {
