@@ -38,6 +38,7 @@
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
 #include "protocol/msg/audio_voiceprint_result.hpp"
+#include "protocol/msg/connector_status.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
 #include "protocol/srv/ota_server_cmd.hpp"
@@ -76,14 +77,16 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   std::shared_ptr<std::thread> destory_grpc_server_thread_;
   std::shared_ptr<std::thread> dog_walk_thread_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
+  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
+  rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
   void destroyGrpcServer();
   std::string getDogIp(const string str, const string & split);
   std::string getPhoneIp(const string str, const string & split);
   std::shared_ptr<Cyberdog_App_Client> app_stub;
   std::shared_ptr<std::string> server_ip;
   std::shared_ptr<grpc::Server> server_;
-  void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
+  // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
+  void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
   string GetFileConecxt(string path);
@@ -91,6 +94,7 @@ private:
   uint32_t heartbeat_err_cnt;
   bool app_disconnected;
   std::string local_ip;
+  bool is_internet;
   TimeInterval timer_interval;
   void HeartBeat();
   void sendMsg(
