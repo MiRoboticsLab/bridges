@@ -1,5 +1,10 @@
 # request
-int32         motion_id    # 机器人运控姿态
+int32 APP = 0
+int32 AUDIO = 1
+int32 VIS = 2
+
+int32        motion_id    # 机器人运控姿态
+int32        cmd_source   # 命令来源
 float32[]    vel_des      # x y yaw speed  m/s
 float32[]    rpy_des      # roll pitch yaw  rad
 float32[]    pos_des      # x y z  m/s
@@ -7,7 +12,7 @@ float32[]    acc_des      # acc for jump m^2/s
 float32[]    ctrl_point   # pose ctrl point  m
 float32[]    foot_pose    # front/back foot pose x,y,z  m
 float32[]    step_height  # step height when trot  m
-int32         duration     # Time of command execution
+int32        duration     # Time of command execution
 
 ---
 
