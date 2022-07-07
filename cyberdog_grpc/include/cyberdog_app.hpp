@@ -45,6 +45,7 @@
 #include "protocol/srv/motion_result_cmd.hpp"
 #include "protocol/srv/audio_voiceprint_train.hpp"
 #include "protocol/srv/audio_voiceprints_set.hpp"
+#include "protocol/srv/camera_service.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -139,6 +140,10 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr image_trans_pub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr image_trans_sub_;
   void image_transmission_callback(const std_msgs::msg::String::SharedPtr msg);
+
+  // photo and video recording
+  rclcpp::Client<protocol::srv::CameraService>::SharedPtr camera_service_client_;
+  bool callCameraService(uint8_t command, uint8_t & result, std::string & msg);
 
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
