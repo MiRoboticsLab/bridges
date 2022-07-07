@@ -132,6 +132,10 @@ Cyberdog_app::Cyberdog_app()
     "img_trans_signal_out", 100,
     std::bind(&Cyberdog_app::image_transmission_callback, this, _1));
 
+  // photo and video recording
+  camera_service_client_ = this->create_client<protocol::srv::CameraService>(
+    "camera_service");
+
   // ota
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 }
@@ -353,6 +357,7 @@ void Cyberdog_app::voiceprints_data_callback(const std_msgs::msg::Bool::SharedPt
 {
   send_grpc_msg(::grpcapi::SendRequest::AUDIO_VOICEPRINTS_DATA, "{}");
 }
+
 // for image transmission
 void Cyberdog_app::image_transmission_callback(
   const std_msgs::msg::String::SharedPtr msg)
@@ -362,6 +367,28 @@ void Cyberdog_app::image_transmission_callback(
   } else {
     send_grpc_msg(::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST, msg->data);
   }
+}
+
+// for photo and video recording
+bool Cyberdog_app::callCameraService(uint8_t command, uint8_t & result, std::string & msg)
+{
+  if (!camera_service_client_->wait_for_service(std::chrono::seconds(5))) {
+    WARN("camera_service is not activate");
+    return false;
+  }
+  auto request = std::make_shared<protocol::srv::CameraService::Request>();
+  request->command = command;
+  auto future_result = camera_service_client_->async_send_request(request);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(5));
+  if (status == std::future_status::ready) {
+    result = future_result.get()->result;
+    msg = future_result.get()->msg;
+    INFO("Succeeded to call camera_service services.");
+  } else {
+    WARN("Failed to call camera_service services.");
+    return false;
+  }
+  return true;
 }
 
 //  commcon code
@@ -648,14 +675,49 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST:
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_CLOSE: {
         std_msgs::msg::String it_msg;
-        if (!CyberdogJson::Document2String(json_resquest, rsp_string)) {
+        if (!CyberdogJson::Document2String(json_resquest, it_msg.data)) {
           RCLCPP_ERROR(
             get_logger(),
             "error while parse image transmission data to string");
           return;
         }
-        it_msg.data = rsp_string;
         image_trans_pub_->publish(it_msg);
+      } break;
+    case ::grpcapi::SendRequest::IMAGE_TAKE_PHOTO:
+    case ::grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING:
+    case ::grpcapi::SendRequest::IMAGE_STOP_VIDEO_RECORDING: {
+        uint8_t result;
+        std::string msg;
+        bool cs_success;
+        auto nc = grpc_request->namecode();
+        if (nc == grpcapi::SendRequest::IMAGE_TAKE_PHOTO) {
+          cs_success = callCameraService(
+            protocol::srv::CameraService::Request::TAKE_PICTURE,
+            result, msg);
+        } else if (nc == grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING) {
+          cs_success = callCameraService(
+            protocol::srv::CameraService::Request::START_RECORDING,
+            result, msg);
+        } else {
+          cs_success = callCameraService(
+            protocol::srv::CameraService::Request::STOP_RECORDING,
+            result, msg);
+        }
+        if (!cs_success) {
+          return;
+        }
+        CyberdogJson::Add(json_response, "result", result);
+        CyberdogJson::Add(json_response, "msg", msg);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          RCLCPP_ERROR(
+            get_logger(),
+            "error while encoding camera_service response to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_namecode(nc);
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
       } break;
     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
       {
