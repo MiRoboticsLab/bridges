@@ -9,6 +9,9 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "time -v")
+# set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK "time -v")
+
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
@@ -28,7 +31,7 @@ lcm_generate_interfaces(${PROJECT_NAME} ${lcm_protocol_list})
 set(ros_protocol_list)                            # ros 协议列表
 get_ros_protocol_file(${PROJECT_NAME} "msg")      # 加载 msg 协议
 get_ros_protocol_file(${PROJECT_NAME} "srv")      # 加载 srv 协议
-get_ros_protocol_file(${PROJECT_NAME} "action")                   # 加载 action 协议
+get_ros_protocol_file(${PROJECT_NAME} "action")   # 加载 action 协议
 rosidl_generate_interfaces(${PROJECT_NAME} ${ros_protocol_list}
   DEPENDENCIES builtin_interfaces sensor_msgs action_msgs
 )
