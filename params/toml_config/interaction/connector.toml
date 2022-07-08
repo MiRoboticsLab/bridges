@@ -6,7 +6,7 @@ check_internet = 0.2
 reset_signal = 5.0
 
 [connector.initialization.cmd] # string
-check_internet_cmd = "ping -c 3 baidu.com; echo $?"
+check_internet_cmd = "ping -c 3 mi.com; echo $?"
 
 [connector.initialization.timeout_s] # int
 wifi_service = 30
@@ -28,3 +28,8 @@ led = "led_state"
 wifi = "connect_wifi"
 ip = "ip_state"
 camera = "camera_service"
+
+[connector.initialization.image] # string
+width = 2560
+height = 1920
+fps = 10
