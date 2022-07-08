@@ -681,7 +681,7 @@ void Cyberdog_app::ProcessMsg(
         std::string json_result;
         CyberdogJson::Document2String(json_resquest, json_result);
         auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-        req->request.key = "ota_command_start_download";
+        req->request.key = "ota_command_start_upgrade";
         req->request.value = json_result;
         req->request.type = "JSON";
 
