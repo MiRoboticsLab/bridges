@@ -117,6 +117,90 @@ private:
     protocol::srv::MotionResultCmd::Response & rep);
   void retrunErrorGrpc(::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  /**
+   * @brief handle ota stauts
+   *
+   * @param json_resquest
+   * @param grpc_respond
+   * @param writer
+   * @return true
+   * @return false
+   */
+  bool HandleOTAStatusRequest(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  /**
+   * @brief handle ota version
+   *
+   * @param json_resquest
+   * @param grpc_respond
+   * @param writer
+   * @return true
+   * @return false
+   */
+  bool HandleOTAVersionQueryRequest(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  /**
+   * @brief handle ota download
+   *
+   * @param json_resquest
+   * @param grpc_respond
+   * @param writer
+   * @return true
+   * @return false
+   */
+  bool HandleOTAStartDownloadRequest(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  /**
+   * @brief handle ota upgrade
+   *
+   * @param json_resquest
+   * @param grpc_respond
+   * @param writer
+   * @return true
+   * @return false
+   */
+  bool HandleOTAStartUpgradeRequest(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  /**
+   * @brief handle ota process query
+   *
+   * @param json_resquest
+   * @param grpc_respond
+   * @param writer
+   * @return true
+   * @return false
+   */
+  bool HandleOTAProcessQueryRequest(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  /**
+   * @brief handle ota time upgrade
+   *
+   * @param json_resquest
+   * @param grpc_respond
+   * @param writer
+   * @return true
+   * @return false
+   */
+  bool HandleOTAEstimateUpgradeTimeRequest(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   // visual program
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr visual_request_pub_;
