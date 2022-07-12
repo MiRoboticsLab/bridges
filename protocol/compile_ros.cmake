@@ -33,14 +33,28 @@ macro(get_ros_protocol_file target)
   if(_ros_protocol_list_number)
     list(APPEND ros_protocol_list ${_ros_protocol_list})
     if(_ARG_LOG)
-      message("\n┏━[${_ARG_UNPARSED_ARGUMENTS}]> 搜索到${_ros_protocol_list_number}个${_ARG_UNPARSED_ARGUMENTS}协议文件")
+      message("\n ┏━[${_ARG_UNPARSED_ARGUMENTS}]> 搜索到${_ros_protocol_list_number}个${_ARG_UNPARSED_ARGUMENTS}协议文件")
       set(_loop_var_index 1)
       foreach(_loop_var IN LISTS _ros_protocol_list)
-        message("┠─[${_loop_var_index}]─> ${_loop_var}")
+        message(" ┠─[${_loop_var_index}]─> ${_loop_var}")
         math(EXPR _loop_var_index "(${_loop_var_index}+1)")
       endforeach()
       list(LENGTH ros_protocol_list ros_protocol_list_number)
-      message("┗━[ROS]> 共计${ros_protocol_list_number}个 ROS 协议文件")
+      message(" ┗━[ROS]> 共计${ros_protocol_list_number}个 ROS 协议文件")
     endif()
   endif()
 endmacro()
+
+#
+# 功能说明: 打印当前时间
+# :param target: 消息内容
+# :type target: 字符串
+# :param LOG: 如果设置 LOG 则打印日志
+# :type LOG: 选项
+# 举例:
+# 1. print_time("msg")         # 打印当前时间
+#
+function(print_time msg)
+  string(TIMESTAMP COMPILE_TIME_1 %Y%m%d_%H%M%S)
+  message(" 🌹 [${msg}]> ${COMPILE_TIME_1}")
+endfunction()
