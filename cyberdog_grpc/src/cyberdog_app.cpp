@@ -463,6 +463,288 @@ void Cyberdog_app::retrunErrorGrpc(
   writer->Write(grpc_respond);
 }
 
+bool Cyberdog_app::HandleOTAStatusRequest(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string response_string;
+  std::chrono::seconds timeout(10);
+  if (!ota_client_->wait_for_service(timeout)) {
+    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    return false;
+  }
+
+  std::string json_result;
+  CyberdogJson::Document2String(json_resquest, json_result);
+  auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
+  req->request.key = "ota_command_status_query";
+  req->request.value = json_result;
+  req->request.type = "JSON";
+
+  auto res = ota_client_->async_send_request(req);
+  auto status = res.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    RCLCPP_INFO(get_logger(), "success to call ota services.");
+  } else {
+    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+  }
+
+  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  if (!CyberdogJson::Document2String(json_response, response_string)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_STATUS_REQUEST);
+  grpc_respond.set_data(response_string);
+  writer->Write(grpc_respond);
+
+  return true;
+}
+
+bool Cyberdog_app::HandleOTAVersionQueryRequest(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string response_string;
+  std::chrono::seconds timeout(10);
+  if (!ota_client_->wait_for_service(timeout)) {
+    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    return false;
+  }
+
+  std::string json_result;
+  CyberdogJson::Document2String(json_resquest, json_result);
+  auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
+  req->request.key = "ota_command_version_query";
+  req->request.value = json_result;
+  req->request.type = "JSON";
+  auto res = ota_client_->async_send_request(req);
+
+  auto status = res.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    RCLCPP_INFO(get_logger(), "success to call ota services.");
+  } else {
+    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+  }
+
+  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  if (!CyberdogJson::Document2String(json_response, response_string)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_VERSION_QUERY_REQUEST);
+  grpc_respond.set_data(response_string);
+  writer->Write(grpc_respond);
+
+  return true;
+}
+
+bool Cyberdog_app::HandleOTAStartDownloadRequest(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string response_string;
+  std::chrono::seconds timeout(10);
+  if (!ota_client_->wait_for_service(timeout)) {
+    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    return false;
+  }
+
+  std::string json_result;
+  CyberdogJson::Document2String(json_resquest, json_result);
+
+  auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
+  req->request.key = "ota_command_start_download";
+  req->request.value = json_result;
+  req->request.type = "JSON";
+  auto res = ota_client_->async_send_request(req);
+
+  auto status = res.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    RCLCPP_INFO(get_logger(), "success to call ota services.");
+  } else {
+    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+  }
+
+  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  if (!CyberdogJson::Document2String(json_response, response_string)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_DOWNLOAD_REQUEST);
+  grpc_respond.set_data(response_string);
+  writer->Write(grpc_respond);
+
+  return true;
+}
+
+bool Cyberdog_app::HandleOTAStartUpgradeRequest(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string response_string;
+  std::chrono::seconds timeout(10);
+  if (!ota_client_->wait_for_service(timeout)) {
+    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    return false;
+  }
+
+  std::string json_result;
+  CyberdogJson::Document2String(json_resquest, json_result);
+  auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
+  req->request.key = "ota_command_start_upgrade";
+  req->request.value = json_result;
+  req->request.type = "JSON";
+
+  auto res = ota_client_->async_send_request(req);
+  auto status = res.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    RCLCPP_INFO(get_logger(), "success to call ota services.");
+  } else {
+    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+  }
+
+  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  if (!CyberdogJson::Document2String(json_response, response_string)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST);
+  grpc_respond.set_data(response_string);
+  writer->Write(grpc_respond);
+
+  return true;
+}
+
+bool Cyberdog_app::HandleOTAProcessQueryRequest(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string response_string;
+  std::chrono::seconds timeout(10);
+  if (!ota_client_->wait_for_service(timeout)) {
+    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    return false;
+  }
+
+  std::string json_result;
+  CyberdogJson::Document2String(json_resquest, json_result);
+  auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
+  req->request.key = "ota_command_process_query";
+  req->request.value = json_result;
+  req->request.type = "JSON";
+  auto res = ota_client_->async_send_request(req);
+
+  auto status = res.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    RCLCPP_INFO(get_logger(), "success to call ota services.");
+  } else {
+    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+  }
+
+  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  if (!CyberdogJson::Document2String(json_response, response_string)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST);
+  grpc_respond.set_data(response_string);
+  writer->Write(grpc_respond);
+
+  return true;
+}
+
+bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string response_string;
+  std::chrono::seconds timeout(10);
+  if (!ota_client_->wait_for_service(timeout)) {
+    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    return false;
+  }
+
+  std::string json_result;
+  CyberdogJson::Document2String(json_resquest, json_result);
+  auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
+  req->request.key = "ota_command_estimate_upgrade_time_query";
+  req->request.value = json_result;
+  req->request.type = "JSON";
+  auto res = ota_client_->async_send_request(req);
+
+  auto status = res.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    RCLCPP_INFO(get_logger(), "success to call ota services.");
+  } else {
+    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+  }
+
+  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  if (!CyberdogJson::Document2String(json_response, response_string)) {
+    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+
+  grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_ESTIMATE_UPGRADE_TIME_REQUEST);
+  grpc_respond.set_data(response_string);
+  writer->Write(grpc_respond);
+  return true;
+}
+
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -732,243 +1014,44 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
       {
-        std::chrono::seconds timeout(10);
-        if (!ota_client_->wait_for_service(timeout)) {
-          RCLCPP_INFO(get_logger(), "ota server not avalible");
+        if (!HandleOTAStatusRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
-
-        std::string json_result;
-        CyberdogJson::Document2String(json_resquest, json_result);
-        auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-        req->request.key = "ota_command_status_query";
-        req->request.value = json_result;
-        req->request.type = "JSON";
-
-        auto res = ota_client_->async_send_request(req);
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(get_logger(), "success to call ota services.");
-        } else {
-          RCLCPP_INFO(get_logger(), "Failed to call ota services.");
-        }
-
-        if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_STATUS_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
       }
       break;
     case ::grpcapi::SendRequest::OTA_VERSION_QUERY_REQUEST:
       {
-        std::chrono::seconds timeout(10);
-        if (!ota_client_->wait_for_service(timeout)) {
-          RCLCPP_INFO(get_logger(), "ota server not avalible");
+        if (!HandleOTAVersionQueryRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
-
-        std::string json_result;
-        CyberdogJson::Document2String(json_resquest, json_result);
-        auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-        req->request.key = "ota_command_version_query";
-        req->request.value = json_result;
-        req->request.type = "JSON";
-        auto res = ota_client_->async_send_request(req);
-
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(get_logger(), "success to call ota services.");
-        } else {
-          RCLCPP_INFO(get_logger(), "Failed to call ota services.");
-        }
-
-        if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_VERSION_QUERY_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
       }
       break;
     case ::grpcapi::SendRequest::OTA_START_DOWNLOAD_REQUEST:
       {
-        std::chrono::seconds timeout(10);
-        if (!ota_client_->wait_for_service(timeout)) {
-          RCLCPP_INFO(get_logger(), "ota server not avalible");
+        if (!HandleOTAStartDownloadRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
-
-        std::string json_result;
-        CyberdogJson::Document2String(json_resquest, json_result);
-
-        auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-        req->request.key = "ota_command_start_download";
-        req->request.value = json_result;
-        req->request.type = "JSON";
-        auto res = ota_client_->async_send_request(req);
-
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(get_logger(), "success to call ota services.");
-        } else {
-          RCLCPP_INFO(get_logger(), "Failed to call ota services.");
-        }
-
-        if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_DOWNLOAD_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
       }
       break;
     case ::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST:
       {
-        std::chrono::seconds timeout(10);
-        if (!ota_client_->wait_for_service(timeout)) {
-          RCLCPP_INFO(get_logger(), "ota server not avalible");
+        if (!HandleOTAStartUpgradeRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
-
-        std::string json_result;
-        CyberdogJson::Document2String(json_resquest, json_result);
-        auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-        req->request.key = "ota_command_start_upgrade";
-        req->request.value = json_result;
-        req->request.type = "JSON";
-
-        auto res = ota_client_->async_send_request(req);
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(get_logger(), "success to call ota services.");
-        } else {
-          RCLCPP_INFO(get_logger(), "Failed to call ota services.");
-        }
-
-        if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
       }
       break;
     case ::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST:
       {
-        std::chrono::seconds timeout(10);
-        if (!ota_client_->wait_for_service(timeout)) {
-          RCLCPP_INFO(get_logger(), "ota server not avalible");
+        if (!HandleOTAProcessQueryRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
-
-        std::string json_result;
-        CyberdogJson::Document2String(json_resquest, json_result);
-        auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-        req->request.key = "ota_command_process_query";
-        req->request.value = json_result;
-        req->request.type = "JSON";
-        auto res = ota_client_->async_send_request(req);
-
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(get_logger(), "success to call ota services.");
-        } else {
-          RCLCPP_INFO(get_logger(), "Failed to call ota services.");
-        }
-
-        if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
       }
       break;
     case ::grpcapi::SendRequest::OTA_ESTIMATE_UPGRADE_TIME_REQUEST:
       {
-        std::chrono::seconds timeout(10);
-        if (!ota_client_->wait_for_service(timeout)) {
-          RCLCPP_INFO(get_logger(), "ota server not avalible");
+        if (!HandleOTAEstimateUpgradeTimeRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
-
-        std::string json_result;
-        CyberdogJson::Document2String(json_resquest, json_result);
-        auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-        req->request.key = "ota_command_estimate_upgrade_time_query";
-        req->request.value = json_result;
-        req->request.type = "JSON";
-        auto res = ota_client_->async_send_request(req);
-
-        auto status = res.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          RCLCPP_INFO(get_logger(), "success to call ota services.");
-        } else {
-          RCLCPP_INFO(get_logger(), "Failed to call ota services.");
-        }
-
-        if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-
-        grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_ESTIMATE_UPGRADE_TIME_REQUEST);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
       }
       break;
     default:

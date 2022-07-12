@@ -1,0 +1,9 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "uwb_rear"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
