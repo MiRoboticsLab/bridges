@@ -1,0 +1,108 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "uwb_head"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+# uwb head data
+[[array]]
+description = ""
+can_package_num = 2
+can_id = ["0x048B4000", "0x048B4001"]
+array_name = "uwb_head_data_array"
+
+[[var]]
+description = ""
+can_id = "0x048B2100" 
+var_name = "enable_initial_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x048B2200" 
+var_name = "enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x048A2400"
+var_name = "enable_off_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[cmd]]
+description = ""
+cmd_name = "enable_initial"
+can_id = "0x048A2100"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "enable_on"
+can_id = "0x048A2200"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "enable_off"
+can_id = "0x048A2400"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+###############################################################
+
+# uwb tof head data
+[[array]]
+description = ""
+can_package_num = 2
+can_id = ["0x018B4000", "0x018B4001"]
+array_name = "uwb_head_tof_data_array"
+
+[[var]]
+description = ""
+can_id = "0x018B2100" 
+var_name = "tof_enable_initial_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x048B2200" 
+var_name = "tof_enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x048A2400"
+var_name = "tof_enable_off_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[cmd]]
+description = ""
+cmd_name = "tof_enable_initial"
+can_id = "0x018A2100"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "tof_enable_on"
+can_id = "0x018A2200"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "tof_enable_off"
+can_id = "0x018A2400"
+ctrl_len = 1
+ctrl_data = ["0x00"]
