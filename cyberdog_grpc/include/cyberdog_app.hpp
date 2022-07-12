@@ -144,6 +144,9 @@ private:
   // photo and video recording
   rclcpp::Client<protocol::srv::CameraService>::SharedPtr camera_service_client_;
   bool callCameraService(uint8_t command, uint8_t & result, std::string & msg);
+  bool processCameraMsg(
+    int namecode,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
