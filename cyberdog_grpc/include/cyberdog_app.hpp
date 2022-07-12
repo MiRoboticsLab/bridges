@@ -234,6 +234,9 @@ private:
 
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
+  // configured ports
+  std::string grpc_server_port_;
+  std::string grpc_client_port_;
 };
 }  // namespace carpo_cyberdog_app
 

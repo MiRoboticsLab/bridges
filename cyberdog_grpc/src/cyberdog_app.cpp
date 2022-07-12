@@ -65,6 +65,12 @@ Cyberdog_app::Cyberdog_app()
   INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
 
+  this->declare_parameter("grpc_server_port", "50052");
+  this->declare_parameter("grpc_client_port", "8981");
+
+  grpc_server_port_ = get_parameter("grpc_server_port").as_string();
+  grpc_client_port_ = get_parameter("grpc_client_port").as_string();
+
   // ip_subscriber = this->create_subscription<std_msgs::msg::String>(
   // "ip_notify", rclcpp::SystemDefaultsQoS(),
   // std::bind(&Cyberdog_app::subscribeIp, this, _1));
@@ -164,7 +170,8 @@ std::string Cyberdog_app::getServiceIp() {return *server_ip;}
 void Cyberdog_app::RunServer()
 {
   INFO("run_server thread id is %ld", gettid());
-  std::string server_address("0.0.0.0:50051");
+  std::string server_address("0.0.0.0:");
+  server_address += grpc_server_port_;
   CyberdogAppImpl service(server_address);
   service.SetRequesProcess(this);
   ServerBuilder builder;
@@ -262,7 +269,7 @@ void Cyberdog_app::createGrpc()
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
   INFO("Create client");
-  grpc::string ip = *server_ip + std::string(":8980");
+  grpc::string ip = *server_ip + std::string(":") + grpc_client_port_;
   can_process_messages = false;
   heartbeat_err_cnt = 0;
   net_checker.set_ip(*server_ip);
