@@ -1,0 +1,17 @@
+
+
+[[fences]]
+fence_name = 'mi_01'
+longitude = [116.554635, 116.558868,116.562460,116.556886]
+latitude = [39.793607,39.795643,39.792458,39.789469]
+radius = 0
+shape_type = 0
+alarm_type = 'warning'
+
+[[fences]]
+fence_name = 'mi_02'
+longitude = [-2.0,1.0,1.0,-1.0]
+latitude = [-2.0,-1.0,1.0,1.0]
+radius = 0
+shape_type = 0
+alarm_type = 'error'
