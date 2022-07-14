@@ -504,12 +504,7 @@ bool Cyberdog_app::HandleOTAStatusRequest(
     return false;
   }
 
-  if (!CyberdogJson::Document2String(json_response, response_string)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
-
+  CyberdogJson::Get(json_response, "status", response_string);
   grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_STATUS_REQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
@@ -551,16 +546,10 @@ bool Cyberdog_app::HandleOTAVersionQueryRequest(
     return false;
   }
 
-  if (!CyberdogJson::Document2String(json_response, response_string)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
-
+  CyberdogJson::Get(json_response, "version", response_string);
   grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_VERSION_QUERY_REQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
-
   return true;
 }
 
@@ -595,12 +584,6 @@ bool Cyberdog_app::HandleOTAStartDownloadRequest(
 
   if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
     RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
-
-  if (!CyberdogJson::Document2String(json_response, response_string)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
     retrunErrorGrpc(writer);
     return false;
   }
@@ -693,12 +676,7 @@ bool Cyberdog_app::HandleOTAProcessQueryRequest(
     return false;
   }
 
-  if (!CyberdogJson::Document2String(json_response, response_string)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
-
+  CyberdogJson::Get(json_response, "progress", response_string);
   grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
