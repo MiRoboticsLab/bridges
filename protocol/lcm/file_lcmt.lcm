@@ -1,0 +1,3 @@
+struct file_lcmt {
+    string  data;
+}
