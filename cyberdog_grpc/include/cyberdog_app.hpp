@@ -237,6 +237,8 @@ private:
   // configured ports
   std::string grpc_server_port_;
   std::string grpc_client_port_;
+  // app connection state
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_connection_pub_;
 };
 }  // namespace carpo_cyberdog_app
 
