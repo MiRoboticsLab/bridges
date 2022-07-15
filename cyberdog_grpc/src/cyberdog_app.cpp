@@ -436,7 +436,20 @@ bool Cyberdog_app::processCameraMsg(
   Document json_response(kObjectType);
   std::string rsp_string;
   CyberdogJson::Add(json_response, "result", result);
-  CyberdogJson::Add(json_response, "msg", msg);
+  if (namecode != grpcapi::SendRequest::IMAGE_STOP_VIDEO_RECORDING && result == 0) {
+    std::stringstream ss;
+    size_t comma_index = msg.find(',', 0);
+    if (comma_index == string::npos) {
+      ERROR("error while parsing camera_service respose msg");
+      return false;
+    }
+    std::string file_name(msg.substr(0, comma_index));
+    ss << msg.substr(comma_index + 1);
+    size_t file_size;
+    ss >> file_size;
+    CyberdogJson::Add(json_response, "fileName", file_name);
+    CyberdogJson::Add(json_response, "fileSize", file_size);
+  }
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while encoding camera_service response to json");
     retrunErrorGrpc(writer);
