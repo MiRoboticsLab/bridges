@@ -147,7 +147,7 @@ Cyberdog_app::Cyberdog_app()
 
   // connection
   app_connection_pub_ = this->create_publisher<std_msgs::msg::Bool>(
-      "app_connection_state", rclcpp::SystemDefaultsQoS());
+    "app_connection_state", rclcpp::SystemDefaultsQoS());
 }
 
 void Cyberdog_app::HeartBeat()
@@ -166,9 +166,7 @@ void Cyberdog_app::HeartBeat()
             createGrpc();
           }
         }
-      }
-      else
-      {
+      } else {
         std_msgs::msg::Bool msg;
         msg.data = true;
         app_connection_pub_->publish(msg);
