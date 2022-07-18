@@ -436,7 +436,7 @@ bool Cyberdog_app::processCameraMsg(
   Document json_response(kObjectType);
   std::string rsp_string;
   CyberdogJson::Add(json_response, "result", result);
-  if (namecode != grpcapi::SendRequest::IMAGE_STOP_VIDEO_RECORDING && result == 0) {
+  if (namecode != grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING && result == 0) {
     std::stringstream ss;
     size_t comma_index = msg.find(',', 0);
     if (comma_index == string::npos) {
