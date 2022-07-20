@@ -1,0 +1,6 @@
+# request
+MotionCustomCmd[] cmds
+
+---
+# response
+bool          result       # 执行结果
