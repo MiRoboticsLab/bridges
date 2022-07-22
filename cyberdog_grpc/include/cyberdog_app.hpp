@@ -46,6 +46,7 @@
 #include "protocol/srv/audio_voiceprint_train.hpp"
 #include "protocol/srv/audio_voiceprints_set.hpp"
 #include "protocol/srv/camera_service.hpp"
+#include "protocol/srv/device_info.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -239,6 +240,9 @@ private:
   std::string grpc_client_port_;
   // app connection state
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_connection_pub_;
+
+  // robot state
+  rclcpp::Client<protocol::srv::DeviceInfo>::SharedPtr query_dev_info_client_;
 };
 }  // namespace carpo_cyberdog_app
 

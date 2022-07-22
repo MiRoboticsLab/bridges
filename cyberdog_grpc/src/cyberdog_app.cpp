@@ -148,6 +148,10 @@ Cyberdog_app::Cyberdog_app()
   // connection
   app_connection_pub_ = this->create_publisher<std_msgs::msg::Bool>(
     "app_connection_state", rclcpp::SystemDefaultsQoS());
+
+  // robot state
+  query_dev_info_client_ =
+    this->create_client<protocol::srv::DeviceInfo>("query_divice_info");
 }
 
 void Cyberdog_app::HeartBeat()
@@ -773,16 +777,37 @@ void Cyberdog_app::ProcessMsg(
   }
   switch (grpc_request->namecode()) {
     case ::grpcapi::SendRequest::GET_DEVICE_INFO:
-
-      grpc_respond.set_namecode(grpc_request->namecode());
-      CyberdogJson::Add(json_response, "ip", "192.168.55.1");
-      if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-        ERROR("error while encoding to json");
-        retrunErrorGrpc(writer);
-        return;
+      {
+        if (!query_dev_info_client_->wait_for_service()) {
+          RCLCPP_INFO(
+            get_logger(),
+            "call querydevinfo server not avaiable"
+          );
+          return;
+        }
+        bool is_sn = false;
+        bool is_version = false;
+        CyberdogJson::Get(json_resquest, "is_sn", is_sn);
+        CyberdogJson::Get(json_resquest, "is_version", is_version);
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
+        req->enables.resize(2);
+        req->enables[0] = is_sn;
+        req->enables[1] = is_version;
+        auto future_result = query_dev_info_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(
+            get_logger(),
+            "success to call querydevinfo request services.");
+        } else {
+          RCLCPP_INFO(
+            get_logger(),
+            "Failed to call querydevinfo request  services.");
+        }
+        grpc_respond.set_data(future_result.get()->info);
+        writer->Write(grpc_respond);
       }
-      grpc_respond.set_data(rsp_string);
-      writer->Write(grpc_respond);
       break;
 
     case ::grpcapi::SendRequest::MOTION_SERVO_REQUEST: {
