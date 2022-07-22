@@ -22,13 +22,14 @@ option objc_class_prefix = "RTG";
 package grpcapi;
 
 service GrpcApp {
-    rpc sendMsg(SendRequest) returns (stream RecResponse );
+    rpc sendMsg(SendRequest) returns (stream RecResponse) {}
     rpc heartbeat(Ticks) returns(Result) {}
+    rpc getFile(SendRequest) returns (stream FileChunk) {}
 }
 
 message Ticks{
     string ip = 1;
-	bool internet = 4;
+    bool internet = 4;
 }
 
 message SendRequest {
@@ -69,4 +70,11 @@ message RecResponse {
 
 message Result {
     string result = 1;
+}
+
+message FileChunk {
+    fixed32 error_code = 1;
+    string file_name        = 2;
+    fixed32 file_size       = 3;
+    bytes buffer       = 4;
 }
