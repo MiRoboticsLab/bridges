@@ -201,6 +201,9 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  // Report current process
+  void ReportCurrentProgress();
+
   // visual program
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr visual_request_pub_;
@@ -231,6 +234,8 @@ private:
 
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
+  std::shared_ptr<std::thread> timer_ptr_ {nullptr};
+  bool downloading_or_upgrade_ {false};
 };
 }  // namespace carpo_cyberdog_app
 
