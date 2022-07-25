@@ -804,6 +804,8 @@ void Cyberdog_app::ReportCurrentProgress()
       } else  if (download_progress == 100) {
         download_finished_ = true;
       }
+
+      send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
     } 
     std::this_thread::sleep_for(std::chrono::microseconds(1000));
   }
