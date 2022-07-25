@@ -239,7 +239,10 @@ private:
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
   std::shared_ptr<std::thread> timer_ptr_ {nullptr};
-  bool downloading_or_upgrade_ {false};
+  bool download_start_ {false};
+  bool upgrade_start_ {false};
+  bool download_finished_ {false};
+  bool upgrade_finished_ {false};
 
   // configured ports
   std::string grpc_server_port_;
