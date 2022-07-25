@@ -145,6 +145,7 @@ Cyberdog_app::Cyberdog_app()
 
   // ota
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
+  timer_ptr_ = std::make_shared<std::thread>(&Cyberdog_app::ReportCurrentProgress, this);
 
   // connection
   app_connection_pub_ = this->create_publisher<std_msgs::msg::Bool>(
