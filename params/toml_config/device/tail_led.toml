@@ -8,8 +8,6 @@ canfd_enable = false
 timeout_us = 1234567
 
 
-
-
 [[cmd]]
 description = ""
 cmd_name = "enable_on"
