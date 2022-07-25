@@ -66,6 +66,12 @@ Cyberdog_app::Cyberdog_app()
   INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
 
+  this->declare_parameter("grpc_server_port", "50052");
+  this->declare_parameter("grpc_client_port", "8981");
+
+  grpc_server_port_ = get_parameter("grpc_server_port").as_string();
+  grpc_client_port_ = get_parameter("grpc_client_port").as_string();
+
   // ip_subscriber = this->create_subscription<std_msgs::msg::String>(
   // "ip_notify", rclcpp::SystemDefaultsQoS(),
   // std::bind(&Cyberdog_app::subscribeIp, this, _1));
@@ -140,8 +146,13 @@ Cyberdog_app::Cyberdog_app()
   // ota
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 
-  // timer
-  timer_ptr_ = std::make_shared<std::thread>(&Cyberdog_app::ReportCurrentProgress, this);
+  // connection
+  app_connection_pub_ = this->create_publisher<std_msgs::msg::Bool>(
+    "app_connection_state", rclcpp::SystemDefaultsQoS());
+
+  // robot state
+  query_dev_info_client_ =
+    this->create_client<protocol::srv::DeviceInfo>("query_divice_info");
 }
 
 void Cyberdog_app::HeartBeat()
@@ -152,11 +163,18 @@ void Cyberdog_app::HeartBeat()
     if (can_process_messages && app_stub) {
       if (!app_stub->sendHeartBeat(local_ip, is_internet)) {
         if (heartbeat_err_cnt++ >= APP_CONNECTED_FAIL_CNT) {
+          std_msgs::msg::Bool msg;
+          msg.data = false;
+          app_connection_pub_->publish(msg);
           if (!app_disconnected) {
             destroyGrpc();
             createGrpc();
           }
         }
+      } else {
+        std_msgs::msg::Bool msg;
+        msg.data = true;
+        app_connection_pub_->publish(msg);
       }
     }
     r.sleep();
@@ -168,7 +186,8 @@ std::string Cyberdog_app::getServiceIp() {return *server_ip;}
 void Cyberdog_app::RunServer()
 {
   INFO("run_server thread id is %ld", gettid());
-  std::string server_address("0.0.0.0:50052");
+  std::string server_address("0.0.0.0:");
+  server_address += grpc_server_port_;
   CyberdogAppImpl service(server_address);
   service.SetRequesProcess(this);
   ServerBuilder builder;
@@ -266,7 +285,7 @@ void Cyberdog_app::createGrpc()
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
   INFO("Create client");
-  grpc::string ip = *server_ip + std::string(":8980");
+  grpc::string ip = *server_ip + std::string(":") + grpc_client_port_;
   can_process_messages = false;
   heartbeat_err_cnt = 0;
   net_checker.set_ip(*server_ip);
@@ -392,6 +411,59 @@ bool Cyberdog_app::callCameraService(uint8_t command, uint8_t & result, std::str
     WARN("Failed to call camera_service services.");
     return false;
   }
+  return true;
+}
+
+bool Cyberdog_app::processCameraMsg(
+  int namecode,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  uint8_t result;
+  std::string msg;
+  bool cs_success;
+  if (namecode == grpcapi::SendRequest::IMAGE_TAKE_PHOTO) {
+    cs_success = callCameraService(
+      protocol::srv::CameraService::Request::TAKE_PICTURE,
+      result, msg);
+  } else if (namecode == grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING) {
+    cs_success = callCameraService(
+      protocol::srv::CameraService::Request::START_RECORDING,
+      result, msg);
+  } else {
+    cs_success = callCameraService(
+      protocol::srv::CameraService::Request::STOP_RECORDING,
+      result, msg);
+  }
+  if (!cs_success) {
+    ERROR("error while calling camera_service");
+    return false;
+  }
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  CyberdogJson::Add(json_response, "result", result);
+  if (namecode != grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING && result == 0) {
+    std::stringstream ss;
+    size_t comma_index = msg.find(',', 0);
+    if (comma_index == string::npos) {
+      ERROR("error while parsing camera_service respose msg");
+      return false;
+    }
+    std::string file_name(msg.substr(0, comma_index));
+    ss << msg.substr(comma_index + 1);
+    size_t file_size;
+    ss >> file_size;
+    CyberdogJson::Add(json_response, "fileName", file_name);
+    CyberdogJson::Add(json_response, "fileSize", file_size);
+  }
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while encoding camera_service response to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  ::grpcapi::RecResponse grpc_respond;
+  grpc_respond.set_namecode(namecode);
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
   return true;
 }
 
@@ -747,16 +819,37 @@ void Cyberdog_app::ProcessMsg(
   }
   switch (grpc_request->namecode()) {
     case ::grpcapi::SendRequest::GET_DEVICE_INFO:
-
-      grpc_respond.set_namecode(grpc_request->namecode());
-      CyberdogJson::Add(json_response, "ip", "192.168.55.1");
-      if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-        ERROR("error while encoding to json");
-        retrunErrorGrpc(writer);
-        return;
+      {
+        if (!query_dev_info_client_->wait_for_service()) {
+          RCLCPP_INFO(
+            get_logger(),
+            "call querydevinfo server not avaiable"
+          );
+          return;
+        }
+        bool is_sn = false;
+        bool is_version = false;
+        CyberdogJson::Get(json_resquest, "is_sn", is_sn);
+        CyberdogJson::Get(json_resquest, "is_version", is_version);
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
+        req->enables.resize(2);
+        req->enables[0] = is_sn;
+        req->enables[1] = is_version;
+        auto future_result = query_dev_info_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          RCLCPP_INFO(
+            get_logger(),
+            "success to call querydevinfo request services.");
+        } else {
+          RCLCPP_INFO(
+            get_logger(),
+            "Failed to call querydevinfo request  services.");
+        }
+        grpc_respond.set_data(future_result.get()->info);
+        writer->Write(grpc_respond);
       }
-      grpc_respond.set_data(rsp_string);
-      writer->Write(grpc_respond);
       break;
 
     case ::grpcapi::SendRequest::MOTION_SERVO_REQUEST: {
@@ -991,38 +1084,9 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::IMAGE_TAKE_PHOTO:
     case ::grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING:
     case ::grpcapi::SendRequest::IMAGE_STOP_VIDEO_RECORDING: {
-        uint8_t result;
-        std::string msg;
-        bool cs_success;
-        auto nc = grpc_request->namecode();
-        if (nc == grpcapi::SendRequest::IMAGE_TAKE_PHOTO) {
-          cs_success = callCameraService(
-            protocol::srv::CameraService::Request::TAKE_PICTURE,
-            result, msg);
-        } else if (nc == grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING) {
-          cs_success = callCameraService(
-            protocol::srv::CameraService::Request::START_RECORDING,
-            result, msg);
-        } else {
-          cs_success = callCameraService(
-            protocol::srv::CameraService::Request::STOP_RECORDING,
-            result, msg);
-        }
-        if (!cs_success) {
+        if (!processCameraMsg(grpc_request->namecode(), writer)) {
           return;
         }
-        CyberdogJson::Add(json_response, "result", result);
-        CyberdogJson::Add(json_response, "msg", msg);
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(
-            get_logger(),
-            "error while encoding camera_service response to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-        grpc_respond.set_namecode(nc);
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
       } break;
     case ::grpcapi::SendRequest::OTA_STATUS_REQUEST:
       {

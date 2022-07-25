@@ -46,6 +46,7 @@
 #include "protocol/srv/audio_voiceprint_train.hpp"
 #include "protocol/srv/audio_voiceprints_set.hpp"
 #include "protocol/srv/camera_service.hpp"
+#include "protocol/srv/device_info.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -231,11 +232,22 @@ private:
   // photo and video recording
   rclcpp::Client<protocol::srv::CameraService>::SharedPtr camera_service_client_;
   bool callCameraService(uint8_t command, uint8_t & result, std::string & msg);
+  bool processCameraMsg(
+    int namecode,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
-  std::shared_ptr<std::thread> timer_ptr_ {nullptr};
   bool downloading_or_upgrade_ {false};
+
+  // configured ports
+  std::string grpc_server_port_;
+  std::string grpc_client_port_;
+  // app connection state
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_connection_pub_;
+
+  // robot state
+  rclcpp::Client<protocol::srv::DeviceInfo>::SharedPtr query_dev_info_client_;
 };
 }  // namespace carpo_cyberdog_app
 
