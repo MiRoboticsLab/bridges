@@ -796,7 +796,7 @@ void Cyberdog_app::ReportCurrentProgress()
       downloading_or_upgrade_ = false;
     }
 
-    send_grpc_msg(::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST, response_string);
+    send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
     std::this_thread::sleep_for(std::chrono::microseconds(1000));
   }
 }
