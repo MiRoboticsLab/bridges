@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <sys/time.h>
 
 #include <algorithm>
 #include <chrono>
@@ -47,6 +48,8 @@ using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
 using rapidjson::kObjectType;
 #define CON_TO_CHAR(a) (reinterpret_cast<const char *>(a))
+#define CHUNK_SIZE 4194304  // 4MB
+
 namespace carpo_cyberdog_app
 {
 static int64_t requestNumber;
@@ -190,6 +193,8 @@ void Cyberdog_app::RunServer()
   CyberdogAppImpl service(server_address);
   service.SetRequesProcess(this);
   ServerBuilder builder;
+  builder.SetMaxSendMessageSize(CHUNK_SIZE / 4 * 5);
+  builder.SetMaxReceiveMessageSize(CHUNK_SIZE / 4 * 5);
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
   builder.AddChannelArgument(GRPC_ARG_KEEPALIVE_TIME_MS, 1000);
   builder.AddChannelArgument(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 1000);
@@ -413,12 +418,11 @@ bool Cyberdog_app::callCameraService(uint8_t command, uint8_t & result, std::str
   return true;
 }
 
-bool Cyberdog_app::processCameraMsg(
+bool Cyberdog_app::selectCallingCameraService(
   int namecode,
-  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+  uint8_t & result,
+  std::string & msg)
 {
-  uint8_t result;
-  std::string msg;
   bool cs_success;
   if (namecode == grpcapi::SendRequest::IMAGE_TAKE_PHOTO) {
     cs_success = callCameraService(
@@ -437,25 +441,37 @@ bool Cyberdog_app::processCameraMsg(
     ERROR("error while calling camera_service");
     return false;
   }
+  return cs_success;
+}
+
+bool parseCameraServiceResponseString(
+  const std::string & str,
+  size_t & file_size,
+  std::string & file_name)
+{
+  std::stringstream ss;
+  size_t comma_index = str.find(',', 0);
+  if (comma_index == string::npos) {
+    ERROR("error while parsing camera_service respose msg");
+    return false;
+  }
+  file_name = str.substr(0, comma_index);
+  ss << str.substr(comma_index + 1);
+  ss >> file_size;
+  return true;
+}
+
+bool Cyberdog_app::returnResponse(
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
+  uint8_t result,
+  const std::string & msg,
+  uint32_t namecode)
+{
   Document json_response(kObjectType);
   std::string rsp_string;
   CyberdogJson::Add(json_response, "result", result);
-  if (namecode != grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING && result == 0) {
-    std::stringstream ss;
-    size_t comma_index = msg.find(',', 0);
-    if (comma_index == string::npos) {
-      ERROR("error while parsing camera_service respose msg");
-      return false;
-    }
-    std::string file_name(msg.substr(0, comma_index));
-    ss << msg.substr(comma_index + 1);
-    size_t file_size;
-    ss >> file_size;
-    CyberdogJson::Add(json_response, "fileName", file_name);
-    CyberdogJson::Add(json_response, "fileSize", file_size);
-  }
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-    ERROR("error while encoding camera_service response to json");
+    ERROR("Error while encoding camera_service response to json");
     retrunErrorGrpc(writer);
     return false;
   }
@@ -463,6 +479,59 @@ bool Cyberdog_app::processCameraMsg(
   grpc_respond.set_namecode(namecode);
   grpc_respond.set_data(rsp_string);
   writer->Write(grpc_respond);
+  return true;
+}
+
+bool Cyberdog_app::returnFile(
+  ::grpc::ServerWriter<::grpcapi::FileChunk> * writer,
+  uint8_t result,
+  const std::string & msg)
+{
+  ::grpcapi::FileChunk chunk;
+  if (result != 0) {
+    chunk.set_error_code(uint32_t(result));
+    writer->Write(chunk);
+    return false;
+  }
+  std::string file_name, file_name_with_path;
+  size_t file_size = 0;
+  if (!parseCameraServiceResponseString(msg, file_size, file_name)) {
+    ERROR("Not able to parse msg from camera_service.");
+    chunk.set_error_code(2);
+    writer->Write(chunk);
+    return false;
+  }
+  chunk.set_file_name(file_name);
+  chunk.set_file_size(uint32_t(file_size));
+  file_name_with_path = "/home/mi" + file_name;
+  ClientContext context;
+  char data[CHUNK_SIZE];
+  std::ifstream infile;
+  infile.open(file_name_with_path, std::ifstream::in | std::ifstream::binary);
+  if (!infile.is_open()) {
+    ERROR_STREAM("failed to open file: " << file_name_with_path);
+    chunk.set_error_code(3);
+    writer->Write(chunk);
+    return false;
+  }
+  chunk.set_error_code(0);
+  int chunk_num = 0;
+  timeval start, end;
+  gettimeofday(&start, NULL);
+  while (!infile.eof()) {
+    infile.read(data, CHUNK_SIZE);
+    chunk.set_buffer(data, infile.gcount());
+    if (!writer->Write(chunk)) {
+      break;
+    }
+    INFO_STREAM("Finish sending chunk num " << chunk_num++);
+  }
+  infile.close();
+  gettimeofday(&end, NULL);
+  INFO_STREAM(
+    "Finish sending file: " << file_name_with_path <<
+      ", it takes: " << double(end.tv_sec - start.tv_sec) + double(end.tv_usec - start.tv_usec) /
+      1000000);
   return true;
 }
 
@@ -1039,9 +1108,7 @@ void Cyberdog_app::ProcessMsg(
         }
         image_trans_pub_->publish(it_msg);
       } break;
-    case ::grpcapi::SendRequest::IMAGE_TAKE_PHOTO:
-    case ::grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING:
-    case ::grpcapi::SendRequest::IMAGE_STOP_VIDEO_RECORDING: {
+    case ::grpcapi::SendRequest::IMAGE_START_VIDEO_RECORDING: {
         if (!processCameraMsg(grpc_request->namecode(), writer)) {
           return;
         }
@@ -1091,5 +1158,49 @@ void Cyberdog_app::ProcessMsg(
     default:
       break;
   }
+}
+
+void Cyberdog_app::ProcessGetFile(
+  const ::grpcapi::SendRequest * grpc_request,
+  ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
+{
+  switch (grpc_request->namecode()) {
+    case ::grpcapi::SendRequest::IMAGE_TAKE_PHOTO:
+    case ::grpcapi::SendRequest::IMAGE_STOP_VIDEO_RECORDING: {
+        if (!processCameraMsg(grpc_request->namecode(), writer)) {
+          return;
+        }
+      } break;
+    default: {
+        ERROR("nameCode is wrong for calling getFile service!");
+        ::grpcapi::FileChunk chunk;
+        chunk.set_error_code(100);
+        writer->Write(chunk);
+      } break;
+  }
+}
+
+bool Cyberdog_app::processCameraMsg(
+  int namecode,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  uint8_t result;
+  std::string msg;
+  if (!selectCallingCameraService(namecode, result, msg)) {
+    result = 1;
+  }
+  return returnResponse(writer, result, msg, namecode);
+}
+
+bool Cyberdog_app::processCameraMsg(
+  int namecode,
+  ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
+{
+  uint8_t result;
+  std::string msg;
+  if (!selectCallingCameraService(namecode, result, msg)) {
+    result = 1;
+  }
+  return returnFile(writer, result, msg);
 }
 }  // namespace carpo_cyberdog_app

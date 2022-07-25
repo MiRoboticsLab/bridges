@@ -20,6 +20,7 @@ CyberdogAppImpl::CyberdogAppImpl(const std::string & db)
 : decision_(NULL)
 {
 }
+
 bool CyberdogAppImpl::isPeerAvalible(std::string peer)
 {
   if (decision_ == NULL) {
@@ -28,6 +29,7 @@ bool CyberdogAppImpl::isPeerAvalible(std::string peer)
   // std::cout << "peer:" << peer << "self_ip:" << decision_->getServiceIp() << std::endl;
   return true;
 }
+
 ::grpc::Status CyberdogAppImpl::sendMsg(
   ::grpc::ServerContext * context,
   const ::grpcapi::SendRequest * request,
@@ -35,6 +37,17 @@ bool CyberdogAppImpl::isPeerAvalible(std::string peer)
 {
   if (isPeerAvalible(context->peer())) {
     decision_->ProcessMsg(request, writer);
+  }
+  return ::grpc::Status::OK;
+}
+
+::grpc::Status CyberdogAppImpl::getFile(
+  ::grpc::ServerContext * context,
+  const ::grpcapi::SendRequest * request,
+  ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
+{
+  if (isPeerAvalible(context->peer())) {
+    decision_->ProcessGetFile(request, writer);
   }
   return ::grpc::Status::OK;
 }

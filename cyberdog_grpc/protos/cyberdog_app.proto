@@ -74,7 +74,7 @@ message Result {
 
 message FileChunk {
     fixed32 error_code = 1;
-    string file_name        = 2;
-    fixed32 file_size       = 3;
+    string file_name   = 2;
+    fixed32 file_size  = 3;
     bytes buffer       = 4;
 }
