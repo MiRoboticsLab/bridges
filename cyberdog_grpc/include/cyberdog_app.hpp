@@ -205,6 +205,9 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  // Report current process
+  void ReportCurrentProgress();
+
   // visual program
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr visual_request_pub_;
@@ -245,11 +248,20 @@ private:
     uint8_t result,
     const std::string & msg);
 
+  void ResetOTAFlags();
+
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
+  std::shared_ptr<std::thread> timer_ptr_ {nullptr};
+  bool download_start_ {false};
+  bool upgrade_start_ {false};
+  bool download_finished_ {false};
+  bool upgrade_finished_ {false};
+
   // configured ports
   std::string grpc_server_port_;
   std::string grpc_client_port_;
+
   // app connection state
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_connection_pub_;
 

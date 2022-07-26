@@ -7,3 +7,101 @@ extended_frame = true
 canfd_enable = false
 timeout_us = 1234567
 
+# uwb rear tof data
+[[array]]
+description = ""
+can_package_num = 2
+can_id = ["0x020B4000", "0x020B4001"]
+array_name = "rear_tof_data_array"
+
+[[var]]
+description = ""
+can_id = "0x020B2100" 
+var_name = "rear_tof_enable_initial_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x020B2200" 
+var_name = "rear_tof_enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x020B2400"
+var_name = "rear_tof_enable_off_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[cmd]]
+description = ""
+cmd_name = "rear_tof_enable_initial"
+can_id = "0x020A2100"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "rear_tof_enable_on"
+can_id = "0x020A2200"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "rear_tof_enable_off"
+can_id = "0x020A2400"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+###############################################################
+# uwb rear data
+[[array]]
+description = ""
+can_package_num = 2
+can_id = ["0x050B4000", "0x050B4001"]
+array_name = "rear_data_array"
+
+[[var]]
+description = ""
+can_id = "0x050B2100" 
+var_name = "rear_enable_initial_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x050B2200" 
+var_name = "rear_enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x050B2400"
+var_name = "rear_enable_off_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[cmd]]
+description = ""
+cmd_name = "rear_enable_initial"
+can_id = "0x050A2100"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "rear_enable_on"
+can_id = "0x050A2200"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "rear_enable_off"
+can_id = "0x050A2400"
+ctrl_len = 1
+ctrl_data = ["0x00"]

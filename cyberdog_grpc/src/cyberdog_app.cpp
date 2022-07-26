@@ -37,6 +37,7 @@
 #include "std_msgs/msg/string.hpp"
 #define gettid() syscall(SYS_gettid)
 
+using namespace std::chrono_literals;
 using grpc::ServerWriter;
 #define APP_CONNECTED_FAIL_CNT 3
 #define CYBER_CLIENT_LED 1
@@ -148,6 +149,7 @@ Cyberdog_app::Cyberdog_app()
 
   // ota
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
+  timer_ptr_ = std::make_shared<std::thread>(&Cyberdog_app::ReportCurrentProgress, this);
 
   // connection
   app_connection_pub_ = this->create_publisher<std_msgs::msg::Bool>(
@@ -624,6 +626,7 @@ bool Cyberdog_app::HandleOTAVersionQueryRequest(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
+  INFO("GRPC version query.");
   Document json_response(kObjectType);
   std::string response_string;
   std::chrono::seconds timeout(10);
@@ -689,14 +692,8 @@ bool Cyberdog_app::HandleOTAStartDownloadRequest(
     RCLCPP_INFO(get_logger(), "Failed to call ota services.");
   }
 
-  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
-
   grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_DOWNLOAD_REQUEST);
-  grpc_respond.set_data(response_string);
+  grpc_respond.set_data(res.get()->response.value);
   writer->Write(grpc_respond);
 
   return true;
@@ -730,20 +727,10 @@ bool Cyberdog_app::HandleOTAStartUpgradeRequest(
     RCLCPP_INFO(get_logger(), "Failed to call ota services.");
   }
 
-  if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
-
-  if (!CyberdogJson::Document2String(json_response, response_string)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
+  std::cout << "response_string: " << res.get()->response.value << std::endl;
 
   grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST);
-  grpc_respond.set_data(response_string);
+  grpc_respond.set_data(res.get()->response.value);
   writer->Write(grpc_respond);
 
   return true;
@@ -835,6 +822,60 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
   return true;
+}
+
+void Cyberdog_app::ReportCurrentProgress()
+{
+  Document json_response(kObjectType);
+  std::string response_string;
+
+  while (true) {
+    if ((download_start_ && !download_finished_) || (upgrade_start_ && !upgrade_finished_)) {
+      auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
+      req->request.key = "ota_command_process_query";
+      req->request.type = "JSON";
+      auto res = ota_client_->async_send_request(req);
+
+      std::chrono::seconds timeout(10);
+      auto status = res.wait_for(timeout);
+      if (status == std::future_status::ready) {
+        RCLCPP_INFO(get_logger(), "success to call ota services.");
+      } else {
+        RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+        continue;
+      }
+
+      if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
+        RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+        continue;
+      }
+
+      // Document progress_response(kObjectType);
+      CyberdogJson::Get(json_response, "progress", response_string);
+
+      int32_t upgrade_progress = 0;
+      int32_t download_progress = 0;
+      Document upgrade_progress_response(kObjectType);
+      CyberdogJson::String2Document(response_string, upgrade_progress_response);
+      CyberdogJson::Get(upgrade_progress_response, "upgrade_progress", upgrade_progress);
+      CyberdogJson::Get(upgrade_progress_response, "download_progress", download_progress);
+
+      INFO("upgrade_progress: %d", upgrade_progress);
+      INFO("download_progress: %d", download_progress);
+
+      if (upgrade_progress == 100 || upgrade_progress == -1) {
+        INFO("upgrade finished");
+        upgrade_finished_ = true;
+      } else if (download_progress == 100 || download_progress == -1) {
+        INFO("download finished");
+        download_finished_ = true;
+      }
+
+      send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
+    }
+
+    std::this_thread::sleep_for(std::chrono::microseconds(1000));
+  }
 }
 
 void Cyberdog_app::ProcessMsg(
@@ -1139,6 +1180,7 @@ void Cyberdog_app::ProcessMsg(
       break;
     case ::grpcapi::SendRequest::OTA_START_DOWNLOAD_REQUEST:
       {
+        download_start_ = true;
         if (!HandleOTAStartDownloadRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
@@ -1146,6 +1188,7 @@ void Cyberdog_app::ProcessMsg(
       break;
     case ::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST:
       {
+        upgrade_start_ = true;
         if (!HandleOTAStartUpgradeRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
