@@ -14,6 +14,7 @@
 
 #include "cyberdog_app.hpp"
 
+#include <stdio.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <linux/if.h>
@@ -503,13 +504,14 @@ bool Cyberdog_app::returnFile(
   }
   chunk.set_file_name(file_name);
   chunk.set_file_size(uint32_t(file_size));
-  file_name_with_path = "/home/mi" + file_name;
+  INFO_STREAM("The file name is " << file_name << ", size is " << uint32_t(file_size));
+  file_name_with_path = "/home/mi/Camera/" + file_name;
   ClientContext context;
   char data[CHUNK_SIZE];
   std::ifstream infile;
   infile.open(file_name_with_path, std::ifstream::in | std::ifstream::binary);
   if (!infile.is_open()) {
-    ERROR_STREAM("failed to open file: " << file_name_with_path);
+    ERROR_STREAM("Failed to open file: " << file_name_with_path);
     chunk.set_error_code(3);
     writer->Write(chunk);
     return false;
@@ -517,21 +519,29 @@ bool Cyberdog_app::returnFile(
   chunk.set_error_code(0);
   int chunk_num = 0;
   timeval start, end;
+  INFO_STREAM("Start sending file: " << file_name);
+  bool unexpected_interruption = false;
   gettimeofday(&start, NULL);
   while (!infile.eof()) {
     infile.read(data, CHUNK_SIZE);
     chunk.set_buffer(data, infile.gcount());
     if (!writer->Write(chunk)) {
+      ERROR("Not able to send file chunk. Please check max message size settings.");
+      unexpected_interruption = true;
       break;
     }
     INFO_STREAM("Finish sending chunk num " << chunk_num++);
   }
   infile.close();
+  if (unexpected_interruption) {
+    return false;
+  }
   gettimeofday(&end, NULL);
   INFO_STREAM(
     "Finish sending file: " << file_name_with_path <<
       ", it takes: " << double(end.tv_sec - start.tv_sec) + double(end.tv_usec - start.tv_usec) /
-      1000000);
+      1000000 << " seconds.");
+  remove(file_name_with_path.c_str());
   return true;
 }
 
@@ -1164,6 +1174,7 @@ void Cyberdog_app::ProcessGetFile(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
 {
+  INFO_STREAM("getFile, namecode: " << grpc_request->namecode());
   switch (grpc_request->namecode()) {
     case ::grpcapi::SendRequest::IMAGE_TAKE_PHOTO:
     case ::grpcapi::SendRequest::IMAGE_STOP_VIDEO_RECORDING: {

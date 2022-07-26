@@ -28,7 +28,6 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include <type_traits>
 
 // Interfaces
 #include "cyberdog_app_client.hpp"
