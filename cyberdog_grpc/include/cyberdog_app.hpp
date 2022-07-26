@@ -68,8 +68,11 @@ public:
   Cyberdog_app();
   std::string getServiceIp();
   void ProcessMsg(
-    const ::grpcapi::SendRequest * request,
+    const ::grpcapi::SendRequest * grpc_request,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void ProcessGetFile(
+    const ::grpcapi::SendRequest * grpc_request,
+    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
 
 private:
   uint32_t ticks_;
@@ -232,9 +235,18 @@ private:
   // photo and video recording
   rclcpp::Client<protocol::srv::CameraService>::SharedPtr camera_service_client_;
   bool callCameraService(uint8_t command, uint8_t & result, std::string & msg);
-  bool processCameraMsg(
-    int namecode,
-    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  bool selectCallingCameraService(int namecode, uint8_t & result, std::string & msg);
+  bool processCameraMsg(int namecode, ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  bool processCameraMsg(int namecode, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
+  bool returnResponse(
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
+    uint8_t result,
+    const std::string & msg,
+    uint32_t namecode);
+  bool returnFile(
+    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer,
+    uint8_t result,
+    const std::string & msg);
 
   void ResetOTAFlags();
 

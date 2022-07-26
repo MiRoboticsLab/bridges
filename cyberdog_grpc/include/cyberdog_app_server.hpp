@@ -48,11 +48,15 @@ public:
   {
     decision_ = decision;
   }
-
   ::grpc::Status sendMsg(
     ::grpc::ServerContext * context,
     const ::grpcapi::SendRequest * request,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+  override;
+  ::grpc::Status getFile(
+    ::grpc::ServerContext * context,
+    const ::grpcapi::SendRequest * request,
+    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
   override;
 
 private:
