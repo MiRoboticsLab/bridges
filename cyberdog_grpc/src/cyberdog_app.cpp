@@ -415,6 +415,14 @@ bool Cyberdog_app::callCameraService(uint8_t command, uint8_t & result, std::str
   return true;
 }
 
+void Cyberdog_app::ResetOTAFlags()
+{
+  download_start_ = false;
+  upgrade_start_ = false;
+  download_finished_ = false;
+  upgrade_finished_ = false;
+}
+
 bool Cyberdog_app::processCameraMsg(
   int namecode,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -751,10 +759,6 @@ void Cyberdog_app::ReportCurrentProgress()
   std::string response_string;
 
   while (true) {
-    if (!download_start_ ) {
-      continue;
-    }
-    
     if ((download_start_ && !download_finished_) || (upgrade_start_ && !upgrade_finished_)) {
       auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
       req->request.key = "ota_command_process_query";
@@ -778,25 +782,27 @@ void Cyberdog_app::ReportCurrentProgress()
       // Document progress_response(kObjectType);
       CyberdogJson::Get(json_response, "progress", response_string);
 
-      uint32_t upgrade_progress = 0;
-      uint32_t download_progress = 0;
-      Document upgrade_progress_response(kObjectType); 
+      int32_t upgrade_progress = 0;
+      int32_t download_progress = 0;
+      Document upgrade_progress_response(kObjectType);
       CyberdogJson::String2Document(response_string, upgrade_progress_response);
       CyberdogJson::Get(upgrade_progress_response, "upgrade_progress", upgrade_progress);
       CyberdogJson::Get(upgrade_progress_response, "download_progress", download_progress);
 
-      std::cout << "response_string: " << response_string << std::endl;
-      std::cout << "upgrade_progress: " << upgrade_progress << std::endl;
-      std::cout << "download_progress: " << download_progress << std::endl;
+      INFO("upgrade_progress: %d", upgrade_progress);
+      INFO("download_progress: %d", download_progress);
 
-      if (upgrade_progress == 100) {
+      if (upgrade_progress == 100 || upgrade_progress == -1) {
+        INFO("upgrade finished");
         upgrade_finished_ = true;
-      } else  if (download_progress == 100) {
+      } else if (download_progress == 100 || download_progress == -1) {
+        INFO("download finished");
         download_finished_ = true;
       }
 
       send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
-    } 
+    }
+
     std::this_thread::sleep_for(std::chrono::microseconds(1000));
   }
 }

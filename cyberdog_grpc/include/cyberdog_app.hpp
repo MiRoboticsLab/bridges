@@ -236,6 +236,8 @@ private:
     int namecode,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  void ResetOTAFlags();
+
   // ota
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
   std::shared_ptr<std::thread> timer_ptr_ {nullptr};
