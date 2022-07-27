@@ -14,7 +14,7 @@ ip_service = 1
 touch_signal_effective = 60
 camera_signal_effective = 1
 wifi_wait_time_same = 5
-wifi_wait_time_different = 10
+wifi_wait_time_different = 7
 
 [connector.initialization.topic] # string
 connector = "connector_state"
