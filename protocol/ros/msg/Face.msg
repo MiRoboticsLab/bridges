@@ -19,3 +19,5 @@ float32 row
 # is host
 bool is_host
 
+float32 age
+float32 emotion
