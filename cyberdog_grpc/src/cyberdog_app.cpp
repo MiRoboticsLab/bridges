@@ -148,8 +148,15 @@ Cyberdog_app::Cyberdog_app()
     "camera_service");
 
   // ota
+  download_subscriber_ = this->create_subscription<std_msgs::msg::Int32>(
+    "ota_download_percentage", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::HandleDownloadPercentageMsgs, this, _1));
+
+  upgrade_subscriber_ = this->create_subscription<std_msgs::msg::Int32>(
+    "ota_upgrade_percentage", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::HandleUpgradePercentageMsgs, this, _1));
+
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
-  timer_ptr_ = std::make_shared<std::thread>(&Cyberdog_app::ReportCurrentProgress, this);
 
   // connection
   app_connection_pub_ = this->create_publisher<std_msgs::msg::Bool>(
@@ -621,6 +628,36 @@ bool Cyberdog_app::HandleOTAStatusRequest(
   return true;
 }
 
+void Cyberdog_app::HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg)
+{
+  Document progress_response(kObjectType);
+  std::string response_string;
+
+  CyberdogJson::Add(progress_response, "upgrade_progress", 0);
+  CyberdogJson::Add(progress_response, "download_progress", msg.data);
+  CyberdogJson::Document2String(progress_response, response_string);
+
+  INFO("upgrade_progress: %d", 0);
+  INFO("download_progress: %d", msg.data);
+
+  send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
+}
+
+void Cyberdog_app::HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg)
+{
+  Document progress_response(kObjectType);
+  std::string response_string;
+
+  CyberdogJson::Add(progress_response, "upgrade_progress", msg.data);
+  CyberdogJson::Add(progress_response, "download_progress", 0);
+  CyberdogJson::Document2String(progress_response, response_string);
+
+  INFO("upgrade_progress: %d", msg.data);
+  INFO("download_progress: %d", 0);
+
+  send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
+}
+
 bool Cyberdog_app::HandleOTAVersionQueryRequest(
   const Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
@@ -822,60 +859,6 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
   return true;
-}
-
-void Cyberdog_app::ReportCurrentProgress()
-{
-  Document json_response(kObjectType);
-  std::string response_string;
-
-  while (true) {
-    if ((download_start_ && !download_finished_) || (upgrade_start_ && !upgrade_finished_)) {
-      auto req = std::make_shared<protocol::srv::OtaServerCmd::Request>();
-      req->request.key = "ota_command_process_query";
-      req->request.type = "JSON";
-      auto res = ota_client_->async_send_request(req);
-
-      std::chrono::seconds timeout(10);
-      auto status = res.wait_for(timeout);
-      if (status == std::future_status::ready) {
-        RCLCPP_INFO(get_logger(), "success to call ota services.");
-      } else {
-        RCLCPP_INFO(get_logger(), "Failed to call ota services.");
-        continue;
-      }
-
-      if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-        RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
-        continue;
-      }
-
-      // Document progress_response(kObjectType);
-      CyberdogJson::Get(json_response, "progress", response_string);
-
-      int32_t upgrade_progress = 0;
-      int32_t download_progress = 0;
-      Document upgrade_progress_response(kObjectType);
-      CyberdogJson::String2Document(response_string, upgrade_progress_response);
-      CyberdogJson::Get(upgrade_progress_response, "upgrade_progress", upgrade_progress);
-      CyberdogJson::Get(upgrade_progress_response, "download_progress", download_progress);
-
-      INFO("upgrade_progress: %d", upgrade_progress);
-      INFO("download_progress: %d", download_progress);
-
-      if (upgrade_progress == 100 || upgrade_progress == -1) {
-        INFO("upgrade finished");
-        upgrade_finished_ = true;
-      } else if (download_progress == 100 || download_progress == -1) {
-        INFO("download finished");
-        download_finished_ = true;
-      }
-
-      send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
-    }
-
-    std::this_thread::sleep_for(std::chrono::microseconds(1000));
-  }
 }
 
 void Cyberdog_app::ProcessMsg(
@@ -1180,7 +1163,6 @@ void Cyberdog_app::ProcessMsg(
       break;
     case ::grpcapi::SendRequest::OTA_START_DOWNLOAD_REQUEST:
       {
-        download_start_ = true;
         if (!HandleOTAStartDownloadRequest(json_resquest, grpc_respond, writer)) {
           return;
         }
@@ -1188,7 +1170,6 @@ void Cyberdog_app::ProcessMsg(
       break;
     case ::grpcapi::SendRequest::OTA_START_UPGRADE_REQUEST:
       {
-        upgrade_start_ = true;
         if (!HandleOTAStartUpgradeRequest(json_resquest, grpc_respond, writer)) {
           return;
         }

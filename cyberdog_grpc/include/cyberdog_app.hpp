@@ -53,6 +53,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "threadsafe_queue.hpp"
 #include "time_interval.hpp"
@@ -251,12 +252,11 @@ private:
   void ResetOTAFlags();
 
   // ota
+  void HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg);
+  void HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg);
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr download_subscriber_ {nullptr};
+  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr upgrade_subscriber_ {nullptr};
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
-  std::shared_ptr<std::thread> timer_ptr_ {nullptr};
-  bool download_start_ {false};
-  bool upgrade_start_ {false};
-  bool download_finished_ {false};
-  bool upgrade_finished_ {false};
 
   // configured ports
   std::string grpc_server_port_;
