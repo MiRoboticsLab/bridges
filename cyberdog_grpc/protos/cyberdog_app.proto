@@ -60,6 +60,7 @@ message SendRequest {
         OTA_START_UPGRADE_REQUEST = 5004;  
         OTA_PROCESS_QUERY_REQUEST = 5005;
         OTA_ESTIMATE_UPGRADE_TIME_REQUEST = 5006;
+        OTA_NX_REBOOT = 5007;
     }
 }
 
