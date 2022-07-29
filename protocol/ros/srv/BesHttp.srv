@@ -1,7 +1,11 @@
-# htpp访问服务
+# http访问服务
+
+uint8 HTTP_METHOD_GET  = 0  # http get
+uint8 HTTP_METHOD_POST = 1  # http post
 
 uint8  method		# 0:get,1:post
 string url			# 请求地址
 string params		# 请求参数
+uint16 milsecs	    # 超时设置，单位毫秒
 ---
 string data			# 返回数据
