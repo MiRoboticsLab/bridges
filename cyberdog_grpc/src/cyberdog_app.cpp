@@ -156,6 +156,10 @@ Cyberdog_app::Cyberdog_app()
     "ota_upgrade_percentage", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::HandleUpgradePercentageMsgs, this, _1));
 
+  reboot_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
+    "ota_upgrade_reboot", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::HandleUpgradeRebootMsgs, this, _1));
+
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 
   // connection
@@ -656,6 +660,16 @@ void Cyberdog_app::HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg)
   INFO("download_progress: %d", 0);
 
   send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
+}
+
+void Cyberdog_app::HandleUpgradeRebootMsgs(const std_msgs::msg::Bool msg)
+{
+  Document progress_response(kObjectType);
+  std::string response_string = "";
+  CyberdogJson::Document2String(progress_response, response_string);
+
+  INFO("reboot data: %d", msg.data);
+  send_grpc_msg(::grpcapi::SendRequest::OTA_NX_REBOOT, response_string);
 }
 
 bool Cyberdog_app::HandleOTAVersionQueryRequest(

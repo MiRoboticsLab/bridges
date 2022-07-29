@@ -254,8 +254,10 @@ private:
   // ota
   void HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg);
   void HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg);
+  void HandleUpgradeRebootMsgs(const std_msgs::msg::Bool msg);
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr download_subscriber_ {nullptr};
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr upgrade_subscriber_ {nullptr};
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reboot_subscriber_ {nullptr};
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
 
   // configured ports
