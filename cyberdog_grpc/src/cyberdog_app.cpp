@@ -154,11 +154,11 @@ Cyberdog_app::Cyberdog_app()
 
   upgrade_subscriber_ = this->create_subscription<std_msgs::msg::Int32>(
     "ota_upgrade_percentage", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::HandleUpgradePercentageMsgs, this, _1)); 
+    std::bind(&Cyberdog_app::HandleUpgradePercentageMsgs, this, _1));
 
   reboot_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
     "ota_upgrade_reboot", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::HandleUpgradeRebootMsgs, this, _1)); 
+    std::bind(&Cyberdog_app::HandleUpgradeRebootMsgs, this, _1));
 
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 
