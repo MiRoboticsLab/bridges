@@ -1,0 +1,7 @@
+# htpp访问服务
+
+uint8  method		# 0:get,1:post
+string url			# 请求地址
+string params		# 请求参数
+---
+string data			# 返回数据
