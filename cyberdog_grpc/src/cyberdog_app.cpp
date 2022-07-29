@@ -56,7 +56,7 @@ namespace carpo_cyberdog_app
 {
 static int64_t requestNumber;
 Cyberdog_app::Cyberdog_app()
-: Node("motion_test_server"),
+: Node("app_server"),
   ticks_(0),
   can_process_messages(false),
   heartbeat_err_cnt(0),
@@ -599,7 +599,7 @@ bool Cyberdog_app::HandleOTAStatusRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    INFO("ota server not avalible");
     return false;
   }
 
@@ -613,13 +613,13 @@ bool Cyberdog_app::HandleOTAStatusRequest(
   auto res = ota_client_->async_send_request(req);
   auto status = res.wait_for(timeout);
   if (status == std::future_status::ready) {
-    RCLCPP_INFO(get_logger(), "success to call ota services.");
+    INFO("success to call ota services.");
   } else {
-    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+    INFO("Failed to call ota services.");
   }
 
   if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    ERROR("error while encoding authenticate ota response to json");
     retrunErrorGrpc(writer);
     return false;
   }
@@ -682,7 +682,7 @@ bool Cyberdog_app::HandleOTAVersionQueryRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    INFO("ota server not avalible");
     return false;
   }
 
@@ -696,13 +696,13 @@ bool Cyberdog_app::HandleOTAVersionQueryRequest(
 
   auto status = res.wait_for(timeout);
   if (status == std::future_status::ready) {
-    RCLCPP_INFO(get_logger(), "success to call ota services.");
+    INFO("success to call ota services.");
   } else {
-    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+    INFO("Failed to call ota services.");
   }
 
   if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    ERROR("error while encoding authenticate ota response to json");
     retrunErrorGrpc(writer);
     return false;
   }
@@ -723,7 +723,7 @@ bool Cyberdog_app::HandleOTAStartDownloadRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    INFO("ota server not avalible");
     return false;
   }
 
@@ -738,9 +738,9 @@ bool Cyberdog_app::HandleOTAStartDownloadRequest(
 
   auto status = res.wait_for(timeout);
   if (status == std::future_status::ready) {
-    RCLCPP_INFO(get_logger(), "success to call ota services.");
+    INFO("success to call ota services.");
   } else {
-    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+    INFO("Failed to call ota services.");
   }
 
   grpc_respond.set_namecode(::grpcapi::SendRequest::OTA_START_DOWNLOAD_REQUEST);
@@ -759,7 +759,7 @@ bool Cyberdog_app::HandleOTAStartUpgradeRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    INFO("ota server not avalible");
     return false;
   }
 
@@ -773,9 +773,9 @@ bool Cyberdog_app::HandleOTAStartUpgradeRequest(
   auto res = ota_client_->async_send_request(req);
   auto status = res.wait_for(timeout);
   if (status == std::future_status::ready) {
-    RCLCPP_INFO(get_logger(), "success to call ota services.");
+    INFO("success to call ota services.");
   } else {
-    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+    INFO("Failed to call ota services.");
   }
 
   std::cout << "response_string: " << res.get()->response.value << std::endl;
@@ -796,7 +796,7 @@ bool Cyberdog_app::HandleOTAProcessQueryRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    INFO("ota server not avalible");
     return false;
   }
 
@@ -810,13 +810,13 @@ bool Cyberdog_app::HandleOTAProcessQueryRequest(
 
   auto status = res.wait_for(timeout);
   if (status == std::future_status::ready) {
-    RCLCPP_INFO(get_logger(), "success to call ota services.");
+    INFO("success to call ota services.");
   } else {
-    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+    INFO("Failed to call ota services.");
   }
 
   if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    ERROR("error while encoding authenticate ota response to json");
     retrunErrorGrpc(writer);
     return false;
   }
@@ -838,7 +838,7 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    RCLCPP_INFO(get_logger(), "ota server not avalible");
+    INFO("ota server not avalible");
     return false;
   }
 
@@ -852,19 +852,19 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
 
   auto status = res.wait_for(timeout);
   if (status == std::future_status::ready) {
-    RCLCPP_INFO(get_logger(), "success to call ota services.");
+    INFO("success to call ota services.");
   } else {
-    RCLCPP_INFO(get_logger(), "Failed to call ota services.");
+    INFO("Failed to call ota services.");
   }
 
   if (!CyberdogJson::String2Document(res.get()->response.value, json_response)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate ota response to json");
+    ERROR("error while encoding authenticate ota response to json");
     retrunErrorGrpc(writer);
     return false;
   }
 
   if (!CyberdogJson::Document2String(json_response, response_string)) {
-    RCLCPP_ERROR(get_logger(), "error while encoding authenticate response to json");
+    ERROR("error while encoding authenticate response to json");
     retrunErrorGrpc(writer);
     return false;
   }
@@ -879,8 +879,8 @@ void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  RCLCPP_INFO(
-    get_logger(), "ProcessMsg %d %s", grpc_request->namecode(),
+  INFO(
+    "ProcessMsg %d %s", grpc_request->namecode(),
     grpc_request->params().c_str());
   ::grpcapi::RecResponse grpc_respond;
   Document json_resquest(kObjectType);
@@ -896,8 +896,7 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::GET_DEVICE_INFO:
       {
         if (!query_dev_info_client_->wait_for_service()) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "call querydevinfo server not avaiable"
           );
           return;
@@ -914,12 +913,10 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = query_dev_info_client_->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "success to call querydevinfo request services.");
         } else {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "Failed to call querydevinfo request  services.");
         }
         grpc_respond.set_data(future_result.get()->info);
@@ -991,8 +988,7 @@ void Cyberdog_app::ProcessMsg(
 
     case ::grpcapi::SendRequest::AUDIO_AUTHENTICATION_REQUEST: {
         if (!audio_auth_request->wait_for_service()) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "callAuthenticateRequest server not avalible");
           return;
         }
@@ -1002,12 +998,10 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = audio_auth_request->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "success to call authenticate request services.");
         } else {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "Failed to call authenticate request  services.");
         }
         rsp.did = future_result.get()->did;
@@ -1015,8 +1009,7 @@ void Cyberdog_app::ProcessMsg(
         CyberdogJson::Add(json_response, "did", rsp.did);
         CyberdogJson::Add(json_response, "sn", rsp.sn);
         if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(
-            get_logger(),
+          ERROR(
             "error while encoding authenticate request to json");
           retrunErrorGrpc(writer);
           return;
@@ -1028,8 +1021,7 @@ void Cyberdog_app::ProcessMsg(
 
     case ::grpcapi::SendRequest::AUDIO_AUTHENTICATION_RESPONSE: {
         if (!audio_auth_response->wait_for_service()) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "callAuthenticateResponse server not avalible");
           return;
         }
@@ -1048,19 +1040,16 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = audio_auth_response->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "success to call authenticate response services.");
         } else {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "Failed to call authenticate response services.");
         }
         rsp.result = future_result.get()->result;
         CyberdogJson::Add(json_response, "result", rsp.result);
         if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          RCLCPP_ERROR(
-            get_logger(),
+          ERROR(
             "error while encoding authenticate response to json");
           retrunErrorGrpc(writer);
           return;
@@ -1071,8 +1060,7 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::AUDIO_VOICEPRINTTRAIN_START: {
         if (!audio_voiceprint_train->wait_for_service()) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "call voiceprint train start server not avalible");
           return;
         }
@@ -1084,12 +1072,10 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = audio_voiceprint_train->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "success to call voiceprint train start response services.");
         } else {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "Failed to call voiceprint train start response services.");
           return;
         }
@@ -1099,8 +1085,7 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::AUDIO_VOICEPRINTTRAIN_CANCEL: {
         if (!audio_voiceprint_train->wait_for_service()) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "call voiceprint train cancel server not avalible");
           return;
         }
@@ -1110,12 +1095,10 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = audio_voiceprint_train->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "success to call voiceprint train cancel response services.");
         } else {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "Failed to call voiceprint train cancel response services.");
           return;
         }
@@ -1125,8 +1108,7 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::AUDIO_VOICEPRINTS_DATA: {
         if (!voiceprints_data_notify->wait_for_service()) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "call voiceprints data server not avalible");
           return;
         }
@@ -1135,12 +1117,10 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = voiceprints_data_notify->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "success to call voiceprints data response services.");
         } else {
-          RCLCPP_INFO(
-            get_logger(),
+          INFO(
             "Failed to call voiceprints data response services.");
           return;
         }
@@ -1149,8 +1129,7 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::IMAGE_TRANSMISSION_CLOSE: {
         std_msgs::msg::String it_msg;
         if (!CyberdogJson::Document2String(json_resquest, it_msg.data)) {
-          RCLCPP_ERROR(
-            get_logger(),
+          ERROR(
             "error while parse image transmission data to string");
           return;
         }
