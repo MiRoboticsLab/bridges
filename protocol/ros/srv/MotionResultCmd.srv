@@ -13,7 +13,7 @@ float32[]    ctrl_point   # pose ctrl point  m
 float32[]    foot_pose    # front/back foot pose x,y,z  m
 float32[]    step_height  # step height when trot  m
 int32        duration     # Time of command execution
-
+int32        value
 ---
 
 # response
