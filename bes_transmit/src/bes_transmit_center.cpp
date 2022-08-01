@@ -13,6 +13,7 @@
 // limitations under the License.
 #include <string>
 #include <memory>
+#include <algorithm>
 #include "bes_transmit_center.hpp"
 
 #define   BTW_PUB_NODE_NAME   "bes_transmit_pub_waiter"
@@ -128,5 +129,13 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   if (!request->params.empty()) {
     params = request->params;
   }
-  respose->data = bhttp_ptr_->Access(request->method, request->url, params);
+  int mill_seconds = std::min(static_cast<int>(request->milsecs), 6000);
+  mill_seconds = std::max(0, mill_seconds);
+  mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
+  respose->data = "{\"code\": 369003, \"message\": \"http method error\"}";
+  if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
+    respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds);
+  } else if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_POST) {
+    respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds);
+  }
 }

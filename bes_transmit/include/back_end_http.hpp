@@ -33,20 +33,14 @@ public:
   ~Backend_Http()
   {
   }
-  const std::string Access(uint8_t method, const std::string & url, const std::string & params)
-  {
-    if (method == 0) {
-      return get(url, params);
-    } else if (method == 1) {
-      return post(url, params);
-    }
-    return "{\"code\": 369003, \"message\": \"http method error\"}";
-  }
 
-private:
-  const std::string get(const std::string & url, const std::string & params)
+public:
+  const std::string get(
+    const std::string & url, const std::string & params,
+    const uint16_t & millsecs)
   {
     httplib::Client cli_(base_url);
+    cli_.set_read_timeout(std::chrono::milliseconds(millsecs));
     std::string request_url = "/v1";
     if (url.length() > 0 && url[0] == '/') {
       request_url += url;
@@ -86,9 +80,13 @@ private:
     }
     return body;
   }
-  const std::string post(const std::string & url, const std::string & params)
+  const std::string post(
+    const std::string & url, const std::string & params,
+    const uint16_t & millsecs)
   {
     httplib::Client cli_(base_url);
+    cli_.set_read_timeout(std::chrono::milliseconds(millsecs));
+    cli_.set_write_timeout(std::chrono::milliseconds(millsecs));
     std::string request_url = "/v1";
     if (url.length() > 0 && url[0] == '/') {
       request_url += url;
