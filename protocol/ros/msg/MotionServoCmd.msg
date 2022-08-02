@@ -1,6 +1,7 @@
 int32        motion_id
 int32        cmd_type
 int32        cmd_source   
+int32        value
 float32[]    vel_des      # x y yaw speed  m/s
 float32[]    rpy_des      # roll pitch yaw  rad
 float32[]    pos_des      # x y z  m/s
