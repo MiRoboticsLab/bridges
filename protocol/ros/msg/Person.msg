@@ -7,6 +7,5 @@ FaceInfo face_info
 # body info
 BodyInfo body_info
 
-# gesture info
-
-# keypoint info
+# auto track
+TrackResult track_res

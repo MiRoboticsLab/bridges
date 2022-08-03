@@ -1,0 +1,15 @@
+# gesture rect
+sensor_msgs/RegionOfInterest roi
+
+# gesture cls
+int32 GESTURE_OK = 0
+int32 GESTURE_FAST_BACKWARD = 1
+int32 GESTURE_FAST_FORWARD = 2
+int32 GESTURE_STOP_LEFT = 3
+int32 GESTURE_STOP_RIGHT = 4
+int32 GESTURE_THUMBS_UP = 5
+int32 GESTURE_SHHH = 6
+int32 GESTURE_FIST = 7
+int32 GESTURE_PALM2FIST = 8
+int32 GESTURE_INVALID = 9
+int32 cls

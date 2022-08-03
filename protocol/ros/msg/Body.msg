@@ -7,3 +7,9 @@ string reid
 
 # features
 float32[] feats
+
+# keypoints
+Keypoint[] keypoints
+
+# gesture
+Gesture gesture
