@@ -18,6 +18,11 @@
 #include "cpp_httplib/httplib.h"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
+
+using cyberdog::common::CyberdogJson;
+using rapidjson::Document;
+using rapidjson::kObjectType;
 
 namespace cyberdog
 {
@@ -27,8 +32,20 @@ class Backend_Http final
 {
 public:
   Backend_Http()
-  : base_url("http://10.167.23.60:8091")
+  : base_url("http://10.167.153.177:8091")
   {
+    auto local_share_dir = ament_index_cpp::get_package_share_directory("params");
+    auto path = local_share_dir + std::string("/toml_config/manager/settings.json");
+    Document json_document(kObjectType);
+    auto result = CyberdogJson::ReadJsonFromFile(path, json_document);
+    if (result) {
+      std::string url;
+      bool result = CyberdogJson::Get(json_document, "bes_url", url);
+      if (result) {
+        base_url = url;
+        INFO("bes url:%s", base_url.c_str());
+      }
+    }
   }
   ~Backend_Http()
   {
