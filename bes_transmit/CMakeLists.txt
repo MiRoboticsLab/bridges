@@ -23,6 +23,7 @@ find_package(protocol REQUIRED)
 find_package(cyberdog_common REQUIRED)
 find_package(mqttc REQUIRED)
 find_package(cpp_httplib REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 set(dependencies
   rclcpp
@@ -31,6 +32,7 @@ set(dependencies
   cyberdog_common
   mqttc
   cpp_httplib
+  ament_index_cpp
 )
 set(executable_name bes_transmit_waiter)
 
