@@ -1,3 +1,9 @@
-uint64 nanosec
-uint16 range #  rang的单位是cm
-int16 angle  # angle得到的数据除以100是实际的度数
+uint64 second
+
+# position [x, y, z]
+float32[] position
+
+uint64 n_los
+uint16 rssi_1
+uint16 rssi_2
+
