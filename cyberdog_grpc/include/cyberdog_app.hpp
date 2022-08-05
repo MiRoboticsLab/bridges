@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2022 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -239,18 +239,19 @@ private:
   // photo and video recording
   rclcpp::Client<protocol::srv::CameraService>::SharedPtr camera_service_client_;
   bool callCameraService(uint8_t command, uint8_t & result, std::string & msg);
-  bool selectCallingCameraService(int namecode, uint8_t & result, std::string & msg);
-  bool processCameraMsg(int namecode, ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
-  bool processCameraMsg(int namecode, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
+  bool processCameraMsg(
+    uint32_t namecode,
+    uint8_t command,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  bool processCameraMsg(
+    uint32_t namecode,
+    uint8_t command,
+    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
   bool returnResponse(
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
     uint8_t result,
     const std::string & msg,
     uint32_t namecode);
-  bool returnFile(
-    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer,
-    uint8_t result,
-    const std::string & msg);
 
   void ResetOTAFlags();
 
@@ -284,6 +285,8 @@ private:
 
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
+
+  LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };
 }  // namespace carpo_cyberdog_app
 
