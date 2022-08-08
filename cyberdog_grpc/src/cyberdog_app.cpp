@@ -903,13 +903,34 @@ void Cyberdog_app::ProcessMsg(
         }
         bool is_sn = false;
         bool is_version = false;
+        bool is_uid = false;
+        bool is_nick_name = false;
+        bool is_volume = false;
+        bool is_mic_state = false;
+        bool is_voice_control = false;
+        bool is_wifi = false;
+        bool is_bat_info = false;
         CyberdogJson::Get(json_resquest, "is_sn", is_sn);
         CyberdogJson::Get(json_resquest, "is_version", is_version);
+        CyberdogJson::Get(json_resquest, "is_uid", is_version);
+        CyberdogJson::Get(json_resquest, "is_nick_name", is_nick_name);
+        CyberdogJson::Get(json_resquest, "is_volume", is_volume);
+        CyberdogJson::Get(json_resquest, "is_mic_state", is_mic_state);
+        CyberdogJson::Get(json_resquest, "is_voice_control", is_voice_control);
+        CyberdogJson::Get(json_resquest, "is_wifi", is_wifi);
+        CyberdogJson::Get(json_resquest, "is_bat_info", is_bat_info);
         std::chrono::seconds timeout(3);
         auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
         req->enables.resize(2);
         req->enables[0] = is_sn;
         req->enables[1] = is_version;
+        req->enables[2] = is_uid;
+        req->enables[3] = is_nick_name;
+        req->enables[4] = is_volume;
+        req->enables[5] = is_mic_state;
+        req->enables[6] = is_voice_control;
+        req->enables[7] = is_wifi;
+        req->enables[8] = is_bat_info;
         auto future_result = query_dev_info_client_->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
