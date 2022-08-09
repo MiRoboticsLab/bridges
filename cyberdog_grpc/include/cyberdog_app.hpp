@@ -47,6 +47,7 @@
 #include "protocol/srv/audio_voiceprints_set.hpp"
 #include "protocol/srv/camera_service.hpp"
 #include "protocol/srv/device_info.hpp"
+#include "protocol/srv/audio_nick_name.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -269,6 +270,9 @@ private:
 
   // robot state
   rclcpp::Client<protocol::srv::DeviceInfo>::SharedPtr query_dev_info_client_;
+
+  // robot nick name
+  rclcpp::Client<protocol::srv::AudioNickName>::SharedPtr dev_name_set_client_;
 };
 }  // namespace carpo_cyberdog_app
 
