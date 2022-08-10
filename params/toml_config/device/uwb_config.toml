@@ -1,0 +1,15 @@
+front_back_threshold = 7.0
+left_right_threshold = 7.0
+
+[HeadUWB]
+AoA_F_NMAX = -48.0
+AoA_F_PMAX = 60.0
+AoA_B_NMAX = -60.0
+AoA_B_PMAX = 60.0
+
+[RearUWB]
+AoA_L_NMAX = -40.0
+AoA_L_PMAX = 60.0
+AoA_R_NMAX = -48.0
+AoA_R_PMAX = 48.0
+
