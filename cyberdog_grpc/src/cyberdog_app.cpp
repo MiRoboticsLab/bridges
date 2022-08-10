@@ -172,6 +172,14 @@ Cyberdog_app::Cyberdog_app()
 
   dev_name_set_client_ =
     this->create_client<protocol::srv::AudioNickName>("set_nick_name");
+
+  // audio volume set
+  audio_volume_set_client_ =
+    this->create_client<protocol::srv::AudioVolumeSet>("audio_volume_set");
+
+  // audio mic set
+  audio_execute_client_ =
+    this->create_client<protocol::srv::AudioExecute>("set_audio_state");
 }
 
 void Cyberdog_app::HeartBeat()
@@ -1041,12 +1049,70 @@ void Cyberdog_app::ProcessMsg(
       } break;
 
     case ::grpcapi::SendRequest::DEVICE_VOLUME_SET: {
+        if (!audio_volume_set_client_->wait_for_service()) {
+          INFO(
+            "call volume set server not avalible");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioVolumeSet::Request>();
+        int volume;
+        CyberdogJson::Get(json_resquest, "volume", volume);
+        req->volume = volume;
+        auto future_result = audio_volume_set_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          INFO(
+            "success to call setvolume request services.");
+        } else {
+          INFO(
+            "Failed to call setvolume request  services.");
+        }
+        CyberdogJson::Add(json_response, "success", future_result.get()->success);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while volume set response encoding to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
       } break;
 
+    case ::grpcapi::SendRequest::DEVICE_AUDIO_SET:
     case ::grpcapi::SendRequest::DEVICE_MIC_SET: {
-      } break;
-
-    case ::grpcapi::SendRequest::DEVICE_AUDIO_SET: {
+        if (!audio_execute_client_->wait_for_service()) {
+          INFO(
+            "call mic set server not avalible");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioExecute::Request>();
+        req->client = "app_server";
+        bool enable;
+        CyberdogJson::Get(json_resquest, "enable", enable);
+        req->status.state =
+          (enable ==
+          true) ? protocol::msg::AudioStatus::AUDIO_STATUS_NORMAL : protocol::msg::AudioStatus::
+          AUDIO_STATUS_OFFMIC;
+        auto future_result = audio_execute_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          INFO(
+            "success to call set mic state request services.");
+        } else {
+          INFO(
+            "Failed to call set mic state request  services.");
+        }
+        CyberdogJson::Add(json_response, "success", future_result.get()->result);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while set mic state response encoding to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
       } break;
 
     case ::grpcapi::SendRequest::AUDIO_AUTHENTICATION_REQUEST: {
