@@ -169,6 +169,9 @@ Cyberdog_app::Cyberdog_app()
   // robot state
   query_dev_info_client_ =
     this->create_client<protocol::srv::DeviceInfo>("query_divice_info");
+
+  dev_name_set_client_ =
+    this->create_client<protocol::srv::AudioNickName>("set_nick_name");
 }
 
 void Cyberdog_app::HeartBeat()
@@ -903,13 +906,34 @@ void Cyberdog_app::ProcessMsg(
         }
         bool is_sn = false;
         bool is_version = false;
+        bool is_uid = false;
+        bool is_nick_name = false;
+        bool is_volume = false;
+        bool is_mic_state = false;
+        bool is_voice_control = false;
+        bool is_wifi = false;
+        bool is_bat_info = false;
         CyberdogJson::Get(json_resquest, "is_sn", is_sn);
         CyberdogJson::Get(json_resquest, "is_version", is_version);
+        CyberdogJson::Get(json_resquest, "is_uid", is_version);
+        CyberdogJson::Get(json_resquest, "is_nick_name", is_nick_name);
+        CyberdogJson::Get(json_resquest, "is_volume", is_volume);
+        CyberdogJson::Get(json_resquest, "is_mic_state", is_mic_state);
+        CyberdogJson::Get(json_resquest, "is_voice_control", is_voice_control);
+        CyberdogJson::Get(json_resquest, "is_wifi", is_wifi);
+        CyberdogJson::Get(json_resquest, "is_bat_info", is_bat_info);
         std::chrono::seconds timeout(3);
         auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
         req->enables.resize(2);
         req->enables[0] = is_sn;
         req->enables[1] = is_version;
+        req->enables[2] = is_uid;
+        req->enables[3] = is_nick_name;
+        req->enables[4] = is_volume;
+        req->enables[5] = is_mic_state;
+        req->enables[6] = is_voice_control;
+        req->enables[7] = is_wifi;
+        req->enables[8] = is_bat_info;
         auto future_result = query_dev_info_client_->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
@@ -984,6 +1008,45 @@ void Cyberdog_app::ProcessMsg(
         std_msgs::msg::String msg;
         msg.data = grpc_request->params();
         visual_request_pub_->publish(msg);
+      } break;
+
+    case ::grpcapi::SendRequest::DEVICE_NAME_SET: {
+        if (!dev_name_set_client_->wait_for_service()) {
+          INFO(
+            "call setnickname server not avaiable"
+          );
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::AudioNickName::Request>();
+        CyberdogJson::Get(json_resquest, "nick_name", req->nick_name);
+        CyberdogJson::Get(json_resquest, "wake_name", req->wake_name);
+        auto future_result = dev_name_set_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          INFO(
+            "success to call setnickname request services.");
+        } else {
+          INFO(
+            "Failed to call setnickname request  services.");
+        }
+        CyberdogJson::Add(json_response, "success", future_result.get()->success);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while device name set response encoding to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+      } break;
+
+    case ::grpcapi::SendRequest::DEVICE_VOLUME_SET: {
+      } break;
+
+    case ::grpcapi::SendRequest::DEVICE_MIC_SET: {
+      } break;
+
+    case ::grpcapi::SendRequest::DEVICE_AUDIO_SET: {
       } break;
 
     case ::grpcapi::SendRequest::AUDIO_AUTHENTICATION_REQUEST: {
