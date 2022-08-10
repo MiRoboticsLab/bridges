@@ -1,0 +1,8 @@
+# request
+string module_name
+bool is_online
+AudioPlay speech
+string text
+---
+# response
+uint8 status    # 0播放完毕
