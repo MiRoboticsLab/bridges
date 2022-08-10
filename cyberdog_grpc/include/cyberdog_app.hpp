@@ -48,6 +48,8 @@
 #include "protocol/srv/camera_service.hpp"
 #include "protocol/srv/device_info.hpp"
 #include "protocol/srv/audio_nick_name.hpp"
+#include "protocol/srv/audio_volume_set.hpp"
+#include "protocol/srv/audio_execute.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -273,6 +275,12 @@ private:
 
   // robot nick name
   rclcpp::Client<protocol::srv::AudioNickName>::SharedPtr dev_name_set_client_;
+
+  // audio volume set
+  rclcpp::Client<protocol::srv::AudioVolumeSet>::SharedPtr audio_volume_set_client_;
+
+  // audio mic state
+  rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
 };
 }  // namespace carpo_cyberdog_app
 
