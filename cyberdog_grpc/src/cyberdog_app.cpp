@@ -921,6 +921,7 @@ void Cyberdog_app::ProcessMsg(
         bool is_voice_control = false;
         bool is_wifi = false;
         bool is_bat_info = false;
+        bool is_motor_temper = false;
         CyberdogJson::Get(json_resquest, "is_sn", is_sn);
         CyberdogJson::Get(json_resquest, "is_version", is_version);
         CyberdogJson::Get(json_resquest, "is_uid", is_version);
@@ -930,9 +931,10 @@ void Cyberdog_app::ProcessMsg(
         CyberdogJson::Get(json_resquest, "is_voice_control", is_voice_control);
         CyberdogJson::Get(json_resquest, "is_wifi", is_wifi);
         CyberdogJson::Get(json_resquest, "is_bat_info", is_bat_info);
+        CyberdogJson::Get(json_resquest, "is_motor_temper", is_motor_temper);
         std::chrono::seconds timeout(3);
         auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
-        req->enables.resize(2);
+        req->enables.resize(20);
         req->enables[0] = is_sn;
         req->enables[1] = is_version;
         req->enables[2] = is_uid;
@@ -942,6 +944,7 @@ void Cyberdog_app::ProcessMsg(
         req->enables[6] = is_voice_control;
         req->enables[7] = is_wifi;
         req->enables[8] = is_bat_info;
+        req->enables[9] = is_motor_temper;
         auto future_result = query_dev_info_client_->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
