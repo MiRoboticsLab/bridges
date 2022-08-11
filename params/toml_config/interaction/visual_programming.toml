@@ -7,14 +7,18 @@ task_option_request = "task_option_request"     # 任务操作请求消息名称
 option_task_response = "task_option_response"   # 任务操作响应消息名称
 touch = "touch_status"                          # 触摸板模块消息名称
 bms = "bms_status"                              # BMS模块消息名称
-audio = "speech_play"                           # 语音模块消息名称
+ultrasonic = "ultrasonic_payload"               # 超声波模块消息名称
+odometer = "odom_out"                           # 里程计模块消息名称
+imu = "imu_out"                                 # imu模块消息名称
 voice = "asr_text"                              # 自动语音识别文本信息
 motion_servo_cmd = "motion_servo_cmd"           # 运动模块伺服指令
 motion_servo_res = "motion_servo_response"      # 运动模块伺服反馈
+connector = "connector_state"                   # 连接模块状态
 
 [vp.init.service]                               # 服务：string
 motion = "motion_result_cmd"                    # 运动模块服务名称
 led = "led_execute"                             # LED模块服务名称
+audio = "speech_text_play"                      # 语音模块服务名称
 
 [vp.init.validity_period]                       # 有效期：int(milliseconds) 毫秒
 touch = 30000                                   # 触摸板消息有效时长
