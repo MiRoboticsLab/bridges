@@ -1,0 +1,6 @@
+MapLabel label
+bool only_delete
+---
+uint8 RESULT_FAILED = 1
+uint8 RESULT_SUCCESS = 2
+uint8 success
