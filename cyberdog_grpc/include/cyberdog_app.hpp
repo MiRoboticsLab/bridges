@@ -273,6 +273,9 @@ private:
   // robot state
   rclcpp::Client<protocol::srv::DeviceInfo>::SharedPtr query_dev_info_client_;
 
+  // robot nick name switch
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr dev_name_enable_client_;
+
   // robot nick name
   rclcpp::Client<protocol::srv::AudioNickName>::SharedPtr dev_name_set_client_;
 
