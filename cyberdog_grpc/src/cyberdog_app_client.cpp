@@ -48,7 +48,9 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
   INFO("sendMsg rpc success.");
   return true;
 }
-bool Cyberdog_App_Client::sendHeartBeat(const std::string & ip, const bool & internet)
+bool Cyberdog_App_Client::sendHeartBeat(
+  const std::string & ip, const int32_t & wstrength,
+  const int32_t & battery, const bool & internet, const std::string & sn)
 {
   ClientContext context;
   gpr_timespec timespec;
@@ -59,7 +61,10 @@ bool Cyberdog_App_Client::sendHeartBeat(const std::string & ip, const bool & int
   Result result;
   Ticks ticks_;
   ticks_.set_ip(ip);
+  ticks_.set_wifi_strength(wstrength);
+  ticks_.set_battery_power(battery);
   ticks_.set_internet(internet);
+  ticks_.set_sn(sn);
   Status status = stub_->heartbeat(&context, ticks_, &result);
   if (!status.ok()) {
     INFO("SetHeartBeat error code:%d", status.error_code());

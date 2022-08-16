@@ -35,6 +35,7 @@
 
 #include "cyberdog_app_server.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_srvs/srv/trigger.hpp"
 #define gettid() syscall(SYS_gettid)
 
 using namespace std::chrono_literals;
@@ -65,8 +66,32 @@ Cyberdog_app::Cyberdog_app()
   server_(nullptr),
   app_stub(nullptr),
   app_disconnected(true),
+  is_internet(false),
+  wifi_strength(0),
+  sn(""),
   destory_grpc_server_thread_(nullptr)
 {
+  if (sn == "") {
+    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
+    sn_ger_srv_ =
+      node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
+    if (!sn_ger_srv_->wait_for_service()) {
+      ERROR("call sn server not avalible");
+      sn = "unaviable";
+    }
+    auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+    auto future_result = sn_ger_srv_->async_send_request(req);
+    if (!(rclcpp::spin_until_future_complete(node, future_result) ==
+      rclcpp::FutureReturnCode::SUCCESS))
+    {
+      ERROR("call get sn service failed!");
+      sn = "unkown";
+    } else {
+      sn = future_result.get()->message;
+    }
+    INFO("sn:%s", sn.c_str());
+  }
   INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
 
@@ -193,7 +218,7 @@ void Cyberdog_app::HeartBeat()
   std::string ipv4;
   while (true) {
     if (can_process_messages && app_stub) {
-      if (!app_stub->sendHeartBeat(local_ip, is_internet)) {
+      if (!app_stub->sendHeartBeat(local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn)) {
         if (heartbeat_err_cnt++ >= APP_CONNECTED_FAIL_CNT) {
           std_msgs::msg::Bool msg;
           msg.data = false;
@@ -285,10 +310,16 @@ void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::
       INFO("local_ip ip :%s,pheneIp ip :%s", local_ip.c_str(), phoneIp.c_str());
       server_ip = std::make_shared<std::string>(phoneIp);
       is_internet = msg->is_internet;
+      wifi_strength = msg->strength;
       destroyGrpc();
       createGrpc();
     }
   }
+}
+
+void Cyberdog_app::subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg)
+{
+  bms_status = *msg;
 }
 
 void Cyberdog_app::destroyGrpcServer()
@@ -959,6 +990,7 @@ void Cyberdog_app::ProcessMsg(
           INFO(
             "Failed to call querydevinfo request  services.");
         }
+        grpc_respond.set_namecode(grpc_request->namecode());
         grpc_respond.set_data(future_result.get()->info);
         writer->Write(grpc_respond);
       }

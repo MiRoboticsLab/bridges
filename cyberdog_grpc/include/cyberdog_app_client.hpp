@@ -42,7 +42,9 @@ class Cyberdog_App_Client
 public:
   explicit Cyberdog_App_Client(std::shared_ptr<Channel> channel);
   ~Cyberdog_App_Client();
-  bool sendHeartBeat(const std::string & ip, const bool & internet);
+  bool sendHeartBeat(
+    const std::string & ip, const int32_t & wstrength,
+    const int32_t & battery, const bool & internet, const std::string & sn);
   bool sendRequest(const ::grpcapi::SendRequest & msg);
 
 private:
