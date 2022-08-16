@@ -39,6 +39,7 @@
 #include "protocol/msg/motion_servo_response.hpp"
 #include "protocol/msg/audio_voiceprint_result.hpp"
 #include "protocol/msg/connector_status.hpp"
+#include "protocol/msg/bms_status.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
 #include "protocol/srv/ota_server_cmd.hpp"
@@ -96,6 +97,7 @@ private:
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
   void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
+  void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
   string GetFileConecxt(string path);
@@ -104,6 +106,9 @@ private:
   bool app_disconnected;
   std::string local_ip;
   bool is_internet;
+  int wifi_strength;
+  protocol::msg::BmsStatus bms_status;
+  std::string sn;
   TimeInterval timer_interval;
   void HeartBeat();
   void sendMsg(
@@ -225,6 +230,7 @@ private:
   rclcpp::Subscription<protocol::msg::AudioVoiceprintResult>::SharedPtr
     audio_voiceprint_result_sub_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr voiceprints_data_sub_;
+  rclcpp::Subscription<protocol::msg::BmsStatus>::SharedPtr bms_status_sub_;
   void voiceprint_result_callback(const protocol::msg::AudioVoiceprintResult::SharedPtr msg);
   void voiceprints_data_callback(const std_msgs::msg::Bool::SharedPtr msg);
   // commcon code
