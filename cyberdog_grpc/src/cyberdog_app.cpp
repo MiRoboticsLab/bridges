@@ -1259,6 +1259,36 @@ void Cyberdog_app::ProcessMsg(
         visual_request_pub_->publish(msg);
       } break;
 
+    case ::grpcapi::SendRequest::DEVICE_NAME_SWITCH: {
+        if (!dev_name_enable_client_->wait_for_service()) {
+          INFO(
+            "call set nickname switch server not avaiable"
+          );
+          retrunErrorGrpc(writer);
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        CyberdogJson::Get(json_resquest, "enable", req->data);
+        auto future_result = dev_name_enable_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          INFO(
+            "success to call set nickname switch request services.");
+        } else {
+          INFO(
+            "Failed to call set nickname switch request  services.");
+        }
+        CyberdogJson::Add(json_response, "success", future_result.get()->success);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while device name switch response encoding to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+      } break;
+
     case ::grpcapi::SendRequest::DEVICE_NAME_SET: {
         if (!dev_name_set_client_->wait_for_service()) {
           INFO("call setnickname server not avaiable");
