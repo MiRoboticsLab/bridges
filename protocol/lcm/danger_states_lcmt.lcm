@@ -1,0 +1,4 @@
+struct danger_states_lcmt
+{
+  float motor_temperature[12];
+}
