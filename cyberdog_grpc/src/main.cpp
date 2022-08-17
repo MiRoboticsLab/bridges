@@ -15,12 +15,14 @@
 
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
+#include "cyberdog_debug/backtrace.hpp"
 #include "cyberdog_app.hpp"
 
 int main(int argc, char ** argv)
 {
-  rclcpp::init(argc, argv);
   LOGGER_MAIN_INSTANCE("cyberdog_grpc");
+  cyberdog::debug::register_signal();
+  rclcpp::init(argc, argv);
   auto node = std::make_shared<carpo_cyberdog_app::Cyberdog_app>();
   rclcpp::executors::MultiThreadedExecutor exec_;
   exec_.add_node(node->get_node_base_interface());
