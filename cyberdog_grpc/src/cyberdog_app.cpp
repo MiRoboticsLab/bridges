@@ -631,8 +631,8 @@ bool Cyberdog_app::returnFile(
   INFO_STREAM(
     "Finish sending file: " <<
       file_name_with_path << ", it takes: " <<
-      double(end.tv_sec - start.tv_sec) +
-      double(end.tv_usec - start.tv_usec) / 1000000 <<
+      static_cast<double>(end.tv_sec - start.tv_sec) +
+      static_cast<double>(end.tv_usec - start.tv_usec) / 1000000 <<
       " seconds.");
   remove(file_name_with_path.c_str());
   return true;

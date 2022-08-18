@@ -91,4 +91,4 @@ private:
   SharedPtrCallback callback_;
   std::shared_ptr<std::thread> thread_;
 };
-#endif  // MSGD_ISPATCHER_HPP_
+#endif  // MSG_DISPATCHER_HPP_
