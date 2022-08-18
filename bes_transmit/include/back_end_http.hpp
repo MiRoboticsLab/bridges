@@ -32,7 +32,7 @@ class Backend_Http final
 {
 public:
   Backend_Http()
-  : base_url("http://10.167.153.177:8091")
+  : base_url("http://10.38.204.220:8091")
   {
     auto local_share_dir = ament_index_cpp::get_package_share_directory("params");
     auto path = local_share_dir + std::string("/toml_config/manager/settings.json");
@@ -64,7 +64,7 @@ public:
     } else {
       request_url = request_url + "/" + url;
     }
-    std::string body("{\"code\": 404}");
+    std::string body("{\"code\": -1}");
     if (!params.empty()) {
       rapidjson::Document doc;
       doc.SetObject();
@@ -113,7 +113,7 @@ public:
     INFO(
       "base_url:%s, request url:%s, params:%s",
       base_url.c_str(), request_url.c_str(), params.c_str());
-    std::string body("{\"code\": 404}");
+    std::string body("{\"code\": -1}");
     auto res = cli_.Post(request_url, params, "application/json");
     if (res) {
       body = res->body;
