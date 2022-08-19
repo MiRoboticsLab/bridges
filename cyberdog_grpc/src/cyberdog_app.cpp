@@ -35,6 +35,7 @@
 
 #include "cyberdog_app_server.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #define gettid() syscall(SYS_gettid)
 
 using namespace std::chrono_literals;
@@ -980,29 +981,51 @@ void Cyberdog_app::handleMappingRequest(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  int timeout = 5;
+  int timeout = 60;
   std::string response_string;
   std::string status;
+  double goal_x, goal_y;
   CyberdogJson::Get(json_resquest, "status", status);
   RCLCPP_INFO(get_logger(), "handleMappingRequest ");
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_MAPPING;
-  } else {
+  } else if (status == "STOP") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_STOP_MAPPING;
+  } else if (status == "NAVIGATION_AB") {
+    if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
+      ERROR("NAVIGATION_AB should have goalX and goalY settings");
+      retrunErrorGrpc(writer);
+    }
+    CyberdogJson::Get(json_resquest, "goalX", goal_x);
+    CyberdogJson::Get(json_resquest, "goalY", goal_y);
+    geometry_msgs::msg::PoseStamped goal;
+    goal.pose.position.x = goal_x;
+    goal.pose.position.y = goal_y;
+    mode_goal.poses.push_back(goal);
   }
   auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal);
   auto mode_result =
     navigation_client_->async_get_result(mode_goal_handle.get());
-
-  mode_result.wait_for(std::chrono::seconds(timeout > 0 ? timeout : 5));
+  uint8_t result = 2;
+  mode_result.wait_for(std::chrono::seconds(60));
   if (mode_goal_handle.get()->is_result_aware()) {
     if (mode_result.get().result->result ==
       protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
     {
-      INFO("handleMappingRequest success");
+      INFO("Navigation action success");
+    } else {
+      WARN("Navigation action fail");
     }
+    result = mode_result.get().result->result;
   }
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+  json_writer.StartObject();
+  json_writer.Key("result");
+  json_writer.Int(result);
+  json_writer.EndObject();
+  response_string = strBuf.GetString();
   grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_MAPPING_RQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
