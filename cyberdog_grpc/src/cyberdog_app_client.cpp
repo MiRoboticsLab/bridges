@@ -45,7 +45,7 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
     INFO("sendMsg error code:%d", status.error_code());
     return false;
   }
-  INFO("sendMsg rpc success.");
+  INFO_STREAM("sendMsg rpc success. namecode: " << msg.namecode() << " params: " << msg.params());
   return true;
 }
 bool Cyberdog_App_Client::sendHeartBeat(
