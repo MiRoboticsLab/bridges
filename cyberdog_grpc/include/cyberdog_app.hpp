@@ -292,6 +292,9 @@ private:
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
 
+  // test
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
+
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };
 }  // namespace carpo_cyberdog_app

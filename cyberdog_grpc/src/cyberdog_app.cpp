@@ -209,6 +209,9 @@ Cyberdog_app::Cyberdog_app()
   // audio mic set
   audio_execute_client_ =
     this->create_client<protocol::srv::AudioExecute>("set_audio_state");
+
+  // test
+  app_disconnect_pub_ = this->create_publisher<std_msgs::msg::Bool>("disconnect_app", 2);
 }
 
 void Cyberdog_app::HeartBeat()
@@ -1279,6 +1282,14 @@ void Cyberdog_app::ProcessMsg(
         }
       }
       break;
+    case 55001: {
+        std_msgs::msg::Bool msg;
+        msg.data = true;
+        grpc_respond.set_namecode(55001);
+        grpc_respond.set_data("");
+        writer->Write(grpc_respond);
+        app_disconnect_pub_->publish(msg);
+      } break;
     default:
       break;
   }
