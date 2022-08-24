@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-#ifndef MSGDISPATCHER_HPP_
-#define MSGDISPATCHER_HPP_
-#include <queue>
-#include <mutex>
-#include <memory>
-#include <condition_variable>
+#ifndef MSG_DISPATCHER_HPP_
+#define MSG_DISPATCHER_HPP_
 #include <chrono>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <queue>
 #include <utility>
 template<typename MessageT>
 class LatestMsgDispather
@@ -28,16 +27,14 @@ class LatestMsgDispather
 
 public:
   LatestMsgDispather()
-  : callback_(nullptr), need_run_(true)
-  {
-  }
+  : callback_(nullptr), need_run_(true) {}
   ~LatestMsgDispather()
   {
     need_run_ = false;
     cond.notify_all();
     thread_->join();
   }
-  void push(MessageT msg)
+  void push(const MessageT & msg)
   {
     std::lock_guard<std::mutex> lk(mut);
     if (!need_run_) {
@@ -52,13 +49,12 @@ public:
   std::shared_ptr<MessageT> get()
   {
     std::unique_lock<std::mutex> ulk(mut);
-    cond.wait(
-      ulk, [this]
-      {return !need_run_ || !this->queue_.empty();});
+    cond.wait(ulk, [this] {return !need_run_ || !this->queue_.empty();});
     if (!need_run_) {
       return NULL;
     }
-    std::shared_ptr<MessageT> val(std::make_shared<MessageT>(std::move(queue_.front())));
+    std::shared_ptr<MessageT> val(
+      std::make_shared<MessageT>(std::move(queue_.front())));
     queue_.pop();
     return val;
   }
@@ -71,7 +67,9 @@ public:
 
   void run()
   {
-    thread_ = std::make_shared<std::thread>(&LatestMsgDispather::process_thread, this);
+    thread_ = std::make_shared<std::thread>(
+      &LatestMsgDispather::process_thread,
+      this);
   }
   void process_thread()
   {
@@ -93,4 +91,4 @@ private:
   SharedPtrCallback callback_;
   std::shared_ptr<std::thread> thread_;
 };
-#endif  // MSGDISPATCHER_HPP_
+#endif  // MSG_DISPATCHER_HPP_

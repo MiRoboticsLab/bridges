@@ -28,17 +28,23 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <map>
 
 // Interfaces
 #include "cyberdog_app_client.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
-#include "msgdispatcher.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "msg_dispatcher.hpp"
+#include "protocol/action/navigation.hpp"
+#include "nav_msgs/msg/occupancy_grid.hpp"
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
 #include "protocol/msg/audio_voiceprint_result.hpp"
 #include "protocol/msg/connector_status.hpp"
+#include "protocol/msg/label.hpp"
+#include "protocol/msg/map_label.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
 #include "protocol/srv/ota_server_cmd.hpp"
@@ -50,6 +56,8 @@
 #include "protocol/srv/audio_nick_name.hpp"
 #include "protocol/srv/audio_volume_set.hpp"
 #include "protocol/srv/audio_execute.hpp"
+#include "protocol/srv/get_map_label.hpp"
+#include "protocol/srv/set_map_label.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -86,16 +94,21 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   std::shared_ptr<std::thread> destory_grpc_server_thread_;
   std::shared_ptr<std::thread> dog_walk_thread_;
-  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
-  rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
+  rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr
+    connect_status_subscriber;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
+    dog_pose_sub_;
   void destroyGrpcServer();
   std::string getDogIp(const string str, const string & split);
   std::string getPhoneIp(const string str, const string & split);
   std::shared_ptr<Cyberdog_App_Client> app_stub;
   std::shared_ptr<std::string> server_ip;
   std::shared_ptr<grpc::Server> server_;
-  // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
-  void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
+  void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
+  void subscribeConnectStatus(
+    const protocol::msg::ConnectorStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
   string GetFileConecxt(string path);
@@ -273,6 +286,9 @@ private:
   // robot state
   rclcpp::Client<protocol::srv::DeviceInfo>::SharedPtr query_dev_info_client_;
 
+  // robot nick name switch
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr dev_name_enable_client_;
+
   // robot nick name
   rclcpp::Client<protocol::srv::AudioNickName>::SharedPtr dev_name_set_client_;
 
@@ -281,7 +297,31 @@ private:
 
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
+  // process map message
+  void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+  void processDogPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
+  // LatestMsgDispather<std::shared_ptr<::grpcapi::SendRequest>> send_thread_;
+  void send_msgs_(
+    const std::shared_ptr<std::shared_ptr<::grpcapi::SendRequest>> msg);
+  std::map<int, std::shared_ptr<LatestMsgDispather<
+      std::shared_ptr<::grpcapi::SendRequest>>>>
+  send_thread_map_;
+  // map label
+  void handlLableSetRequest(
+    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  void handlLableGetRequest(
+    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  void handleMappingRequest(
+    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  rclcpp::Client<protocol::srv::SetMapLabel>::SharedPtr set_label_client_;
+  rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
+  rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
+    navigation_client_;
 };
 }  // namespace carpo_cyberdog_app
-
 #endif  // CYBERDOG_APP_HPP_

@@ -28,7 +28,7 @@
 #include <string>
 #include <thread>
 #include "std_msgs/msg/string.hpp"
-#include "msgdispatcher.hpp"
+#include "msg_dispatcher.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
 
 using grpc::Channel;
