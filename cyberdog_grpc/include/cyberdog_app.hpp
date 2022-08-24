@@ -292,6 +292,9 @@ private:
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
 
+  // audio action state
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
+
   // test
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
 

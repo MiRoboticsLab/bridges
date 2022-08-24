@@ -75,7 +75,7 @@ Cyberdog_app::Cyberdog_app()
     rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
     sn_ger_srv_ =
       node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
-    if (!sn_ger_srv_->wait_for_service()) {
+    if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
       ERROR("call sn server not avalible");
       sn = "unaviable";
     }
@@ -184,6 +184,10 @@ Cyberdog_app::Cyberdog_app()
     "ota_upgrade_reboot", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::HandleUpgradeRebootMsgs, this, _1));
 
+  bms_status_sub_ = this->create_subscription<protocol::msg::BmsStatus>(
+    "bms_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::subscribeBmsStatus, this, std::placeholders::_1));
+
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 
   // connection
@@ -209,6 +213,9 @@ Cyberdog_app::Cyberdog_app()
   // audio mic set
   audio_execute_client_ =
     this->create_client<protocol::srv::AudioExecute>("set_audio_state");
+
+  audio_action_set_client_ =
+    this->create_client<std_srvs::srv::SetBool>("audio_action_set");
 
   // test
   app_disconnect_pub_ = this->create_publisher<std_msgs::msg::Bool>("disconnect_app", 2);
@@ -1049,7 +1056,6 @@ void Cyberdog_app::ProcessMsg(
         writer->Write(grpc_respond);
       } break;
 
-    case ::grpcapi::SendRequest::DEVICE_AUDIO_SET:
     case ::grpcapi::SendRequest::DEVICE_MIC_SET: {
         if (!audio_execute_client_->wait_for_service()) {
           INFO(
@@ -1078,6 +1084,37 @@ void Cyberdog_app::ProcessMsg(
         CyberdogJson::Add(json_response, "success", future_result.get()->result);
         if (!CyberdogJson::Document2String(json_response, rsp_string)) {
           ERROR("error while set mic state response encoding to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+      } break;
+
+    case ::grpcapi::SendRequest::DEVICE_AUDIO_SET: {
+        if (!audio_action_set_client_->wait_for_service()) {
+          INFO(
+            "call audio action set server not avalible");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+        bool enable;
+        CyberdogJson::Get(json_resquest, "enable", enable);
+        req->data = enable;
+        auto future_result = audio_action_set_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          INFO(
+            "success to call set audio action request services.");
+        } else {
+          INFO(
+            "Failed to call set audio action request  services.");
+        }
+        CyberdogJson::Add(json_response, "success", future_result.get()->success);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while set audio action response encoding to json");
           retrunErrorGrpc(writer);
           return;
         }
