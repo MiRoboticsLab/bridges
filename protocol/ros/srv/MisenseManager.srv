@@ -1,0 +1,25 @@
+uint32 GET_MISENSE_STATUS = 0
+uint32 SET_MISENSE_STATUS = 1
+uint32 GET_MISENSE_PARAM = 2
+uint32 SET_MISENSE_LED = 3
+
+uint32 command
+bool rgbenable
+bool monoenable
+bool tofenable
+uint32 rgbres
+---
+uint32 RESULT_SUCCESS = 0
+uint32 RESULT_INVALID_ARGS = 1
+uint32 RESULT_UNSUPPORTED = 2
+uint32 RESULT_TIMEOUT = 3
+uint32 RESULT_BUSY = 4
+uint32 RESULT_INVALID_STATE = 5
+uint32 RESULT_INNER_ERROR = 6
+uint32 RESULT_UNDEFINED_ERROR = 255
+
+uint32 result
+string msg
+MisenseStatus status
+uint32 count
+float32[] intr
