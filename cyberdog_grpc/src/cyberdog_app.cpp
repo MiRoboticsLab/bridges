@@ -184,6 +184,10 @@ Cyberdog_app::Cyberdog_app()
     "ota_upgrade_reboot", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::HandleUpgradeRebootMsgs, this, _1));
 
+  bms_status_sub_ = this->create_subscription<protocol::msg::BmsStatus>(
+    "bms_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::subscribeBmsStatus, this, std::placeholders::_1));
+
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 
   // connection
