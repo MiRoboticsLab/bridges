@@ -872,6 +872,7 @@ void Cyberdog_app::ProcessMsg(
         bool is_motor_temper = false;
         bool is_audio_state = false;
         bool is_device_model = false;
+        bool is_stand_up = false;
         CyberdogJson::Get(json_resquest, "is_sn", is_sn);
         CyberdogJson::Get(json_resquest, "is_version", is_version);
         CyberdogJson::Get(json_resquest, "is_uid", is_version);
@@ -884,6 +885,7 @@ void Cyberdog_app::ProcessMsg(
         CyberdogJson::Get(json_resquest, "is_motor_temper", is_motor_temper);
         CyberdogJson::Get(json_resquest, "is_audio_state", is_audio_state);
         CyberdogJson::Get(json_resquest, "is_device_model", is_device_model);
+        CyberdogJson::Get(json_resquest, "is_stand", is_stand_up);
         std::chrono::seconds timeout(3);
         auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
         req->enables.resize(20);
@@ -899,6 +901,7 @@ void Cyberdog_app::ProcessMsg(
         req->enables[9] = is_motor_temper;
         req->enables[10] = is_audio_state;
         req->enables[11] = is_device_model;
+        req->enables[12] = is_stand_up;
         auto future_result = query_dev_info_client_->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
