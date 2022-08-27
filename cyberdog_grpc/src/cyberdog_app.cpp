@@ -585,10 +585,16 @@ void Cyberdog_app::HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg)
   std::string response_string;
 
   CyberdogJson::Add(progress_response, "upgrade_progress", 0);
-  CyberdogJson::Add(progress_response, "download_progress", msg.data);
+  if (msg.data < 0) {
+    CyberdogJson::Add(progress_response, "download_progress", -1);
+    CyberdogJson::Add(progress_response, "code", msg.data);
+  } else {
+    CyberdogJson::Add(progress_response, "download_progress", msg.data);
+    CyberdogJson::Add(progress_response, "code", 0);
+  }
   CyberdogJson::Document2String(progress_response, response_string);
 
-  INFO("upgrade_progress: %d", 0);
+  // INFO("upgrade_progress: %d", 0);
   INFO("download_progress: %d", msg.data);
 
   send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
@@ -599,12 +605,18 @@ void Cyberdog_app::HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg)
   Document progress_response(kObjectType);
   std::string response_string;
 
-  CyberdogJson::Add(progress_response, "upgrade_progress", msg.data);
+  if (msg.data < 0) {
+    CyberdogJson::Add(progress_response, "upgrade_progress", -1);
+    CyberdogJson::Add(progress_response, "code", msg.data);
+  } else {
+    CyberdogJson::Add(progress_response, "upgrade_progress", msg.data);
+    CyberdogJson::Add(progress_response, "code", 0);
+  }
   CyberdogJson::Add(progress_response, "download_progress", 0);
   CyberdogJson::Document2String(progress_response, response_string);
 
   INFO("upgrade_progress: %d", msg.data);
-  INFO("download_progress: %d", 0);
+  // INFO("download_progress: %d", 0);
 
   send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
 }
