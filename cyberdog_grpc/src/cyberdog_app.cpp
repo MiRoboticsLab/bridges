@@ -1062,7 +1062,7 @@ void Cyberdog_app::handlLableGetRequest(
     writer.String(labels.map_name.c_str());
     writer.Key("locationLabelInfo");
     writer.StartArray();
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < labels.labels.size(); ++i) {
       writer.StartObject();
       writer.Key("labelName");
       writer.String(labels.labels[i].label_name.c_str());
