@@ -1073,32 +1073,34 @@ void Cyberdog_app::handlLableGetRequest(
       writer.EndObject();
     }
     writer.EndArray();
+    writer.StartObject();
     writer.Key("resolution");
-    writer.Double(labels.resolution);
+    writer.Double(labels.map.info.resolution);
     writer.Key("width");
-    writer.Int(labels.width);
+    writer.Int(labels.map.info.width);
     writer.Key("height");
-    writer.Int(labels.height);
+    writer.Int(labels.map.info.height);
     writer.Key("px");
-    writer.Double(labels.origin.position.x);
+    writer.Double(labels.map.info.origin.position.x);
     writer.Key("py");
-    writer.Double(labels.origin.position.y);
+    writer.Double(labels.map.info.origin.position.y);
     writer.Key("pz");
-    writer.Double(labels.origin.position.z);
+    writer.Double(labels.map.info.origin.position.z);
     writer.Key("qx");
-    writer.Double(labels.origin.orientation.x);
+    writer.Double(labels.map.info.origin.orientation.x);
     writer.Key("qy");
-    writer.Double(labels.origin.orientation.y);
+    writer.Double(labels.map.info.origin.orientation.y);
     writer.Key("qz");
-    writer.Double(labels.origin.orientation.z);
+    writer.Double(labels.map.info.origin.orientation.z);
     writer.Key("qw");
-    writer.Double(labels.origin.orientation.w);
+    writer.Double(labels.map.info.origin.orientation.w);
     writer.Key("data");
     writer.StartArray();
-    for (auto & each_cell : labels.data) {
+    for (auto & each_cell : labels.map.data) {
       writer.Int(each_cell);
     }
     writer.EndArray();
+    writer.EndObject();
     writer.EndObject();
     string data = strBuf.GetString();
     grpc_respond.set_data(data);
