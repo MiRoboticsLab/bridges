@@ -1003,6 +1003,10 @@ void Cyberdog_app::handleMappingRequest(
     goal.pose.position.x = goal_x;
     goal.pose.position.y = goal_y;
     mode_goal.poses.push_back(goal);
+  } else if (status == "START_NAVIGATION") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_LOCATION;
+  } else if (status == "START_AUTO_DOCKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_AUTO_DOCKING;
   }
   auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal);
   auto mode_result =
