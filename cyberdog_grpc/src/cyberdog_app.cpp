@@ -1057,54 +1057,51 @@ void Cyberdog_app::handlLableGetRequest(
     grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_GET_LABLE_REQUEST);
     rapidjson::StringBuffer strBuf;
     rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-    int size = labels.labels.size();
-    if (size > 0) {
+    writer.StartObject();
+    writer.Key("mapName");
+    writer.String(labels.map_name.c_str());
+    writer.Key("locationLabelInfo");
+    writer.StartArray();
+    for (int i = 0; i < size; ++i) {
       writer.StartObject();
-      writer.Key("mapName");
-      writer.String(labels.map_name.c_str());
-      writer.Key("locationLabelInfo");
-      writer.StartArray();
-      for (int i = 0; i < size; ++i) {
-        writer.StartObject();
-        writer.Key("labelName");
-        writer.String(labels.labels[i].label_name.c_str());
-        writer.Key("physicX");
-        writer.Double(labels.labels[i].physic_x);
-        writer.Key("physicY");
-        writer.Double(labels.labels[i].physic_y);
-        writer.EndObject();
-      }
-      writer.EndArray();
-      writer.Key("resolution");
-      writer.Double(labels.resolution);
-      writer.Key("width");
-      writer.Int(labels.width);
-      writer.Key("height");
-      writer.Int(labels.height);
-      writer.Key("px");
-      writer.Double(labels.origin.position.x);
-      writer.Key("py");
-      writer.Double(labels.origin.position.y);
-      writer.Key("pz");
-      writer.Double(labels.origin.position.z);
-      writer.Key("qx");
-      writer.Double(labels.origin.orientation.x);
-      writer.Key("qy");
-      writer.Double(labels.origin.orientation.y);
-      writer.Key("qz");
-      writer.Double(labels.origin.orientation.z);
-      writer.Key("qw");
-      writer.Double(labels.origin.orientation.w);
-      writer.Key("data");
-      writer.StartArray();
-      for (auto & each_cell : data) {
-        writer.Int(each_cell);
-      }
-      writer.EndArray();
+      writer.Key("labelName");
+      writer.String(labels.labels[i].label_name.c_str());
+      writer.Key("physicX");
+      writer.Double(labels.labels[i].physic_x);
+      writer.Key("physicY");
+      writer.Double(labels.labels[i].physic_y);
       writer.EndObject();
-      string data = strBuf.GetString();
-      grpc_respond.set_data(data);
     }
+    writer.EndArray();
+    writer.Key("resolution");
+    writer.Double(labels.resolution);
+    writer.Key("width");
+    writer.Int(labels.width);
+    writer.Key("height");
+    writer.Int(labels.height);
+    writer.Key("px");
+    writer.Double(labels.origin.position.x);
+    writer.Key("py");
+    writer.Double(labels.origin.position.y);
+    writer.Key("pz");
+    writer.Double(labels.origin.position.z);
+    writer.Key("qx");
+    writer.Double(labels.origin.orientation.x);
+    writer.Key("qy");
+    writer.Double(labels.origin.orientation.y);
+    writer.Key("qz");
+    writer.Double(labels.origin.orientation.z);
+    writer.Key("qw");
+    writer.Double(labels.origin.orientation.w);
+    writer.Key("data");
+    writer.StartArray();
+    for (auto & each_cell : labels.data) {
+      writer.Int(each_cell);
+    }
+    writer.EndArray();
+    writer.EndObject();
+    string data = strBuf.GetString();
+    grpc_respond.set_data(data);
     INFO("Succeed call get map_label services.");
     // } else {
     //   INFO("failed call get map_label services.");
