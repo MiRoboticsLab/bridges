@@ -512,7 +512,7 @@ void Cyberdog_app::processDogPose(
   CyberdogJson::Add(json_response, "qy", msg->pose.orientation.y);
   CyberdogJson::Add(json_response, "qz", msg->pose.orientation.z);
   CyberdogJson::Add(json_response, "qw", msg->pose.orientation.w);
-  ERROR("sending dog pose");
+  INFO("sending dog pose");
   send_grpc_msg(::grpcapi::SendRequest::MAP_DOG_POSE_REQUEST, json_response);
 }
 bool Cyberdog_app::selectCallingCameraService(
@@ -658,10 +658,10 @@ void Cyberdog_app::send_grpc_msg(int code, const std::string & msg)
   grpc_respons->set_params(msg);
   auto sender = send_thread_map_.find(code);
   if (sender != send_thread_map_.end()) {
-    ERROR("found sender for %d", code);
+    INFO("found sender for %d", code);
     sender->second->push(std::shared_ptr<::grpcapi::SendRequest>(grpc_respons));
   } else {
-    ERROR("create sender for %d", code);
+    INFO("create sender for %d", code);
     auto new_sender = std::shared_ptr<
       LatestMsgDispather<std::shared_ptr<::grpcapi::SendRequest>>>(
       new LatestMsgDispather<std::shared_ptr<::grpcapi::SendRequest>>());
@@ -1073,6 +1073,7 @@ void Cyberdog_app::handlLableGetRequest(
       writer.EndObject();
     }
     writer.EndArray();
+    writer.Key("map");
     writer.StartObject();
     writer.Key("resolution");
     writer.Double(labels.map.info.resolution);
@@ -1104,6 +1105,10 @@ void Cyberdog_app::handlLableGetRequest(
     writer.EndObject();
     string data = strBuf.GetString();
     grpc_respond.set_data(data);
+
+    std::cout << "json data: " << data << std::endl;
+
+
     INFO("Succeed call get map_label services.");
     // } else {
     //   INFO("failed call get map_label services.");

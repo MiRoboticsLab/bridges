@@ -1,5 +1,5 @@
 string map_name
 
-nav_msgs/OccupancyGrid map
+OccupancyGrid map
 
 Label[] labels
