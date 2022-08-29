@@ -485,10 +485,10 @@ void Cyberdog_app::processMapMsg(
   CyberdogJson::Add(json_response, "resolution", msg->info.resolution);
   CyberdogJson::Add(
     json_response, "width",
-    static_cast<float>(msg->info.width));
+    static_cast<int>(msg->info.width));
   CyberdogJson::Add(
     json_response, "height",
-    static_cast<float>(msg->info.height));
+    static_cast<int>(msg->info.height));
   CyberdogJson::Add(json_response, "px", msg->info.origin.position.x);
   CyberdogJson::Add(json_response, "py", msg->info.origin.position.y);
   CyberdogJson::Add(json_response, "pz", msg->info.origin.position.z);
@@ -1073,6 +1073,32 @@ void Cyberdog_app::handlLableGetRequest(
         writer.Key("physicY");
         writer.Double(labels.labels[i].physic_y);
         writer.EndObject();
+      }
+      writer.EndArray();
+      writer.Key("resolution");
+      writer.Double(labels.resolution);
+      writer.Key("width");
+      writer.Int(labels.width);
+      writer.Key("height");
+      writer.Int(labels.height);
+      writer.Key("px");
+      writer.Double(labels.origin.position.x);
+      writer.Key("py");
+      writer.Double(labels.origin.position.y);
+      writer.Key("pz");
+      writer.Double(labels.origin.position.z);
+      writer.Key("qx");
+      writer.Double(labels.origin.orientation.x);
+      writer.Key("qy");
+      writer.Double(labels.origin.orientation.y);
+      writer.Key("qz");
+      writer.Double(labels.origin.orientation.z);
+      writer.Key("qw");
+      writer.Double(labels.origin.orientation.w);
+      writer.Key("data");
+      writer.StartArray();
+      for (auto & each_cell : labels.data) {
+        writer.Int(each_cell);
       }
       writer.EndArray();
       writer.EndObject();
