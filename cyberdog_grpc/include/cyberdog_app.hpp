@@ -306,13 +306,15 @@ private:
   // process map message
   void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
   void processDogPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
-  // LatestMsgDispather<std::shared_ptr<::grpcapi::SendRequest>> send_thread_;
+
+  // for message queue
   void send_msgs_(
     const std::shared_ptr<std::shared_ptr<::grpcapi::SendRequest>> msg);
   std::map<int, std::shared_ptr<LatestMsgDispather<
       std::shared_ptr<::grpcapi::SendRequest>>>>
   send_thread_map_;
-  // map label
+
+  // mapping and navigation
   void handlLableSetRequest(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);

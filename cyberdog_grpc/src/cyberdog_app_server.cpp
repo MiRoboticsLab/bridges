@@ -40,7 +40,6 @@ bool CyberdogAppImpl::isPeerAvalible(std::string peer)
   if (isPeerAvalible(context->peer())) {
     decision_->ProcessMsg(request, writer);
   }
-  INFO("time ------------------------------");
   return ::grpc::Status::OK;
 }
 
