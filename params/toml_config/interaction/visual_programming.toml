@@ -24,6 +24,9 @@ task_processor = "cyberdog_vp_task_processor"   # 任务处理器服务名称
 [vp.init.validity_period]                       # 有效期：int(milliseconds) 毫秒
 touch = 30000                                   # 触摸板消息有效时长
 
+[vp.init.environment]
+workspace=""                                    # 工作空间（安装路径）
+
 [vp.init.voice_operation]                       # 语音操作表
 shutdown = [                                    # 终止任务
   "shutdown task",
