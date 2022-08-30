@@ -29,7 +29,10 @@ service GrpcApp {
 
 message Ticks{
     string ip = 1;
+    fixed32 wifi_strength = 2;
+    fixed32 battery_power = 3;
     bool internet = 4;
+    string sn = 5;    
 }
 
 message SendRequest {
@@ -55,10 +58,7 @@ message SendRequest {
         AUDIO_VOICEPRINTTRAIN_RESULT = 3013;
         AUDIO_VOICEPRINTS_DATA = 3014;
         IMAGE_TRANSMISSION_REQUEST = 4001;
-        IMAGE_TRANSMISSION_CLOSE = 4002;
-        IMAGE_TAKE_PHOTO = 4003;
-        IMAGE_START_VIDEO_RECORDING = 4004;
-        IMAGE_STOP_VIDEO_RECORDING = 4005;
+        CAMERA_SERVICE = 4002;
         OTA_STATUS_REQUEST = 5001;
         OTA_VERSION_QUERY_REQUEST = 5002;
         OTA_START_DOWNLOAD_REQUEST = 5003;

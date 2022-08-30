@@ -27,6 +27,7 @@ find_package(protocol REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(cyberdog_debug REQUIRED)
 include_directories(include)
 # Proto file
 get_filename_component(rg_proto "./protos/cyberdog_app.proto" ABSOLUTE)

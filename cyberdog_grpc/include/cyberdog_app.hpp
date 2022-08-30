@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2022 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@
 #include "protocol/msg/motion_servo_response.hpp"
 #include "protocol/msg/audio_voiceprint_result.hpp"
 #include "protocol/msg/connector_status.hpp"
+#include "protocol/msg/bms_status.hpp"
 #include "protocol/msg/label.hpp"
 #include "protocol/msg/map_label.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
@@ -94,9 +95,8 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   std::shared_ptr<std::thread> destory_grpc_server_thread_;
   std::shared_ptr<std::thread> dog_walk_thread_;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
-  rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr
-    connect_status_subscriber;
+  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
+  rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -106,9 +106,9 @@ private:
   std::shared_ptr<Cyberdog_App_Client> app_stub;
   std::shared_ptr<std::string> server_ip;
   std::shared_ptr<grpc::Server> server_;
-  void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
-  void subscribeConnectStatus(
-    const protocol::msg::ConnectorStatus::SharedPtr msg);
+  // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
+  void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
+  void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
   string GetFileConecxt(string path);
@@ -117,6 +117,9 @@ private:
   bool app_disconnected;
   std::string local_ip;
   bool is_internet;
+  int wifi_strength;
+  protocol::msg::BmsStatus bms_status;
+  std::string sn;
   TimeInterval timer_interval;
   void HeartBeat();
   void sendMsg(
@@ -238,6 +241,7 @@ private:
   rclcpp::Subscription<protocol::msg::AudioVoiceprintResult>::SharedPtr
     audio_voiceprint_result_sub_;
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr voiceprints_data_sub_;
+  rclcpp::Subscription<protocol::msg::BmsStatus>::SharedPtr bms_status_sub_;
   void voiceprint_result_callback(const protocol::msg::AudioVoiceprintResult::SharedPtr msg);
   void voiceprints_data_callback(const std_msgs::msg::Bool::SharedPtr msg);
   // commcon code
@@ -252,18 +256,19 @@ private:
   // photo and video recording
   rclcpp::Client<protocol::srv::CameraService>::SharedPtr camera_service_client_;
   bool callCameraService(uint8_t command, uint8_t & result, std::string & msg);
-  bool selectCallingCameraService(int namecode, uint8_t & result, std::string & msg);
-  bool processCameraMsg(int namecode, ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
-  bool processCameraMsg(int namecode, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
+  bool processCameraMsg(
+    uint32_t namecode,
+    uint8_t command,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  bool processCameraMsg(
+    uint32_t namecode,
+    uint8_t command,
+    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
   bool returnResponse(
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
     uint8_t result,
     const std::string & msg,
     uint32_t namecode);
-  bool returnFile(
-    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer,
-    uint8_t result,
-    const std::string & msg);
 
   void ResetOTAFlags();
 
@@ -297,6 +302,7 @@ private:
 
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
+
   // process map message
   void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
   void processDogPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
@@ -322,6 +328,15 @@ private:
   rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
     navigation_client_;
+
+  // audio action state
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
+
+  // test
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
+
+  LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };
 }  // namespace carpo_cyberdog_app
+
 #endif  // CYBERDOG_APP_HPP_

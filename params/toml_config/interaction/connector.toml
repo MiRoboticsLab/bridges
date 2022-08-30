@@ -23,6 +23,7 @@ camera = "image"
 wifi = "wifi_status"
 grpc = "ip_notify"
 audio = "speech_play"
+disconnect_app = "disconnect_app"
 
 [connector.initialization.service] # string
 connection = "connect"
@@ -30,6 +31,9 @@ led = "led_state"
 wifi = "connect_wifi"
 ip = "ip_state"
 camera = "camera_service"
+
+[connector.initialization.action] # string
+audio = "speech_text_action"
 
 [connector.initialization.image] # string
 width = 2560
