@@ -32,6 +32,9 @@ wifi = "connect_wifi"
 ip = "ip_state"
 camera = "camera_service"
 
+[connector.initialization.action] # string
+audio = "speech_text_action"
+
 [connector.initialization.image] # string
 width = 2560
 height = 1920
