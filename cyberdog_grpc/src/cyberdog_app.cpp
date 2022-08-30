@@ -134,7 +134,7 @@ Cyberdog_app::Cyberdog_app()
 
   //  code for visual program
   visual_response_sub_ = this->create_subscription<std_msgs::msg::String>(
-    "backend_message", rclcpp::SystemDefaultsQoS(),
+    "robotend_message", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::backend_message_callback, this, _1));
 
   visual_request_pub_ = this->create_publisher<std_msgs::msg::String>(
