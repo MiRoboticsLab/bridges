@@ -27,6 +27,7 @@ disconnect_app = "disconnect_app"
 
 [connector.initialization.service] # string
 connection = "connect"
+audio = "speech_text_play"
 led = "led_state"
 wifi = "connect_wifi"
 ip = "ip_state"
