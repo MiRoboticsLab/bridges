@@ -1,0 +1,13 @@
+# Request
+string module_name
+bool is_online
+AudioPlay speech
+string text
+---
+# Result
+uint8 status
+uint8 SPEECH_RESULT_SUCCESS = 0  # 播放完毕
+uint8 SPEECH_RESULT_FAILED = 1   # 播放失败
+---
+# Feedback
+bool talking
