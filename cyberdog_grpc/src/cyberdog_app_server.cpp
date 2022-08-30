@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "cyberdog_app_server.hpp"
+#include "cyberdog_common/cyberdog_log.hpp"
+
 #include <string>
 #include <memory>
 
@@ -38,6 +40,7 @@ bool CyberdogAppImpl::isPeerAvalible(std::string peer)
   if (isPeerAvalible(context->peer())) {
     decision_->ProcessMsg(request, writer);
   }
+  INFO("time ------------------------------");
   return ::grpc::Status::OK;
 }
 

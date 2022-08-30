@@ -989,9 +989,9 @@ void Cyberdog_app::handleMappingRequest(
   RCLCPP_INFO(get_logger(), "handleMappingRequest ");
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_MAPPING;
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
   } else if (status == "STOP") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_STOP_MAPPING;
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_MAPPING;
   } else if (status == "NAVIGATION_AB") {
     if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
       ERROR("NAVIGATION_AB should have goalX and goalY settings");
@@ -1003,11 +1003,11 @@ void Cyberdog_app::handleMappingRequest(
     goal.pose.position.x = goal_x;
     goal.pose.position.y = goal_y;
     mode_goal.poses.push_back(goal);
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_AB;
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
   } else if (status == "START_NAVIGATION") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_LOCATION;
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
   } else if (status == "START_AUTO_DOCKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_GOAL_TYPE_AUTO_DOCKING;
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
   }
   auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal);
   auto mode_result =
