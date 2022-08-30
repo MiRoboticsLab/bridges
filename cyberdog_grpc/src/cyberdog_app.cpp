@@ -986,7 +986,7 @@ void Cyberdog_app::handleMappingRequest(
   std::string status;
   double goal_x, goal_y;
   CyberdogJson::Get(json_resquest, "status", status);
-  RCLCPP_INFO(get_logger(), "handleMappingRequest ");
+  INFO("handleMappingRequest");
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
@@ -1004,10 +1004,19 @@ void Cyberdog_app::handleMappingRequest(
     goal.pose.position.y = goal_y;
     mode_goal.poses.push_back(goal);
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
+  } else if (status == "STOP_NAVIGATION_AB") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AB;
   } else if (status == "START_NAVIGATION") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
+  } else if (status == "STOP_NAVIGATION") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_LOCALIZATION;
   } else if (status == "START_AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
+  } else if (status == "STOP_AUTO_DOCKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AUTO_DOCKING;
+  } else {
+    ERROR("Unavailable navigation type: %s", status.c_str());
+    retrunErrorGrpc(writer);
   }
   auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal);
   auto mode_result =
