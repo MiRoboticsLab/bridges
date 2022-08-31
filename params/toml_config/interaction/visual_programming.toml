@@ -14,6 +14,7 @@ voice = "asr_text"                              # 自动语音识别文本信息
 motion_servo_cmd = "motion_servo_cmd"           # 运动模块伺服指令
 motion_servo_res = "motion_servo_response"      # 运动模块伺服反馈
 connector = "connector_state"                   # 连接模块状态
+audio = "speech_play_extend"                    # 语音消息
 
 [vp.init.service]                               # 服务：string
 motion = "motion_result_cmd"                    # 运动模块服务名称
