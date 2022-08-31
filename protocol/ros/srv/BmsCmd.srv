@@ -1,0 +1,9 @@
+# command
+uint8 BATTERY_COMMAND_ELECTRIC_MACHINE_POWER_UP  = 1   # electric machine power up
+uint8 BATTERY_COMMAND_ELECTRIC_MACHINE_POWER_DOWN = 2  # electric machine power down
+
+uint8  electric_machine_command		# 1: power up
+                                  # 2: power down
+---
+bool success # true: run success
+             # false: run failed
