@@ -15,6 +15,7 @@
 #ifndef CYBERDOG_APP_HPP_
 #define CYBERDOG_APP_HPP_
 
+#include <shared_mutex>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -29,6 +30,7 @@
 #include <utility>
 #include <vector>
 #include <map>
+#include <atomic>
 
 // Interfaces
 #include "cyberdog_app_client.hpp"
@@ -79,6 +81,7 @@ class Cyberdog_app : public rclcpp::Node
 {
 public:
   Cyberdog_app();
+  ~Cyberdog_app();
   std::string getServiceIp();
   void ProcessMsg(
     const ::grpcapi::SendRequest * grpc_request,
@@ -89,12 +92,10 @@ public:
 
 private:
   uint32_t ticks_;
-  bool can_process_messages;
+  std::atomic_bool can_process_messages_;
   void RunServer();
   std::shared_ptr<std::thread> app_server_thread_;
   std::shared_ptr<std::thread> heart_beat_thread_;
-  std::shared_ptr<std::thread> destory_grpc_server_thread_;
-  std::shared_ptr<std::thread> dog_walk_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
@@ -103,7 +104,8 @@ private:
   void destroyGrpcServer();
   std::string getDogIp(const string str, const string & split);
   std::string getPhoneIp(const string str, const string & split);
-  std::shared_ptr<Cyberdog_App_Client> app_stub;
+  std::shared_ptr<Cyberdog_App_Client> app_stub_;
+  mutable std::shared_mutex stub_mutex_;
   std::shared_ptr<std::string> server_ip;
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
@@ -113,7 +115,7 @@ private:
   void createGrpc();
   string GetFileConecxt(string path);
   NetChecker net_checker;
-  uint32_t heartbeat_err_cnt;
+  std::atomic<uint32_t> heartbeat_err_cnt_;
   bool app_disconnected;
   std::string local_ip;
   bool is_internet;
