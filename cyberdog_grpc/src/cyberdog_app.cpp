@@ -62,17 +62,16 @@ static int64_t requestNumber;
 Cyberdog_app::Cyberdog_app()
 : Node("app_server"),
   ticks_(0),
-  can_process_messages(false),
-  heartbeat_err_cnt(0),
+  can_process_messages_(false),
+  heartbeat_err_cnt_(0),
   heart_beat_thread_(nullptr),
   app_server_thread_(nullptr),
   server_(nullptr),
-  app_stub(nullptr),
+  app_stub_(nullptr),
   app_disconnected(true),
   is_internet(false),
   wifi_strength(0),
-  sn(""),
-  destory_grpc_server_thread_(nullptr)
+  sn("")
 {
   if (sn == "") {
     std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
@@ -244,11 +243,21 @@ Cyberdog_app::Cyberdog_app()
     rclcpp_action::create_client<Navigation>(this, "CyberdogNavigation");
 }
 
+Cyberdog_app::~Cyberdog_app()
+{
+  destroyGrpc();
+  destroyGrpcServer();
+  if (heart_beat_thread_ && heart_beat_thread_->joinable()) {
+    heart_beat_thread_->join();
+  }
+}
+
 void Cyberdog_app::send_msgs_(
   const std::shared_ptr<std::shared_ptr<::grpcapi::SendRequest>> msg)
 {
-  if (can_process_messages && app_stub) {
-    app_stub->sendRequest(**msg);
+  std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
+  if (can_process_messages_ && app_stub_) {
+    app_stub_->sendRequest(**msg);
   }
 }
 
@@ -256,10 +265,21 @@ void Cyberdog_app::HeartBeat()
 {
   rclcpp::WallRate r(500ms);
   std::string ipv4;
-  while (true) {
-    if (can_process_messages && app_stub) {
-      if (!app_stub->sendHeartBeat(local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn)) {
-        if (heartbeat_err_cnt++ >= APP_CONNECTED_FAIL_CNT) {
+  while (rclcpp::ok()) {
+    if (can_process_messages_) {
+      bool hearbeat_result(false);
+      {
+        std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
+        if (app_stub_) {
+          hearbeat_result =
+            app_stub_->sendHeartBeat(
+            local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn);
+        } else {
+          continue;
+        }
+      }
+      if (!hearbeat_result) {
+        if (heartbeat_err_cnt_++ >= APP_CONNECTED_FAIL_CNT) {
           std_msgs::msg::Bool msg;
           msg.data = false;
           app_connection_pub_->publish(msg);
@@ -375,9 +395,10 @@ void Cyberdog_app::destroyGrpcServer()
 
 void Cyberdog_app::destroyGrpc()
 {
-  can_process_messages = false;
-  if (app_stub != nullptr) {
-    app_stub = nullptr;
+  std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
+  can_process_messages_ = false;
+  if (app_stub_ != nullptr) {
+    app_stub_ = nullptr;
   }
   net_checker.pause();
 }
@@ -391,12 +412,13 @@ void Cyberdog_app::createGrpc()
   }
   INFO("Create client");
   grpc::string ip = *server_ip + std::string(":") + grpc_client_port_;
-  can_process_messages = false;
-  heartbeat_err_cnt = 0;
+  can_process_messages_ = false;
+  heartbeat_err_cnt_ = 0;
   net_checker.set_ip(*server_ip);
   auto channel_ = grpc::CreateChannel(ip, grpc::InsecureChannelCredentials());
-  app_stub = std::make_shared<Cyberdog_App_Client>(channel_);
-  can_process_messages = true;
+  std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
+  app_stub_ = std::make_shared<Cyberdog_App_Client>(channel_);
+  can_process_messages_ = true;
   if (app_disconnected) {
     destroyGrpc();
   }
