@@ -109,6 +109,9 @@ Cyberdog_app::Cyberdog_app()
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
+  wifi_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
+    "wifi_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::wifiStatusCB, this, _1));
 
   timer_interval.init();
 
@@ -375,6 +378,11 @@ void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::
       createGrpc();
     }
   }
+}
+
+void Cyberdog_app::wifiStatusCB(const protocol::msg::WifiStatus::SharedPtr msg)
+{
+  INFO_MILLSECONDS(5000, "Wifi ssid: %s. signal strength: %d.", msg->ssid.c_str(), msg->strength);
 }
 
 void Cyberdog_app::subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg)

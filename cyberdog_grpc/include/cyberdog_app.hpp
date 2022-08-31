@@ -45,6 +45,7 @@
 #include "protocol/msg/motion_servo_response.hpp"
 #include "protocol/msg/audio_voiceprint_result.hpp"
 #include "protocol/msg/connector_status.hpp"
+#include "protocol/msg/wifi_status.hpp"
 #include "protocol/msg/bms_status.hpp"
 #include "protocol/msg/label.hpp"
 #include "protocol/msg/map_label.hpp"
@@ -98,6 +99,7 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
+  rclcpp::Subscription<protocol::msg::WifiStatus>::SharedPtr wifi_status_subscriber;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -110,6 +112,7 @@ private:
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
   void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
+  void wifiStatusCB(const protocol::msg::WifiStatus::SharedPtr msg);
   void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
