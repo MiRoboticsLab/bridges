@@ -109,9 +109,6 @@ Cyberdog_app::Cyberdog_app()
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
-  wifi_status_subscriber = this->create_subscription<protocol::msg::WifiStatus>(
-    "wifi_status", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::wifiStatusCB, this, _1));
 
   timer_interval.init();
 
@@ -272,8 +269,9 @@ void Cyberdog_app::HeartBeat()
     if (can_process_messages_) {
       bool hearbeat_result(false);
       {
-        std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
+        std::shared_lock<std::shared_mutex> stub_read_lock(stub_mutex_);
         if (app_stub_) {
+          std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
             local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn);
@@ -366,23 +364,30 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
   if (msg->is_connected) {
-    local_ip = msg->robot_ip;
     std::string phoneIp = msg->provider_ip;
-    if (*server_ip != phoneIp) {
-      app_disconnected = false;
-      INFO("local_ip ip :%s,pheneIp ip :%s", local_ip.c_str(), phoneIp.c_str());
-      server_ip = std::make_shared<std::string>(phoneIp);
+    bool different_ip(false);
+    {
+      std::unique_lock<std::shared_mutex> write_lock(connector_mutex_);
+      local_ip = msg->robot_ip;
+      different_ip = *server_ip != phoneIp;
+      if (different_ip) {
+        server_ip = std::make_shared<std::string>(phoneIp);
+      }
       is_internet = msg->is_internet;
       wifi_strength = msg->strength;
-      destroyGrpc();
-      createGrpc();
+    }
+    {
+      std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
+      INFO_MILLSECONDS(
+        10000, "Wifi ssid: %s. signal strength: %d.", msg->ssid.c_str(), msg->strength);
+      if (different_ip) {
+        app_disconnected = false;
+        INFO("local_ip ip :%s,pheneIp ip :%s", local_ip.c_str(), phoneIp.c_str());
+        destroyGrpc();
+        createGrpc();
+      }
     }
   }
-}
-
-void Cyberdog_app::wifiStatusCB(const protocol::msg::WifiStatus::SharedPtr msg)
-{
-  INFO_MILLSECONDS(5000, "Wifi ssid: %s. signal strength: %d.", msg->ssid.c_str(), msg->strength);
 }
 
 void Cyberdog_app::subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg)
@@ -419,11 +424,15 @@ void Cyberdog_app::createGrpc()
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
   INFO("Create client");
-  grpc::string ip = *server_ip + std::string(":") + grpc_client_port_;
+  grpc::string ip_port;
+  {
+    std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
+    ip_port = *server_ip + std::string(":") + grpc_client_port_;
+    net_checker.set_ip(*server_ip);
+  }
   can_process_messages_ = false;
   heartbeat_err_cnt_ = 0;
-  net_checker.set_ip(*server_ip);
-  auto channel_ = grpc::CreateChannel(ip, grpc::InsecureChannelCredentials());
+  auto channel_ = grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials());
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   app_stub_ = std::make_shared<Cyberdog_App_Client>(channel_);
   can_process_messages_ = true;
