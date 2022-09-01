@@ -109,7 +109,7 @@ Cyberdog_app::Cyberdog_app()
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
-  wifi_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
+  wifi_status_subscriber = this->create_subscription<protocol::msg::WifiStatus>(
     "wifi_status", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::wifiStatusCB, this, _1));
 
