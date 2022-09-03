@@ -19,6 +19,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "protocol/srv/bes_http.hpp"
+#include "protocol/srv/bes_http_send_file.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "back_end_publisher.hpp"
 #include "back_end_subscriber.hpp"
@@ -41,6 +42,9 @@ private:
   void MqttSubCallback(const std::string & msg);
   void BesHttpCallback(const protocol::srv::BesHttp::Request::SharedPtr,
     protocol::srv::BesHttp::Response::SharedPtr);
+  void BesHttpSendFileCallback(
+    const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
+    protocol::srv::BesHttpSendFile::Response::SharedPtr respose);
 
 private:
   rclcpp::executors::MultiThreadedExecutor executor_;
@@ -50,6 +54,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr be_pub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr be_sub_;
   rclcpp::Service<protocol::srv::BesHttp>::SharedPtr http_srv_;
+  rclcpp::Service<protocol::srv::BesHttpSendFile>::SharedPtr http_send_file_srv_;
   std::unique_ptr<Backend_Publisher> bpub_ptr_ {nullptr};
   std::unique_ptr<Backend_Subscriber> bsub_ptr_ {nullptr};
   std::unique_ptr<Backend_Http> bhttp_ptr_ {nullptr};

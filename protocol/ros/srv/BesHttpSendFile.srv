@@ -1,0 +1,12 @@
+# http上传文件到后端
+
+uint8 HTTP_METHOD_POST = 1  # http post
+uint8 HTTP_METHOD_PUT  = 2  # http put
+
+uint8  method	      # 1:post,2:put
+string url          # 请求地址
+string file_name    # 文件名，包括路径
+string content_type # 文件类型
+uint16 milsecs      # 超时设置，单位毫秒
+---
+string data         # 返回数据

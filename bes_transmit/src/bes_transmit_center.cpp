@@ -97,6 +97,12 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
     std::bind(
       &Transmit_Waiter::BesHttpCallback, this, std::placeholders::_1,
       std::placeholders::_2));
+  http_send_file_srv_ =
+    http_node_ptr_->create_service<protocol::srv::BesHttpSendFile>(
+    "bes_http_send_file_srv",
+    std::bind(
+      &Transmit_Waiter::BesHttpSendFileCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
 }
 
 cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
@@ -138,4 +144,15 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   } else if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_POST) {
     respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds);
   }
+}
+
+void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
+  const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
+  protocol::srv::BesHttpSendFile::Response::SharedPtr respose)
+{
+  int mill_seconds = std::min(static_cast<int>(request->milsecs), 6000);
+  mill_seconds = std::max(0, mill_seconds);
+  mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
+  respose->data = bhttp_ptr_->SendFile(
+    request->method, request->url, request->file_name, request->content_type, request->milsecs);
 }
