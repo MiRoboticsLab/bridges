@@ -14,6 +14,7 @@
 #ifndef BACK_END_HTTP_HPP_
 #define BACK_END_HTTP_HPP_
 
+#include <shared_mutex>
 #include <string>
 #include <sstream>
 #include "cpp_httplib/httplib.h"
@@ -67,17 +68,17 @@ public:
     } else {
       request_url = request_url + "/" + url;
     }
-    std::string body("{\"code\": -1}");
+    std::string body("{\"code\": -1, \"message\": \"http method error\"}");
+    request_url += "?";
     if (!params.empty()) {
       rapidjson::Document doc;
       doc.SetObject();
       doc.Parse<rapidjson::kParseDefaultFlags>(params.c_str());
       if (doc.HasParseError()) {
         ERROR("doc should be json::kObjectType.");
-        body = "{\"code\": 369000, \"message\": \"json format error\"}";
+        body = "{\"code\": -1, \"message\": \"json format error\"}";
         return body;
       }
-      request_url += "?";
       for (rapidjson::Value::MemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd();
         iter++)
       {
@@ -88,11 +89,15 @@ public:
           request_url += key;
           request_url += "=";
           request_url += val_str;
+          request_url += "&";
         } else {
           WARN("json params format must be string, if not ignore it.");
         }
       }
     }
+    std::string sn, uid;
+    GetInfo(sn, uid);
+    request_url += "account:" + uid + "&number:" + sn;
     INFO("base_url:%s, request url:%s", base_url.c_str(), request_url.c_str());
     auto res = cli_.Get(request_url);
     if (res) {
@@ -116,7 +121,10 @@ public:
     INFO(
       "base_url:%s, request url:%s, params:%s",
       base_url.c_str(), request_url.c_str(), params.c_str());
-    std::string body("{\"code\": 369003, \"message\": \"http method error\"}");
+    std::string sn, uid;
+    GetInfo(sn, uid);
+    request_url += "?account:" + uid + "&number:" + sn;
+    std::string body("{\"code\": -1, \"message\": \"http method error\"}");
     auto res = cli_.Post(request_url, params, "application/json");
     if (res) {
       body = res->body;
@@ -127,7 +135,7 @@ public:
     unsigned char method, const std::string & url, const std::string & file_name,
     const std::string & content_type, const uint16_t & millsecs)
   {
-    std::string body("{\"code\": 369003, \"message\": \"http method error\"}");
+    std::string body("{\"code\": -1, \"message\": \"http method error\"}");
     std::ifstream infile;
     infile.open(file_name, std::ifstream::in | std::ifstream::binary);
     if (!infile.is_open()) {
@@ -149,6 +157,9 @@ public:
     INFO(
       "base_url:%s, request url:%s, file_name:%s",
       base_url.c_str(), request_url.c_str(), file_name.c_str());
+    std::string sn, uid;
+    GetInfo(sn, uid);
+    request_url += "?account:" + uid + "&number:" + sn;
     char data_to_be_sent[CHUNK_SIZE];
     if (method == 1) {
       auto res = cli_.Post(
@@ -178,9 +189,23 @@ public:
     infile.close();
     return body;
   }
+  void SetInfo(const std::string & sn, const std::string & uid)
+  {
+    std::unique_lock<std::shared_mutex> lock(info_mutex_);
+    sn_ = sn;
+    uid_ = uid;
+  }
+  void GetInfo(std::string & sn, std::string & uid) const
+  {
+    std::shared_lock<std::shared_mutex> lock(info_mutex_);
+    sn = sn_;
+    uid = uid_;
+  }
 
 private:
   std::string base_url;
+  std::string sn_, uid_;
+  mutable std::shared_mutex info_mutex_;
 };  // Backend_Http
 }  // namespace bridge
 }  // namespace cyberdog
