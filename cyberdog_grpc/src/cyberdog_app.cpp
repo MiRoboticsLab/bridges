@@ -1258,14 +1258,15 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = query_dev_info_client_->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          INFO(
-            "success to call querydevinfo request services.");
+          INFO("success to call querydevinfo request services.");
         } else {
-          INFO(
-            "Failed to call querydevinfo request  services.");
+          INFO("Failed to call querydevinfo request  services.");
         }
         grpc_respond.set_namecode(grpc_request->namecode());
         grpc_respond.set_data(future_result.get()->info);
+        INFO(
+          "respond namecode:%d, message:%s", grpc_request->namecode(),
+          future_result.get()->info.c_str());
         writer->Write(grpc_respond);
       }
       break;
