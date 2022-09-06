@@ -31,32 +31,19 @@ public:
   ~LatestMsgDispather()
   {
     need_run_ = false;
-    cond.notify_all();
-    thread_->join();
+    cond_.notify_all();
+    if (thread_->joinable()) {
+      thread_->join();
+    }
   }
   void push(const MessageT & msg)
   {
-    std::lock_guard<std::mutex> lk(mut);
+    std::unique_lock<std::mutex> lock(queue_mutex_);
     if (!need_run_) {
       return;
     }
-    while (!queue_.empty()) {
-      queue_.pop();
-    }
     queue_.push(std::move(msg));
-    cond.notify_all();
-  }
-  std::shared_ptr<MessageT> get()
-  {
-    std::unique_lock<std::mutex> ulk(mut);
-    cond.wait(ulk, [this] {return !need_run_ || !this->queue_.empty();});
-    if (!need_run_) {
-      return NULL;
-    }
-    std::shared_ptr<MessageT> val(
-      std::make_shared<MessageT>(std::move(queue_.front())));
-    queue_.pop();
-    return val;
+    cond_.notify_one();
   }
   template<typename CallbackT>
   void setCallback(CallbackT && callback)
@@ -65,6 +52,7 @@ public:
     run();
   }
 
+private:
   void run()
   {
     thread_ = std::make_shared<std::thread>(
@@ -76,18 +64,29 @@ public:
     while (need_run_) {
       if (callback_ != nullptr) {
         auto msg = get();
-        if (msg != NULL) {
+        if (msg) {
           callback_(msg);
         }
       }
     }
   }
+  std::shared_ptr<MessageT> get()
+  {
+    std::unique_lock<std::mutex> lock(queue_mutex_);
+    cond_.wait(lock, [this] {return !need_run_ || !this->queue_.empty();});
+    if (!need_run_) {
+      return NULL;
+    }
+    std::shared_ptr<MessageT> val(
+      std::make_shared<MessageT>(std::move(queue_.front())));
+    queue_.pop();
+    return val;
+  }
 
-private:
   bool need_run_;
   std::queue<MessageT> queue_;
-  std::mutex mut;
-  std::condition_variable cond;
+  std::mutex queue_mutex_;
+  std::condition_variable cond_;
   SharedPtrCallback callback_;
   std::shared_ptr<std::thread> thread_;
 };
