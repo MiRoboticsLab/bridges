@@ -22,7 +22,6 @@ string STATE_WAIT="wait"                # [状态]等待
 string STATE_RUN="run"                  # [状态]执行
 string STATE_SUSPEND="suspend"          # [状态]暂停
 string STATE_SHUTDOWN="shutdown"        # [状态]终止
-string STATE_DELETE="delete"            # [状态]删除
 
 string STEP_PARSE="parse"               # [条件]解析
 string STEP_REGISTER="register"         # [条件]注册
