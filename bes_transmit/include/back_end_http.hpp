@@ -140,6 +140,7 @@ public:
     infile.open(file_name, std::ifstream::in | std::ifstream::binary);
     if (!infile.is_open()) {
       ERROR_STREAM("file " << file_name << " cannot be opened");
+      body = "{\"code\": -1, \"message\": \"file cannot be opened\"}";
       return body;
     }
     infile.seekg(0, infile.end);
@@ -157,9 +158,15 @@ public:
     INFO(
       "base_url:%s, request url:%s, file_name:%s",
       base_url.c_str(), request_url.c_str(), file_name.c_str());
+    size_t position_of_slash = file_name.find_last_of("/");
+    std::string file_name_to_set = file_name;
+    if (position_of_slash != std::string::npos) {
+      file_name_to_set = file_name.substr(position_of_slash + 1);
+    }
+    request_url += "?file_name:" + file_name_to_set;
     std::string sn, uid;
     GetInfo(sn, uid);
-    request_url += "?account:" + uid + "&number:" + sn;
+    request_url += "&account:" + uid + "&number:" + sn;
     char data_to_be_sent[CHUNK_SIZE];
     if (method == 1) {
       auto res = cli_.Post(
