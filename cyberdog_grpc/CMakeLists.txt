@@ -53,6 +53,7 @@ set(dependencies
   action_msgs
   nav_msgs
   geometry_msgs
+  cyberdog_debug
 )
 
 add_custom_command(
