@@ -105,7 +105,7 @@ private:
   std::string getDogIp(const string str, const string & split);
   std::string getPhoneIp(const string str, const string & split);
   std::shared_ptr<Cyberdog_App_Client> app_stub_;
-  mutable std::shared_mutex stub_mutex_;
+  mutable std::shared_mutex stub_mutex_;  // mutex for app_stub_
   std::shared_ptr<std::string> server_ip;
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
@@ -116,11 +116,14 @@ private:
   string GetFileConecxt(string path);
   NetChecker net_checker;
   std::atomic<uint32_t> heartbeat_err_cnt_;
-  bool app_disconnected;
+  std::atomic_bool app_disconnected;
   std::string local_ip;
   bool is_internet;
   int wifi_strength;
   mutable std::shared_mutex connector_mutex_;
+  // mutex for local_ip, is_internet, wifi_strength, server_ip
+  std::chrono::system_clock::time_point connector_update_time_point_;
+  mutable std::mutex update_time_mutex_;  // mutex for connector_update_time_point_
 
   protocol::msg::BmsStatus bms_status;
   std::string sn;
