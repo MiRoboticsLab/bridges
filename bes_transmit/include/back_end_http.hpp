@@ -14,11 +14,15 @@
 #ifndef BACK_END_HTTP_HPP_
 #define BACK_END_HTTP_HPP_
 
+#include <shared_mutex>
 #include <string>
+#include <sstream>
 #include "cpp_httplib/httplib.h"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
 #include "ament_index_cpp/get_package_share_directory.hpp"
+
+#define CHUNK_SIZE 4194304
 
 using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
@@ -64,17 +68,17 @@ public:
     } else {
       request_url = request_url + "/" + url;
     }
-    std::string body("{\"code\": -1}");
+    std::string body("{\"code\": -1, \"message\": \"http method error\"}");
+    request_url += "?";
     if (!params.empty()) {
       rapidjson::Document doc;
       doc.SetObject();
       doc.Parse<rapidjson::kParseDefaultFlags>(params.c_str());
       if (doc.HasParseError()) {
         ERROR("doc should be json::kObjectType.");
-        body = "{\"code\": 369000, \"message\": \"json format error\"}";
+        body = "{\"code\": -1, \"message\": \"json format error\"}";
         return body;
       }
-      request_url += "?";
       for (rapidjson::Value::MemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd();
         iter++)
       {
@@ -85,11 +89,15 @@ public:
           request_url += key;
           request_url += "=";
           request_url += val_str;
+          request_url += "&";
         } else {
           WARN("json params format must be string, if not ignore it.");
         }
       }
     }
+    std::string sn, uid;
+    GetInfo(sn, uid);
+    request_url += "account:" + uid + "&number:" + sn;
     INFO("base_url:%s, request url:%s", base_url.c_str(), request_url.c_str());
     auto res = cli_.Get(request_url);
     if (res) {
@@ -113,16 +121,98 @@ public:
     INFO(
       "base_url:%s, request url:%s, params:%s",
       base_url.c_str(), request_url.c_str(), params.c_str());
-    std::string body("{\"code\": -1}");
+    std::string sn, uid;
+    GetInfo(sn, uid);
+    request_url += "?account:" + uid + "&number:" + sn;
+    std::string body("{\"code\": -1, \"message\": \"http method error\"}");
     auto res = cli_.Post(request_url, params, "application/json");
     if (res) {
       body = res->body;
     }
     return body;
   }
+  const std::string SendFile(
+    unsigned char method, const std::string & url, const std::string & file_name,
+    const std::string & content_type, const uint16_t & millsecs)
+  {
+    std::string body("{\"code\": -1, \"message\": \"http method error\"}");
+    std::ifstream infile;
+    infile.open(file_name, std::ifstream::in | std::ifstream::binary);
+    if (!infile.is_open()) {
+      ERROR_STREAM("file " << file_name << " cannot be opened");
+      body = "{\"code\": -1, \"message\": \"file cannot be opened\"}";
+      return body;
+    }
+    infile.seekg(0, infile.end);
+    size_t file_size = infile.tellg();
+    infile.seekg(0, infile.beg);
+    httplib::Client cli_(base_url);
+    cli_.set_read_timeout(std::chrono::milliseconds(millsecs));
+    cli_.set_write_timeout(std::chrono::milliseconds(millsecs));
+    std::string request_url = "/v1";
+    if (url.length() > 0 && url[0] == '/') {
+      request_url += url;
+    } else {
+      request_url = request_url + "/" + url;
+    }
+    INFO(
+      "base_url:%s, request url:%s, file_name:%s",
+      base_url.c_str(), request_url.c_str(), file_name.c_str());
+    size_t position_of_slash = file_name.find_last_of("/");
+    std::string file_name_to_set = file_name;
+    if (position_of_slash != std::string::npos) {
+      file_name_to_set = file_name.substr(position_of_slash + 1);
+    }
+    request_url += "?file_name:" + file_name_to_set;
+    std::string sn, uid;
+    GetInfo(sn, uid);
+    request_url += "&account:" + uid + "&number:" + sn;
+    char data_to_be_sent[CHUNK_SIZE];
+    if (method == 1) {
+      auto res = cli_.Post(
+        request_url, file_size,
+        [&](size_t, size_t, httplib::DataSink & sink) {
+          infile.read(data_to_be_sent, CHUNK_SIZE);
+          sink.write(data_to_be_sent, infile.gcount());
+          return true;
+        },
+        content_type);
+      if (res) {
+        body = res->body;
+      }
+    } else if (method == 2) {
+      auto res = cli_.Put(
+        request_url, file_size,
+        [&](size_t, size_t, httplib::DataSink & sink) {
+          infile.read(data_to_be_sent, CHUNK_SIZE);
+          sink.write(data_to_be_sent, infile.gcount());
+          return true;
+        },
+        content_type);
+      if (res) {
+        body = res->body;
+      }
+    }
+    infile.close();
+    return body;
+  }
+  void SetInfo(const std::string & sn, const std::string & uid)
+  {
+    std::unique_lock<std::shared_mutex> lock(info_mutex_);
+    sn_ = sn;
+    uid_ = uid;
+  }
+  void GetInfo(std::string & sn, std::string & uid) const
+  {
+    std::shared_lock<std::shared_mutex> lock(info_mutex_);
+    sn = sn_;
+    uid = uid_;
+  }
 
 private:
   std::string base_url;
+  std::string sn_, uid_;
+  mutable std::shared_mutex info_mutex_;
 };  // Backend_Http
 }  // namespace bridge
 }  // namespace cyberdog

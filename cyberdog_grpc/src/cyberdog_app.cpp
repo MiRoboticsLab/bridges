@@ -267,15 +267,24 @@ void Cyberdog_app::HeartBeat()
   std::string ipv4;
   while (rclcpp::ok()) {
     if (can_process_messages_) {
+      update_time_mutex_.lock();
+      bool connector_timeout =
+        std::chrono::duration_cast<std::chrono::seconds>(
+        std::chrono::system_clock::now() - connector_update_time_point_).count() > 5;
+      update_time_mutex_.unlock();
       bool hearbeat_result(false);
       {
         std::shared_lock<std::shared_mutex> stub_read_lock(stub_mutex_);
-        if (app_stub_) {
+        if (app_stub_ && !connector_timeout) {
           std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
             local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn);
+        } else if (connector_timeout) {
+          hearbeat_result = false;
+          app_disconnected = true;
         } else {
+          r.sleep();
           continue;
         }
       }
@@ -290,6 +299,7 @@ void Cyberdog_app::HeartBeat()
           }
         }
       } else {
+        heartbeat_err_cnt_ = 0;
         std_msgs::msg::Bool msg;
         msg.data = true;
         app_connection_pub_->publish(msg);
@@ -363,8 +373,16 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
+  update_time_mutex_.lock();
+  connector_update_time_point_ = std::chrono::system_clock::now();
+  update_time_mutex_.unlock();
   if (msg->is_connected) {
     std::string phoneIp = msg->provider_ip;
+    if (!phoneIp.empty() && phoneIp != "0.0.0.0") {
+      app_disconnected = false;
+    } else {
+      app_disconnected = true;
+    }
     bool different_ip(false);
     {
       std::unique_lock<std::shared_mutex> write_lock(connector_mutex_);
@@ -376,17 +394,15 @@ void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::
       is_internet = msg->is_internet;
       wifi_strength = msg->strength;
     }
-    {
-      std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
-      INFO_MILLSECONDS(
-        10000, "Wifi ssid: %s. signal strength: %d.", msg->ssid.c_str(), msg->strength);
-      if (different_ip) {
-        app_disconnected = false;
-        INFO("local_ip ip :%s,pheneIp ip :%s", local_ip.c_str(), phoneIp.c_str());
-        destroyGrpc();
-        createGrpc();
-      }
+    INFO_MILLSECONDS(
+      10000, "Wifi ssid: %s. signal strength: %d.", msg->ssid.c_str(), msg->strength);
+    if (different_ip) {
+      INFO("local_ip ip :%s,pheneIp ip :%s", msg->robot_ip.c_str(), msg->provider_ip.c_str());
+      destroyGrpc();
+      createGrpc();
     }
+  } else {
+    INFO_MILLSECONDS(10000, "Wifi is not connected");
   }
 }
 
@@ -430,15 +446,11 @@ void Cyberdog_app::createGrpc()
     ip_port = *server_ip + std::string(":") + grpc_client_port_;
     net_checker.set_ip(*server_ip);
   }
-  can_process_messages_ = false;
   heartbeat_err_cnt_ = 0;
   auto channel_ = grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials());
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   app_stub_ = std::make_shared<Cyberdog_App_Client>(channel_);
   can_process_messages_ = true;
-  if (app_disconnected) {
-    destroyGrpc();
-  }
 }
 
 string Cyberdog_app::GetFileConecxt(string path)
@@ -1258,14 +1270,15 @@ void Cyberdog_app::ProcessMsg(
         auto future_result = query_dev_info_client_->async_send_request(req);
         std::future_status status = future_result.wait_for(timeout);
         if (status == std::future_status::ready) {
-          INFO(
-            "success to call querydevinfo request services.");
+          INFO("success to call querydevinfo request services.");
         } else {
-          INFO(
-            "Failed to call querydevinfo request  services.");
+          INFO("Failed to call querydevinfo request  services.");
         }
         grpc_respond.set_namecode(grpc_request->namecode());
         grpc_respond.set_data(future_result.get()->info);
+        INFO(
+          "respond namecode:%d, message:%s", grpc_request->namecode(),
+          future_result.get()->info.c_str());
         writer->Write(grpc_respond);
       }
       break;

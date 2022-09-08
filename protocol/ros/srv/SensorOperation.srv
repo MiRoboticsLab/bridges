@@ -1,0 +1,17 @@
+# request
+uint16 ID_ALL   = 0  # 所有传感器
+uint16 ID_LIDAR = 1  # 雷达
+uint16 ID_ULTRA = 2  # 超声波
+uint16 ID_TOF   = 3  # Tof
+uint16 ID_GPS   = 4  # GPS
+
+uint8 OPR_OPEN  = 1  # 打开
+uint8 OPR_START = 2  # 开始
+uint8 OPR_STOP  = 3  # 结束
+uint8 OPR_CLOSE = 4  # 关闭
+
+uint16 sensor_id
+uint8 operation
+---
+# response
+bool success
