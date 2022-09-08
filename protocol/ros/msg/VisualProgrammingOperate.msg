@@ -2,10 +2,12 @@
 string TYPE_TASK="task"                 # 任务
 string TYPE_MODULE="module"             # 模块
 
-string MODE_SINGLE="single"             # 单次
-string MODE_CYCLE="cycle"               # 周期
 string MODE_BASE="base"                 # 基础
 string MODE_USER="user"                 # 用户
+string MODE_SINGLE="single"             # 单次
+string MODE_CYCLE="cycle"               # 周期
+string MODE_COMMON="common"             # 普通
+string MODE_SEQUENCE="sequence"         # 序列
 
 string OPERATE_ADD="add"                # [操作]添加
 string OPERATE_REVISE="revise"          # [操作]修改
