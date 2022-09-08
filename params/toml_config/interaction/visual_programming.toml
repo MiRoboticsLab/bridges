@@ -18,6 +18,7 @@ audio = "speech_play_extend"                    # 语音消息
 
 [vp.init.service]                               # 服务：string
 motion = "motion_result_cmd"                    # 运动模块服务名称
+sequence = "motion_sequence"                    # 运动模块序列服务名称
 led = "led_execute"                             # LED模块服务名称
 audio = "speech_text_play"                      # 语音模块服务名称
 task_processor = "cyberdog_vp_task_processor"   # 任务处理器服务名称
