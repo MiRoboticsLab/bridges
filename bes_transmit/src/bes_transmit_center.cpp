@@ -116,7 +116,6 @@ cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
 void cyberdog::bridge::Transmit_Waiter::Run()
 {
   executor_.spin();
-  rclcpp::shutdown();
 }
 
 void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)
