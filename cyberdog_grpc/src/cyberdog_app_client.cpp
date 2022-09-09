@@ -27,11 +27,6 @@ Cyberdog_App_Client::~Cyberdog_App_Client() {}
 bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
 {
   grpc::ClientContext context;
-  // gpr_timespec timespec;
-  // timespec.tv_sec = 2;
-  // timespec.tv_nsec = 0;
-  // timespec.clock_type = GPR_TIMESPAN;
-  // context.set_deadline(timespec);
   ::grpcapi::RecResponse rsp;
   std::unique_ptr<grpc::ClientReader<::grpcapi::RecResponse>> reader(
     stub_->sendMsg(&context, msg));
@@ -53,11 +48,16 @@ bool Cyberdog_App_Client::sendHeartBeat(
   const int32_t & battery, const bool & internet, const std::string & sn)
 {
   ClientContext context;
+  context.set_deadline(
+    std::chrono::system_clock::now() +
+    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(8)));
+  /*
   gpr_timespec timespec;
   timespec.tv_sec = 2;
   timespec.tv_nsec = 0;
   timespec.clock_type = GPR_TIMESPAN;
   context.set_deadline(timespec);
+  */
   Result result;
   Ticks ticks_;
   ticks_.set_ip(ip);

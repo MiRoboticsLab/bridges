@@ -2,7 +2,7 @@
 [vp.init]                                       # WiFi 连接:初始化
 [vp.init.topic]                                 # 消息：string
 frontend = "frontend_message"                   # 前端消息名称
-backend = "backend_message"                     # 后端消息名称
+robotend = "robotend_message"                   # 后端消息名称
 task_option_request = "task_option_request"     # 任务操作请求消息名称
 option_task_response = "task_option_response"   # 任务操作响应消息名称
 touch = "touch_status"                          # 触摸板模块消息名称
@@ -14,14 +14,22 @@ voice = "asr_text"                              # 自动语音识别文本信息
 motion_servo_cmd = "motion_servo_cmd"           # 运动模块伺服指令
 motion_servo_res = "motion_servo_response"      # 运动模块伺服反馈
 connector = "connector_state"                   # 连接模块状态
+audio = "speech_play_extend"                    # 语音消息
 
 [vp.init.service]                               # 服务：string
 motion = "motion_result_cmd"                    # 运动模块服务名称
+sequence = "motion_sequence"                    # 运动模块序列服务名称
 led = "led_execute"                             # LED模块服务名称
 audio = "speech_text_play"                      # 语音模块服务名称
+task_processor = "cyberdog_vp_task_processor"   # 任务处理器服务名称
+backend = "dog_to_bes_http"                     # 后端服务
 
 [vp.init.validity_period]                       # 有效期：int(milliseconds) 毫秒
 touch = 30000                                   # 触摸板消息有效时长
+
+[vp.init.environment]
+backend=false                                   # 后端是否启用？
+workspace=""                                    # 工作空间（安装路径）
 
 [vp.init.voice_operation]                       # 语音操作表
 shutdown = [                                    # 终止任务

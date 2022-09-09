@@ -1,0 +1,11 @@
+
+int32 COMMAND_RECOGNITION_ALL = 0
+int32 COMMAND_RECOGNITION_SINGLE = 1
+
+int32 command
+string username
+
+---
+int32 ENABLE_SUCCESS = 0
+int32 ENABLE_FAIL = 1
+int32 result

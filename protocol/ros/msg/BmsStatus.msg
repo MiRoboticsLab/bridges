@@ -13,3 +13,4 @@ uint8 status
 int8  batt_health
 int16 batt_loop_number
 int8  powerboard_status
+

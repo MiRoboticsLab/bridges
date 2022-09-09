@@ -15,6 +15,7 @@
 #ifndef CYBERDOG_APP_HPP_
 #define CYBERDOG_APP_HPP_
 
+#include <shared_mutex>
 #include <chrono>
 #include <cmath>
 #include <condition_variable>
@@ -28,18 +29,25 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#include <map>
+#include <atomic>
 
 // Interfaces
 #include "cyberdog_app_client.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
-#include "msgdispatcher.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "msg_dispatcher.hpp"
+#include "protocol/action/navigation.hpp"
+#include "nav_msgs/msg/occupancy_grid.hpp"
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
 #include "protocol/msg/audio_voiceprint_result.hpp"
 #include "protocol/msg/connector_status.hpp"
 #include "protocol/msg/bms_status.hpp"
+#include "protocol/msg/label.hpp"
+#include "protocol/msg/map_label.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
 #include "protocol/srv/ota_server_cmd.hpp"
@@ -51,6 +59,8 @@
 #include "protocol/srv/audio_nick_name.hpp"
 #include "protocol/srv/audio_volume_set.hpp"
 #include "protocol/srv/audio_execute.hpp"
+#include "protocol/srv/get_map_label.hpp"
+#include "protocol/srv/set_map_label.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -71,6 +81,7 @@ class Cyberdog_app : public rclcpp::Node
 {
 public:
   Cyberdog_app();
+  ~Cyberdog_app();
   std::string getServiceIp();
   void ProcessMsg(
     const ::grpcapi::SendRequest * grpc_request,
@@ -81,18 +92,20 @@ public:
 
 private:
   uint32_t ticks_;
-  bool can_process_messages;
+  std::atomic_bool can_process_messages_;
   void RunServer();
   std::shared_ptr<std::thread> app_server_thread_;
   std::shared_ptr<std::thread> heart_beat_thread_;
-  std::shared_ptr<std::thread> destory_grpc_server_thread_;
-  std::shared_ptr<std::thread> dog_walk_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
+    dog_pose_sub_;
   void destroyGrpcServer();
   std::string getDogIp(const string str, const string & split);
   std::string getPhoneIp(const string str, const string & split);
-  std::shared_ptr<Cyberdog_App_Client> app_stub;
+  std::shared_ptr<Cyberdog_App_Client> app_stub_;
+  mutable std::shared_mutex stub_mutex_;  // mutex for app_stub_
   std::shared_ptr<std::string> server_ip;
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
@@ -102,11 +115,16 @@ private:
   void createGrpc();
   string GetFileConecxt(string path);
   NetChecker net_checker;
-  uint32_t heartbeat_err_cnt;
-  bool app_disconnected;
+  std::atomic<uint32_t> heartbeat_err_cnt_;
+  std::atomic_bool app_disconnected;
   std::string local_ip;
   bool is_internet;
   int wifi_strength;
+  mutable std::shared_mutex connector_mutex_;
+  // mutex for local_ip, is_internet, wifi_strength, server_ip
+  std::chrono::system_clock::time_point connector_update_time_point_;
+  mutable std::mutex update_time_mutex_;  // mutex for connector_update_time_point_
+
   protocol::msg::BmsStatus bms_status;
   std::string sn;
   TimeInterval timer_interval;
@@ -291,6 +309,37 @@ private:
 
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
+
+  // process map message
+  void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+  void processDogPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
+
+  // for message queue
+  void send_msgs_(
+    const std::shared_ptr<std::shared_ptr<::grpcapi::SendRequest>> msg);
+  std::map<int, std::shared_ptr<LatestMsgDispather<
+      std::shared_ptr<::grpcapi::SendRequest>>>>
+  send_thread_map_;
+
+  // mapping and navigation
+  void handlLableSetRequest(
+    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  void handlLableGetRequest(
+    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  void handleMappingRequest(
+    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  rclcpp::Client<protocol::srv::SetMapLabel>::SharedPtr set_label_client_;
+  rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
+  rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
+    navigation_client_;
+
+  // audio action state
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
 
   // test
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};

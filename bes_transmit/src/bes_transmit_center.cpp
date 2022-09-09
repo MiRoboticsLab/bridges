@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <string>
+#include <vector>
 #include <memory>
 #include <algorithm>
+#include "cyberdog_common/cyberdog_json.hpp"
 #include "bes_transmit_center.hpp"
 
 #define   BTW_PUB_NODE_NAME   "bes_transmit_pub_waiter"
@@ -97,6 +99,14 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
     std::bind(
       &Transmit_Waiter::BesHttpCallback, this, std::placeholders::_1,
       std::placeholders::_2));
+  http_send_file_srv_ =
+    http_node_ptr_->create_service<protocol::srv::BesHttpSendFile>(
+    "bes_http_send_file_srv",
+    std::bind(
+      &Transmit_Waiter::BesHttpSendFileCallback, this, std::placeholders::_1,
+      std::placeholders::_2));
+  device_info_client_ =
+    http_node_ptr_->create_client<protocol::srv::DeviceInfo>("query_divice_info");
 }
 
 cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
@@ -132,10 +142,55 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   int mill_seconds = std::min(static_cast<int>(request->milsecs), 6000);
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
-  respose->data = "{\"code\": 369003, \"message\": \"http method error\"}";
-  if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
-    respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds);
-  } else if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_POST) {
-    respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds);
+  std::string sn, uid;
+  respose->data = "{\"code\": -1, \"message\": \"DeviceInfo service not available \"}";
+  if (getDevInf(sn, uid)) {
+    if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
+      respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds);
+    } else if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_POST) {
+      respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds);
+    }
   }
+}
+
+void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
+  const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
+  protocol::srv::BesHttpSendFile::Response::SharedPtr respose)
+{
+  int mill_seconds = std::min(static_cast<int>(request->milsecs), 6000);
+  mill_seconds = std::max(0, mill_seconds);
+  mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
+  std::string sn, uid;
+  respose->data = "{\"code\": -1, \"message\": \"DeviceInfo service not available \"}";
+  if (getDevInf(sn, uid)) {
+    bhttp_ptr_->SetInfo(sn, uid);
+    respose->data = bhttp_ptr_->SendFile(
+      request->method, request->url, request->file_name, request->content_type, request->milsecs);
+  }
+}
+
+bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string & uid)
+{
+  if (!device_info_client_->wait_for_service(std::chrono::seconds(3))) {
+    WARN("query_divice_info server not avalible!");
+    return false;
+  }
+  auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
+  std::vector<bool> req_v {true, false, true};
+  req->enables = req_v;
+  auto future_result = device_info_client_->async_send_request(req);
+  rapidjson::Document json_dev_inf_doc(kObjectType);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  if (status == std::future_status::ready) {
+    std::string info = future_result.get()->info;
+    if (!json_dev_inf_doc.Parse<0>(info.c_str()).HasParseError()) {
+      return cyberdog::common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
+             cyberdog::common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+    } else {
+      WARN("Parse json error!");
+    }
+  } else {
+    WARN("query_divice_info service timeout!");
+  }
+  return false;
 }
