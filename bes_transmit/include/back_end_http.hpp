@@ -103,6 +103,7 @@ public:
     if (res) {
       body = res->body;
     }
+    INFO("response body: %s", body.c_str());
     return body;
   }
   const std::string post(
@@ -129,6 +130,7 @@ public:
     if (res) {
       body = res->body;
     }
+    INFO("response body: %s", body.c_str());
     return body;
   }
   const std::string SendFile(
@@ -194,6 +196,7 @@ public:
       }
     }
     infile.close();
+    INFO("response body: %s", body.c_str());
     return body;
   }
   void SetInfo(const std::string & sn, const std::string & uid)

@@ -136,6 +136,11 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   const protocol::srv::BesHttp::Request::SharedPtr request,
   protocol::srv::BesHttp::Response::SharedPtr respose)
 {
+  if (request->url.empty() || request->url == "/") {
+    respose->data = "{\"code\": -1, \"message\": \"Empty url \"}";
+    ERROR("Empty url");
+    return;
+  }
   std::string params("");
   if (!request->params.empty()) {
     params = request->params;
@@ -158,6 +163,11 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
   const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
   protocol::srv::BesHttpSendFile::Response::SharedPtr respose)
 {
+  if (request->url.empty() || request->url == "/") {
+    respose->data = "{\"code\": -1, \"message\": \"Empty url \"}";
+    ERROR("Empty url");
+    return;
+  }
   int mill_seconds = std::min(static_cast<int>(request->milsecs), 6000);
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
