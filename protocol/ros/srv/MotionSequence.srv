@@ -1,4 +1,5 @@
 # request
+int32 motion_id
 string toml_data                # toml 文件内容(格式如下框内约束)
                                 #┌─────────────────────────┐
                                 #│# toml file describe.    │
@@ -19,3 +20,4 @@ MotionSequenceParam[] params     # 运动序列参数集
 bool result                     # 执行结果
 int32 code                      # 状态码
 string describe                 # 状态描述
+int32 motion_id
