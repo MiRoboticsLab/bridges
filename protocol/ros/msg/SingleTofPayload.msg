@@ -24,4 +24,5 @@ bool data_available  # A flag that tof data is available
 uint8 tof_position   # location of tof sensor 
                      # (LEFT_HEAD, RIGHT_HEAD, LEFT_REAR,RIGHT_REAR) [enum]
 
-float32[] data      # tof data , Unit: m    
+float32[] data      # tof data , Unit: m
+float32[] intensity      # tof data intensity

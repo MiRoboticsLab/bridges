@@ -22,6 +22,12 @@ var_name = "left_tof_data_clock"
 var_type = "u64"
 parser_param = [0, 7]
 
+[[array]]
+description = ""
+can_package_num = 8
+can_id = ["0x01854009", "0x0185400A", "0x0185400B", "0x0185400C", "0x0185400D", "0x0185400E", "0x0185400F", "0x01854010"]
+array_name = "left_tof_intensity_array"
+
 #right
 [[array]]
 description = ""
@@ -37,6 +43,11 @@ var_name = "right_tof_data_clock"
 var_type = "u64"
 parser_param = [0, 7]
 
+[[array]]
+description = ""
+can_package_num = 8
+can_id = ["0x01874009", "0x0187400A", "0x0187400B", "0x0187400C", "0x0187400D", "0x0187400E", "0x0187400F", "0x01874010"]
+array_name = "right_tof_intensity_array"
 
 [[var]]
 description = ""
