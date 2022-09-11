@@ -2,10 +2,12 @@
 string TYPE_TASK="task"                 # 任务
 string TYPE_MODULE="module"             # 模块
 
-string MODE_SINGLE="single"             # 单次
-string MODE_CYCLE="cycle"               # 周期
 string MODE_BASE="base"                 # 基础
 string MODE_USER="user"                 # 用户
+string MODE_SINGLE="single"             # 单次
+string MODE_CYCLE="cycle"               # 周期
+string MODE_COMMON="common"             # 普通
+string MODE_SEQUENCE="sequence"         # 序列
 
 string OPERATE_ADD="add"                # [操作]添加
 string OPERATE_REVISE="revise"          # [操作]修改
@@ -22,7 +24,6 @@ string STATE_WAIT="wait"                # [状态]等待
 string STATE_RUN="run"                  # [状态]执行
 string STATE_SUSPEND="suspend"          # [状态]暂停
 string STATE_SHUTDOWN="shutdown"        # [状态]终止
-string STATE_DELETE="delete"            # [状态]删除
 
 string STEP_PARSE="parse"               # [条件]解析
 string STEP_REGISTER="register"         # [条件]注册
