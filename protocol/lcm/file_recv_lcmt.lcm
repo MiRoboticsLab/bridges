@@ -1,0 +1,3 @@
+struct file_recv_lcmt {
+    int8_t  result; // 0: 成功， 1：异常，后面留着其他状态
+}

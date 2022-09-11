@@ -106,7 +106,7 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
       &Transmit_Waiter::BesHttpSendFileCallback, this, std::placeholders::_1,
       std::placeholders::_2));
   device_info_client_ =
-    http_node_ptr_->create_client<protocol::srv::DeviceInfo>("query_divice_info");
+    tsub_node_ptr_->create_client<protocol::srv::DeviceInfo>("query_divice_info");
 }
 
 cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
@@ -116,7 +116,6 @@ cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
 void cyberdog::bridge::Transmit_Waiter::Run()
 {
   executor_.spin();
-  rclcpp::shutdown();
 }
 
 void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)

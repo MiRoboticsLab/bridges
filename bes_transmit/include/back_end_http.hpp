@@ -97,7 +97,7 @@ public:
     }
     std::string sn, uid;
     GetInfo(sn, uid);
-    request_url += "account:" + uid + "&number:" + sn;
+    request_url += "account=" + uid + "&number=" + sn;
     INFO("base_url:%s, request url:%s", base_url.c_str(), request_url.c_str());
     auto res = cli_.Get(request_url);
     if (res) {
@@ -123,7 +123,7 @@ public:
       base_url.c_str(), request_url.c_str(), params.c_str());
     std::string sn, uid;
     GetInfo(sn, uid);
-    request_url += "?account:" + uid + "&number:" + sn;
+    request_url += "?account=" + uid + "&number=" + sn;
     std::string body("{\"code\": -1, \"message\": \"http method error\"}");
     auto res = cli_.Post(request_url, params, "application/json");
     if (res) {
@@ -163,10 +163,10 @@ public:
     if (position_of_slash != std::string::npos) {
       file_name_to_set = file_name.substr(position_of_slash + 1);
     }
-    request_url += "?file_name:" + file_name_to_set;
+    request_url += "?file_name=" + file_name_to_set;
     std::string sn, uid;
     GetInfo(sn, uid);
-    request_url += "&account:" + uid + "&number:" + sn;
+    request_url += "&account=" + uid + "&number=" + sn;
     char data_to_be_sent[CHUNK_SIZE];
     if (method == 1) {
       auto res = cli_.Post(
