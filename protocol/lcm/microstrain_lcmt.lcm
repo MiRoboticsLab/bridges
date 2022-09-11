@@ -7,4 +7,5 @@ struct microstrain_lcmt {
   float temp;
   int64_t good_packets;
   int64_t bad_packets;
+  int64_t timestamp;
 }
