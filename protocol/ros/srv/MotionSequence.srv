@@ -1,5 +1,6 @@
 # request
 int32 motion_id
+int32 duration
 string toml_data                # toml 文件内容(格式如下框内约束)
                                 #┌─────────────────────────┐
                                 #│# toml file describe.    │
