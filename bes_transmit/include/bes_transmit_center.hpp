@@ -53,6 +53,7 @@ private:
   rclcpp::Node::SharedPtr tpub_node_ptr_ {nullptr};
   rclcpp::Node::SharedPtr tsub_node_ptr_ {nullptr};
   rclcpp::Node::SharedPtr http_node_ptr_ {nullptr};
+  rclcpp::CallbackGroup::SharedPtr http_node_cb_group_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr be_pub_;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr be_sub_;
   rclcpp::Service<protocol::srv::BesHttp>::SharedPtr http_srv_;

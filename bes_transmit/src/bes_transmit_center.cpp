@@ -93,20 +93,22 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
     "dog_to_bes", rclcpp::SystemDefaultsQoS(),
     std::bind(&Transmit_Waiter::MqttPubCallback, this, std::placeholders::_1));
   bhttp_ptr_ = std::make_unique<Backend_Http>();
+  http_node_cb_group_ = http_node_ptr_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
   http_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttp>(
     "bes_http_srv",
     std::bind(
       &Transmit_Waiter::BesHttpCallback, this, std::placeholders::_1,
-      std::placeholders::_2));
+      std::placeholders::_2), rmw_qos_profile_services_default, http_node_cb_group_);
   http_send_file_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttpSendFile>(
     "bes_http_send_file_srv",
     std::bind(
       &Transmit_Waiter::BesHttpSendFileCallback, this, std::placeholders::_1,
-      std::placeholders::_2));
+      std::placeholders::_2), rmw_qos_profile_services_default, http_node_cb_group_);
   device_info_client_ =
-    tsub_node_ptr_->create_client<protocol::srv::DeviceInfo>("query_divice_info");
+    http_node_ptr_->create_client<protocol::srv::DeviceInfo>(
+    "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
 }
 
 cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
@@ -134,6 +136,11 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   const protocol::srv::BesHttp::Request::SharedPtr request,
   protocol::srv::BesHttp::Response::SharedPtr respose)
 {
+  if (request->url.empty() || request->url == "/") {
+    respose->data = "{\"code\": \"-1\", \"message\": \"Empty url \"}";
+    ERROR("Empty url");
+    return;
+  }
   std::string params("");
   if (!request->params.empty()) {
     params = request->params;
@@ -142,7 +149,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = "{\"code\": -1, \"message\": \"DeviceInfo service not available \"}";
+  respose->data = "{\"code\": \"-1\", \"message\": \"DeviceInfo service not available \"}";
   if (getDevInf(sn, uid)) {
     if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
       respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds);
@@ -156,11 +163,16 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
   const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
   protocol::srv::BesHttpSendFile::Response::SharedPtr respose)
 {
+  if (request->url.empty() || request->url == "/") {
+    respose->data = "{\"code\": \"-1\", \"message\": \"Empty url \"}";
+    ERROR("Empty url");
+    return;
+  }
   int mill_seconds = std::min(static_cast<int>(request->milsecs), 6000);
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = "{\"code\": -1, \"message\": \"DeviceInfo service not available \"}";
+  respose->data = "{\"code\": \"-1\", \"message\": \"DeviceInfo service not available \"}";
   if (getDevInf(sn, uid)) {
     bhttp_ptr_->SetInfo(sn, uid);
     respose->data = bhttp_ptr_->SendFile(
