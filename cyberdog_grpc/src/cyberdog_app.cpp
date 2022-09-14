@@ -731,7 +731,7 @@ void Cyberdog_app::HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg)
   CyberdogJson::Add(progress_response, "upgrade_progress", 0);
   if (msg.data < 0) {
     CyberdogJson::Add(progress_response, "download_progress", -1);
-    CyberdogJson::Add(progress_response, "code", msg.data);
+    CyberdogJson::Add(progress_response, "code", std::abs(msg.data));
   } else {
     CyberdogJson::Add(progress_response, "download_progress", msg.data);
     CyberdogJson::Add(progress_response, "code", 0);
@@ -751,7 +751,7 @@ void Cyberdog_app::HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg)
 
   if (msg.data < 0) {
     CyberdogJson::Add(progress_response, "upgrade_progress", -1);
-    CyberdogJson::Add(progress_response, "code", msg.data);
+    CyberdogJson::Add(progress_response, "code", std::abs(msg.data));
   } else {
     CyberdogJson::Add(progress_response, "upgrade_progress", msg.data);
     CyberdogJson::Add(progress_response, "code", 0);
