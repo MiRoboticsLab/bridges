@@ -77,6 +77,15 @@ using rapidjson::Document;
 using rapidjson::kObjectType;
 namespace carpo_cyberdog_app
 {
+enum NavType
+{
+  START_MAPPIMG,
+  STOP_MAPPIMG,
+  AB_NAV,
+  FOLLOWING,
+  DOCKING,
+  LOCOLIZATION
+};
 class Cyberdog_app : public rclcpp::Node
 {
 public:
@@ -325,18 +334,22 @@ private:
   void handlLableSetRequest(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  rclcpp::Client<protocol::srv::SetMapLabel>::SharedPtr set_label_client_;
 
   void handlLableGetRequest(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
 
   void handleMappingRequest(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
-  rclcpp::Client<protocol::srv::SetMapLabel>::SharedPtr set_label_client_;
-  rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
     navigation_client_;
+  std::map<NavType, size_t> type_hash_map_;
+  std::map<size_t, rclcpp_action::Client<protocol::action::Navigation>::GoalHandle::SharedPtr>
+  hash_handle_map_;
+  std::shared_mutex nav_map_mutex_;
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
