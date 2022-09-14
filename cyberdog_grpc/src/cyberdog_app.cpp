@@ -986,14 +986,18 @@ void Cyberdog_app::handleMappingRequest(
   int timeout = 60;
   std::string response_string;
   std::string status;
+  NavType nav_type_request;
+  bool cancel_goal = false;
   double goal_x, goal_y;
   CyberdogJson::Get(json_resquest, "status", status);
   INFO("handleMappingRequest");
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
+    nav_type_request = START_MAPPIMG;
   } else if (status == "STOP") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_MAPPING;
+    nav_type_request = STOP_MAPPIMG;
   } else if (status == "NAVIGATION_AB") {
     if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
       ERROR("NAVIGATION_AB should have goalX and goalY settings");
@@ -1006,45 +1010,151 @@ void Cyberdog_app::handleMappingRequest(
     goal.pose.position.y = goal_y;
     mode_goal.poses.push_back(goal);
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
+    nav_type_request = AB_NAV;
   } else if (status == "STOP_NAVIGATION_AB") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AB;
+    nav_type_request = AB_NAV;
+    cancel_goal = true;
   } else if (status == "START_NAVIGATION") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
+    nav_type_request = LOCOLIZATION;
   } else if (status == "STOP_NAVIGATION") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_LOCALIZATION;
+    nav_type_request = LOCOLIZATION;
+    cancel_goal = true;
   } else if (status == "START_AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
+    nav_type_request = DOCKING;
   } else if (status == "STOP_AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AUTO_DOCKING;
+    nav_type_request = DOCKING;
+    cancel_goal = true;
   } else {
     ERROR("Unavailable navigation type: %s", status.c_str());
     retrunErrorGrpc(writer);
   }
-  auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal);
-  auto mode_result =
-    navigation_client_->async_get_result(mode_goal_handle.get());
-  uint8_t result = 2;
-  mode_result.wait_for(std::chrono::seconds(60));
-  if (mode_goal_handle.get()->is_result_aware()) {
-    if (mode_result.get().result->result ==
-      protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
-    {
-      INFO("Navigation action success");
+
+  auto return_result = [&](int result_code) {
+      rapidjson::StringBuffer strBuf;
+      rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+      json_writer.StartObject();
+      json_writer.Key("result");
+      json_writer.Int(result_code);
+      json_writer.EndObject();
+      response_string = strBuf.GetString();
+      grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_MAPPING_RQUEST);
+      grpc_respond.set_data(response_string);
+      writer->Write(grpc_respond);
+    };
+
+  auto return_feedback = [&](int feedback_code, const std::string & feedback_msg) {
+      rapidjson::StringBuffer strBuf;
+      rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+      json_writer.StartObject();
+      json_writer.Key("feedback_code");
+      json_writer.Int(feedback_code);
+      json_writer.Key("feedback_msg");
+      json_writer.String(feedback_msg.c_str());
+      json_writer.EndObject();
+      response_string = strBuf.GetString();
+      grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_MAPPING_RQUEST);
+      grpc_respond.set_data(response_string);
+      writer->Write(grpc_respond);
+    };
+
+  if (cancel_goal) {
+    std::unique_lock<std::shared_mutex> write_lock(nav_map_mutex_);
+    if (type_hash_map_.find(nav_type_request) != type_hash_map_.end()) {
+      size_t goal_hash = type_hash_map_[nav_type_request];
+      if (hash_handle_map_.find(goal_hash) != hash_handle_map_.end()) {
+        auto goal_handle_ptr = hash_handle_map_[goal_hash];
+        INFO("Canceling action goal");
+        auto future_cancel_response_ptr = navigation_client_->async_cancel_goal(goal_handle_ptr);
+        if (future_cancel_response_ptr.wait_for(std::chrono::seconds(5)) ==
+          std::future_status::ready)
+        {
+          INFO("Goal has been canceled");
+          return_result(future_cancel_response_ptr.get()->return_code);
+        }
+        hash_handle_map_.erase(goal_hash);
+        type_hash_map_.erase(nav_type_request);
+      } else {
+        ERROR("Wrong goal id!");
+        retrunErrorGrpc(writer);
+      }
     } else {
-      WARN("Navigation action fail");
+      WARN("No such type of action");
+      retrunErrorGrpc(writer);
     }
-    result = mode_result.get().result->result;
+    return;
   }
-  rapidjson::StringBuffer strBuf;
-  rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
-  json_writer.StartObject();
-  json_writer.Key("result");
-  json_writer.Int(result);
-  json_writer.EndObject();
-  response_string = strBuf.GetString();
-  grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_MAPPING_RQUEST);
-  grpc_respond.set_data(response_string);
-  writer->Write(grpc_respond);
+
+  std::mutex writer_mutex;
+  auto feedback_callback =
+    [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
+      const std::shared_ptr<const Navigation::Feedback> feedback) {
+      std::shared_lock<std::shared_mutex> readlock(nav_map_mutex_);
+      std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
+      size_t goal_hash = goal_id_hash_fun(goal_handel_ptr->get_goal_id());
+      if (hash_handle_map_.find(goal_hash) != hash_handle_map_.end()) {
+        INFO_STREAM(
+          "feedback_code: " << feedback->feedback_code << " feedback_msg: " <<
+            feedback->feedback_msg);
+        writer_mutex.lock();
+        return_feedback(feedback->feedback_code, feedback->feedback_msg);
+        writer_mutex.unlock();
+      }
+    };
+  rclcpp_action::Client<Navigation>::SendGoalOptions goal_options;
+  goal_options.feedback_callback;
+  auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal, goal_options);
+  uint8_t result = 2;
+  bool result_timeout = false;
+  if (mode_goal_handle.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
+    nav_map_mutex_.lock();
+    std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
+    size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
+    type_hash_map_[nav_type_request] = goal_hash;
+    hash_handle_map_[goal_hash] = mode_goal_handle.get();
+    nav_map_mutex_.unlock();
+    auto mode_result =
+      navigation_client_->async_get_result(mode_goal_handle.get());
+    if (mode_result.wait_for(std::chrono::seconds(60)) == std::future_status::ready) {
+      if (mode_result.get().result->result ==
+        protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
+      {
+        INFO("Navigation action success");
+      } else {
+        WARN("Navigation action fail");
+      }
+      result = mode_result.get().result->result;
+    } else {
+      WARN("Navigation action result timeout");
+      result_timeout = true;
+    }
+  } else {
+    WARN("Navigation action request timeout");
+    writer_mutex.lock();
+    retrunErrorGrpc(writer);
+    writer_mutex.unlock();
+    return;
+  }
+  std::unique_lock<std::shared_mutex> write_lock(nav_map_mutex_);
+  writer_mutex.lock();
+  if (result_timeout) {
+    retrunErrorGrpc(writer);
+  } else {
+    return_result(result);
+  }
+  writer_mutex.unlock();
+  std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
+  size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
+  hash_handle_map_.erase(goal_hash);
+  if (type_hash_map_.find(nav_type_request) != type_hash_map_.end() &&
+    type_hash_map_[nav_type_request] == goal_hash)
+  {
+    type_hash_map_.erase(nav_type_request);
+  }
 }
 
 void Cyberdog_app::handlLableGetRequest(
