@@ -137,7 +137,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   protocol::srv::BesHttp::Response::SharedPtr respose)
 {
   if (request->url.empty() || request->url == "/") {
-    respose->data = "{\"code\": \"-1\", \"message\": \"Empty url \"}";
+    respose->data = Backend_Http::GetDefaultResponse("Empty url");
     ERROR("Empty url");
     return;
   }
@@ -149,7 +149,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = "{\"code\": \"-1\", \"message\": \"DeviceInfo service not available \"}";
+  respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
   if (getDevInf(sn, uid)) {
     bhttp_ptr_->SetInfo(sn, uid);
     if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
@@ -165,7 +165,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
   protocol::srv::BesHttpSendFile::Response::SharedPtr respose)
 {
   if (request->url.empty() || request->url == "/") {
-    respose->data = "{\"code\": \"-1\", \"message\": \"Empty url \"}";
+    respose->data = Backend_Http::GetDefaultResponse("Empty url");
     ERROR("Empty url");
     return;
   }
@@ -173,7 +173,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = "{\"code\": \"-1\", \"message\": \"DeviceInfo service not available \"}";
+  respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
   if (getDevInf(sn, uid)) {
     bhttp_ptr_->SetInfo(sn, uid);
     respose->data = bhttp_ptr_->SendFile(
