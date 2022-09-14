@@ -1,0 +1,5 @@
+uint8 AVE_DELETE_VOICEPRINT = 4
+uint8 command
+string username
+---
+bool success
