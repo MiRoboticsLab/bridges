@@ -151,6 +151,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   std::string sn, uid;
   respose->data = "{\"code\": \"-1\", \"message\": \"DeviceInfo service not available \"}";
   if (getDevInf(sn, uid)) {
+    bhttp_ptr_->SetInfo(sn, uid);
     if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
       respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds);
     } else if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_POST) {
