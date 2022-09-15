@@ -1,21 +1,49 @@
 
-string OPEN_MINI_LED = "enable_on"
-string CLOSE_MINI_LED = "enable_off"
-string PIC_1 = "PIC_1"
-string PIC_2 = "PIC_2"
-string PIC_ANIMATION = "PIC_ANIMATION"
 
-uint64 COMMAND_OFF = 0
-uint64 COMMAND_ALWAYSON = 0xFFFFFFFFFFFFFFFF
+# mode
+uint8 SET_EXISTED_EFFECT =0x00     #已有灯效模式
+uint8 SET_BRIGHTNESS =0x01         #设置灯效亮度
+uint8 SET_USER_EFFECT =0x02        #用户自定义灯效
 
+# client 
+uint8 BMS =0 
+uint8 BLUETOOTH =1
+uint8 AUDIO =2
+uint8 CONNECTOR =3
+
+# target
+uint8 HEAD_LED =0
+uint8 TAIL_LED =1
+uint8 MINI_LED =2
+
+# runtime  
+uint64 COMMAND_OFF = 0 #灯效时长为0 ms
+uint64 COMMAND_ALWAYSON = 0xFFFFFFFFFFFFFFFF # 若需要设着灯效常亮，可以将timeout字段设置为  protocol::srv::LedExecute::Request::COMMAND_ALWAYSON
+
+# effect
+uint8 OFF =0x00                        #常灭
+uint8 RED_ON =0x01                     #红灯常亮
+uint8 RED_BLINK =0x02                  #红灯闪烁
+uint8 RED_BREATH =0x03                 #红灯呼吸
+uint8 RED_ONE_BY_ONE =0x04             #红灯逐个点亮
+
+uint8 GREEN_ON =0x05                   #绿灯常亮
+uint8 GREEN_BLINK =0x06                #绿灯闪烁
+uint8 GREEN_BREATH =0x07               #绿灯呼吸
+uint8 GREEN_ONE_BY_ONE =0x08           #绿灯逐个点亮
+
+uint8 YELLOW_ON =0x09                   #黄灯常亮
+uint8 YELLOW_BLINK =0x0A                #黄灯闪烁
+uint8 YELLOW_BREATH =0x0B               #黄灯呼吸
+uint8 YELLOW_ONE_BY_ONE =0x0C           #黄灯逐个点亮
 # request
-string client # "BMS";"BLUETOOTH";"AUDIO" ..;
-string target # "tail_led", "head_led","mini_led" ...
-uint8 priority #  response priority
-uint64 timeout 
-string effect
-
+uint8 mode         # 模式取值 见协议中常量定义
+uint8 client       # "bms";"bluetooth";"audio" ..;
+uint8 target       # "tail_led", "head_led","mini_led" ...
+uint8 priority     # response priority(逻辑暂缺)
+uint64 runtime     # 灯效执行时间，单位ms
+uint8 effect       # 灯效 见协议中常量定义
+uint8 brightness   #亮度 0~255
 ---
-
-# response
-int32 code
+# response 
+int32 code #执行结果
