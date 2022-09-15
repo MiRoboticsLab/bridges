@@ -82,16 +82,19 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   executor_.add_node(tpub_node_ptr_);
   executor_.add_node(tsub_node_ptr_);
   executor_.add_node(http_node_ptr_);
-  bpub_ptr_ = std::make_unique<Backend_Publisher>();
+
+  bpub_ptr_ = std::make_unique<Backend_Publisher>(std::string("cyberdog/base_info/submit"));
+  be_sub_ =
+    tsub_node_ptr_->create_subscription<std_msgs::msg::String>(
+    "cyberdog/base_info/submit", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Transmit_Waiter::MqttPubCallback, this, std::placeholders::_1));
+
+  bsub_ptr_ = std::make_unique<Backend_Subscriber>();
   be_pub_ =
     tpub_node_ptr_->create_publisher<std_msgs::msg::String>(
     "bes_to_dog",
     rclcpp::SystemDefaultsQoS());
-  bsub_ptr_ = std::make_unique<Backend_Subscriber>();
-  be_sub_ =
-    tsub_node_ptr_->create_subscription<std_msgs::msg::String>(
-    "dog_to_bes", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Transmit_Waiter::MqttPubCallback, this, std::placeholders::_1));
+
   bhttp_ptr_ = std::make_unique<Backend_Http>();
   http_node_cb_group_ = http_node_ptr_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
   http_srv_ =
