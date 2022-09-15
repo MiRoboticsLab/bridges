@@ -20,3 +20,4 @@ range_max = 8.0
 range_min = 0.01
 frequency = 10.0
 invalid_range_is_inf = false
+filter = false
