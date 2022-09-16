@@ -75,12 +75,6 @@ public:
 
   bool Publish(const char * application_message)
   {
-    time_t timer;
-    time(&timer);
-    struct tm tm_info;
-    localtime_r(&timer, &tm_info);
-    char timebuf[26];
-    strftime(timebuf, 26, "%Y-%m-%d %H:%M:%S", &tm_info);
     mqtt_publish(
       &client, topic_.c_str(), application_message, strlen(
         application_message) + 1, MQTT_PUBLISH_QOS_0);
