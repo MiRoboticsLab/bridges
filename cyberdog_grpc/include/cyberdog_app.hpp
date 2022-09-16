@@ -77,15 +77,6 @@ using rapidjson::Document;
 using rapidjson::kObjectType;
 namespace carpo_cyberdog_app
 {
-enum NavType
-{
-  START_MAPPIMG,
-  STOP_MAPPIMG,
-  AB_NAV,
-  FOLLOWING,
-  DOCKING,
-  LOCOLIZATION
-};
 class Cyberdog_app : public rclcpp::Node
 {
 public:
@@ -346,7 +337,6 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
     navigation_client_;
-  std::map<NavType, size_t> type_hash_map_;
   std::map<size_t, rclcpp_action::Client<protocol::action::Navigation>::GoalHandle::SharedPtr>
   hash_handle_map_;
   std::shared_mutex nav_map_mutex_;
