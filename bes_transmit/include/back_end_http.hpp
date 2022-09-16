@@ -14,6 +14,7 @@
 #ifndef BACK_END_HTTP_HPP_
 #define BACK_END_HTTP_HPP_
 
+#include <uuid/uuid.h>
 #include <shared_mutex>
 #include <string>
 #include <sstream>
@@ -54,6 +55,16 @@ public:
   ~Backend_Http()
   {
   }
+  static std::string GetDefaultResponse(const std::string & message)
+  {
+    uuid_t uu;
+    uuid_generate(uu);
+    char uuid_str[37];
+    uuid_unparse_lower(uu, uuid_str);
+    std::string default_str("{\"code\": \"-1\", \"data\": \"[]\", \"message\": \"");
+    default_str += message + "\", \"request_id\": \"" + std::string(uuid_str) + "\"}";
+    return default_str;
+  }
 
 public:
   const std::string get(
@@ -68,7 +79,7 @@ public:
     } else {
       request_url = request_url + "/" + url;
     }
-    std::string body("{\"code\": \"-1\", \"message\": \"http method error\"}");
+    std::string body(GetDefaultResponse("http method error"));
     request_url += "?";
     if (!params.empty()) {
       rapidjson::Document doc;
@@ -76,7 +87,7 @@ public:
       doc.Parse<rapidjson::kParseDefaultFlags>(params.c_str());
       if (doc.HasParseError()) {
         ERROR("doc should be json::kObjectType.");
-        body = "{\"code\": \"-1\", \"message\": \"json format error\"}";
+        body = GetDefaultResponse("json format error");
         return body;
       }
       for (rapidjson::Value::MemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd();
@@ -125,7 +136,7 @@ public:
     std::string sn, uid;
     GetInfo(sn, uid);
     request_url += "?account=" + uid + "&number=" + sn;
-    std::string body("{\"code\": \"-1\", \"message\": \"http method error\"}");
+    std::string body(GetDefaultResponse("http method error"));
     auto res = cli_.Post(request_url, params, "application/json");
     if (res) {
       body = res->body;
@@ -137,12 +148,12 @@ public:
     unsigned char method, const std::string & url, const std::string & file_name,
     const std::string & content_type, const uint16_t & millsecs)
   {
-    std::string body("{\"code\": \"-1\", \"message\": \"http method error\"}");
+    std::string body(GetDefaultResponse("http method error"));
     std::ifstream infile;
     infile.open(file_name, std::ifstream::in | std::ifstream::binary);
     if (!infile.is_open()) {
       ERROR_STREAM("file " << file_name << " cannot be opened");
-      body = "{\"code\": \"-1\", \"message\": \"file cannot be opened\"}";
+      body = Backend_Http::GetDefaultResponse("file cannot be opened");
       return body;
     }
     infile.seekg(0, infile.end);

@@ -1,6 +1,4 @@
 #goal definition
-geometry_msgs/PoseStamped[] poses
-uint8 nav_type
 uint8 NAVIGATION_TYPE_UNKNWON = 0
 uint8 NAVIGATION_TYPE_START_AB = 1
 uint8 NAVIGATION_TYPE_STOP_AB = 2
@@ -12,8 +10,20 @@ uint8 NAVIGATION_TYPE_START_LOCALIZATION = 7
 uint8 NAVIGATION_TYPE_STOP_LOCALIZATION = 8
 uint8 NAVIGATION_TYPE_START_AUTO_DOCKING = 9
 uint8 NAVIGATION_TYPE_STOP_AUTO_DOCKING = 10
+uint8 NAVIGATION_TYPE_START_WUB_TRACKING = 11
+uint8 NAVIGATION_TYPE_STOP_WUB_TRACKING = 12
 uint8 NAVIGATION_GOAL_TYPE_AB = 101
 uint8 NAVIGATION_GOAL_TYPE_FOLLOW = 102
+uint8 nav_type
+
+geometry_msgs/PoseStamped[] poses # 导航的目标点设置
+
+uint8 TRACING_AUTO = 200 # 自主选择跟随位置
+uint8 TRACING_BEHIND = 201 # 在目标后侧跟随
+uint8 TRACING_LEFT = 202 # 在目标的左侧跟随
+uint8 TRACING_RIGHT = 203 # 在目标的右侧跟随
+uint8 relative_pos # 相对方位，以上方定义的枚举值指定
+float32 keep_distance # 与跟随目标所保持的距离
 ---
 #result definition
 uint8 result
@@ -24,11 +34,16 @@ uint8 NAVIGATION_RESULT_TYPE_FAILED = 3
 uint8 NAVIGATION_RESULT_TYPE_REJECT = 4
 uint8 NAVIGATION_RESULT_TYPE_CANCEL = 5
 ---
+#feedback definition
 #geometry_msgs/PoseStamped current_pose
 #builtin_interfaces/Duration navigation_time
 #builtin_interfaces/Duration estimated_time_remaining
 #int16 number_of_recoveries
 #float32 distance_remaining
 #int16 number_of_poses_remaining
+int32 NAVIGATION_FEEDBACK_RELOCING_SUCCESS = 0
+int32 NAVIGATION_FEEDBACK_RELOCING_RETRYING = 100
+int32 NAVIGATION_FEEDBACK_RELOCING_FAILED = 200
+int32 NAVIGATION_FEEDBACK_NAVIGATING_AB = 1
 int32 feedback_code
 string feedback_msg
