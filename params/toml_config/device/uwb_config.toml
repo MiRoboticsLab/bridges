@@ -1,3 +1,5 @@
+enable = false
+
 front_back_threshold = 7.0
 left_right_threshold = 7.0
 
