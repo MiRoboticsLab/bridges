@@ -112,6 +112,11 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   device_info_client_ =
     http_node_ptr_->create_client<protocol::srv::DeviceInfo>(
     "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
+  INFO("http client is ready");
+
+  if (bpub_ptr_->Init()) {
+    INFO("mqtt publisher is ready");
+  }
 }
 
 cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()

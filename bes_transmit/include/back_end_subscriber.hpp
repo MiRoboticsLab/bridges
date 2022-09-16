@@ -49,7 +49,9 @@ public:
   }
   ~Backend_Subscriber()
   {
-    thread_->join();
+    if (thread_ && thread_->joinable()) {
+      thread_->join();
+    }
   }
 
   void Init()

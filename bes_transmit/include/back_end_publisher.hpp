@@ -31,14 +31,14 @@ void publish_callback(void ** unused, struct mqtt_response_publish * published);
 class Backend_Publisher final
 {
 public:
-  Backend_Publisher(const std::string & topic_name = "cyberdog/base_info/submit")
+  explicit Backend_Publisher(const std::string & topic_name = "cyberdog/base_info/submit")
   : sockfd(-1), addr_("10.38.205.52"),
     port_("1883"), topic_(topic_name), is_stop_(false)
   {
   }
   ~Backend_Publisher()
   {
-    if (thread_sync_->joinable()) {
+    if (thread_sync_ && thread_sync_->joinable()) {
       thread_sync_->join();
     }
   }
@@ -47,7 +47,7 @@ public:
   {
     sockfd = PosixSocket::open_nb_socket(addr_.c_str(), port_.c_str());
     if (sockfd == -1) {
-      ERROR("Failed to open socket: ");
+      ERROR("Failed to open socket");
       return false;
     }
     mqtt_init(
@@ -81,7 +81,6 @@ public:
     localtime_r(&timer, &tm_info);
     char timebuf[26];
     strftime(timebuf, 26, "%Y-%m-%d %H:%M:%S", &tm_info);
-    INFO("published : \"%s\"", application_message);
     mqtt_publish(
       &client, topic_.c_str(), application_message, strlen(
         application_message) + 1, MQTT_PUBLISH_QOS_0);
@@ -91,11 +90,12 @@ public:
         close(sockfd);
       }
       is_stop_ = true;
-      if (thread_sync_->joinable()) {
+      if (thread_sync_ && thread_sync_->joinable()) {
         thread_sync_->join();
       }
       return false;
     }
+    INFO("published : %s", application_message);
     return true;
   }
 
