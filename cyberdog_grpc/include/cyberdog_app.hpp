@@ -40,6 +40,7 @@
 #include "msg_dispatcher.hpp"
 #include "protocol/action/navigation.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
@@ -332,7 +333,7 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
 
-  void handleMappingRequest(
+  void handleNavigationAction(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
@@ -340,6 +341,10 @@ private:
   std::map<size_t, rclcpp_action::Client<protocol::action::Navigation>::GoalHandle::SharedPtr>
   hash_handle_map_;
   std::shared_mutex nav_map_mutex_;
+
+  void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
+
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;

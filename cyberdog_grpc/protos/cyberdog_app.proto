@@ -69,8 +69,9 @@ message SendRequest {
     	MAP_DATA_REQUEST = 6001;
         MAP_SET_LABLE_REQUEST = 6002;
         MAP_GET_LABLE_REQUEST = 6003;
-        MAP_MAPPING_RQUEST = 6004;
+        NAV_ACTION = 6004;
         MAP_DOG_POSE_REQUEST = 6005;
+        NAV_PLAN_PATH = 6006;
     }
 }
 

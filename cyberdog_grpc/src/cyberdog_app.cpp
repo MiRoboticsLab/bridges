@@ -240,6 +240,10 @@ Cyberdog_app::Cyberdog_app()
 
   navigation_client_ =
     rclcpp_action::create_client<Navigation>(this, "CyberdogNavigation");
+
+  nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
+    "plan", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::uploadNavPath, this, _1));
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -978,7 +982,7 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
   return true;
 }
 
-void Cyberdog_app::handleMappingRequest(
+void Cyberdog_app::handleNavigationAction(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
@@ -987,7 +991,7 @@ void Cyberdog_app::handleMappingRequest(
   std::string status;
   double goal_x, goal_y;
   CyberdogJson::Get(json_resquest, "status", status);
-  INFO("handleMappingRequest");
+  INFO("handleNavigationAction");
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
@@ -1036,7 +1040,7 @@ void Cyberdog_app::handleMappingRequest(
       json_writer.Int(result_code);
       json_writer.EndObject();
       response_string = strBuf.GetString();
-      grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_MAPPING_RQUEST);
+      grpc_respond.set_namecode(::grpcapi::SendRequest::NAV_ACTION);
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
     };
@@ -1051,7 +1055,7 @@ void Cyberdog_app::handleMappingRequest(
       json_writer.String(feedback_msg.c_str());
       json_writer.EndObject();
       response_string = strBuf.GetString();
-      grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_MAPPING_RQUEST);
+      grpc_respond.set_namecode(::grpcapi::SendRequest::NAV_ACTION);
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
     };
@@ -1268,6 +1272,28 @@ void Cyberdog_app::handlLableSetRequest(
   grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_SET_LABLE_REQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("path_point");
+  writer.StartArray();
+  for (auto & pose_stamp : msg->poses) {
+    writer.StartObject();
+    writer.Key("px");
+    writer.Double(pose_stamp.pose.position.x);
+    writer.Key("py");
+    writer.Double(pose_stamp.pose.position.y);
+    writer.EndObject();
+  }
+  writer.EndArray();
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  INFO("sending navigation global plan");
+  send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
 }
 
 void Cyberdog_app::ProcessMsg(
@@ -1778,8 +1804,8 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::MAP_GET_LABLE_REQUEST: {
         handlLableGetRequest(json_resquest, grpc_respond, writer);
       } break;
-    case ::grpcapi::SendRequest::MAP_MAPPING_RQUEST: {
-        handleMappingRequest(json_resquest, grpc_respond, writer);
+    case ::grpcapi::SendRequest::NAV_ACTION: {
+        handleNavigationAction(json_resquest, grpc_respond, writer);
       } break;
     case 55001: {
         std_msgs::msg::Bool msg;
