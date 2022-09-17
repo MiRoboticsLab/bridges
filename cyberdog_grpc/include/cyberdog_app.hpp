@@ -333,7 +333,7 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
 
-  void handleMappingRequest(
+  void handleNavigationAction(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
