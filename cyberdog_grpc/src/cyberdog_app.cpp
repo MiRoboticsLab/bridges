@@ -240,6 +240,10 @@ Cyberdog_app::Cyberdog_app()
 
   navigation_client_ =
     rclcpp_action::create_client<Navigation>(this, "CyberdogNavigation");
+
+  nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
+    "plan", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::uploadNavPath, this, _1));
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1268,6 +1272,28 @@ void Cyberdog_app::handlLableSetRequest(
   grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_SET_LABLE_REQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("path_point");
+  writer.StartArray();
+  for (auto & pose_stamp : msg->poses) {
+    writer.StartObject();
+    writer.Key("px");
+    writer.Double(pose_stamp.pose.position.x);
+    writer.Key("py");
+    writer.Double(pose_stamp.pose.position.y);
+    writer.EndObject();
+  }
+  writer.EndArray();
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  INFO("sending navigation global plan");
+  send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
 }
 
 void Cyberdog_app::ProcessMsg(
