@@ -985,18 +985,14 @@ void Cyberdog_app::handleMappingRequest(
   int timeout = 60;
   std::string response_string;
   std::string status;
-  NavType nav_type_request;
-  bool cancel_goal = false;
   double goal_x, goal_y;
   CyberdogJson::Get(json_resquest, "status", status);
   INFO("handleMappingRequest");
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
-    nav_type_request = START_MAPPIMG;
   } else if (status == "STOP") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_MAPPING;
-    nav_type_request = STOP_MAPPIMG;
   } else if (status == "NAVIGATION_AB") {
     if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
       ERROR("NAVIGATION_AB should have goalX and goalY settings");
@@ -1009,25 +1005,24 @@ void Cyberdog_app::handleMappingRequest(
     goal.pose.position.y = goal_y;
     mode_goal.poses.push_back(goal);
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
-    nav_type_request = AB_NAV;
   } else if (status == "STOP_NAVIGATION_AB") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AB;
-    nav_type_request = AB_NAV;
-    cancel_goal = true;
   } else if (status == "START_NAVIGATION") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
-    nav_type_request = LOCOLIZATION;
   } else if (status == "STOP_NAVIGATION") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_LOCALIZATION;
-    nav_type_request = LOCOLIZATION;
-    cancel_goal = true;
   } else if (status == "START_AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
-    nav_type_request = DOCKING;
   } else if (status == "STOP_AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AUTO_DOCKING;
-    nav_type_request = DOCKING;
-    cancel_goal = true;
+  } else if (status == "START_FOLLOW") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_FOLLOW;
+  } else if (status == "STOP_FOLLOW") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_FOLLOW;
+  } else if (status == "START_UWB_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
+  } else if (status == "STOP_UWB_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_UWB_TRACKING;
   } else {
     ERROR("Unavailable navigation type: %s", status.c_str());
     retrunErrorGrpc(writer);
@@ -1061,33 +1056,6 @@ void Cyberdog_app::handleMappingRequest(
       writer->Write(grpc_respond);
     };
 
-  if (cancel_goal) {
-    std::unique_lock<std::shared_mutex> write_lock(nav_map_mutex_);
-    if (type_hash_map_.find(nav_type_request) != type_hash_map_.end()) {
-      size_t goal_hash = type_hash_map_[nav_type_request];
-      if (hash_handle_map_.find(goal_hash) != hash_handle_map_.end()) {
-        auto goal_handle_ptr = hash_handle_map_[goal_hash];
-        INFO("Canceling action goal");
-        auto future_cancel_response_ptr = navigation_client_->async_cancel_goal(goal_handle_ptr);
-        if (future_cancel_response_ptr.wait_for(std::chrono::seconds(5)) ==
-          std::future_status::ready)
-        {
-          INFO("Goal has been canceled");
-          return_result(future_cancel_response_ptr.get()->return_code);
-        }
-        hash_handle_map_.erase(goal_hash);
-        type_hash_map_.erase(nav_type_request);
-      } else {
-        ERROR("Wrong goal id!");
-        retrunErrorGrpc(writer);
-      }
-    } else {
-      WARN("No such type of action");
-      retrunErrorGrpc(writer);
-    }
-    return;
-  }
-
   std::mutex writer_mutex;
   auto feedback_callback =
     [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
@@ -1113,12 +1081,11 @@ void Cyberdog_app::handleMappingRequest(
     nav_map_mutex_.lock();
     std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
     size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
-    type_hash_map_[nav_type_request] = goal_hash;
     hash_handle_map_[goal_hash] = mode_goal_handle.get();
     nav_map_mutex_.unlock();
     auto mode_result =
       navigation_client_->async_get_result(mode_goal_handle.get());
-    if (mode_result.wait_for(std::chrono::seconds(60)) == std::future_status::ready) {
+    if (mode_result.wait_for(std::chrono::seconds(600)) == std::future_status::ready) {
       if (mode_result.get().result->result ==
         protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
       {
@@ -1149,11 +1116,6 @@ void Cyberdog_app::handleMappingRequest(
   std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
   size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
   hash_handle_map_.erase(goal_hash);
-  if (type_hash_map_.find(nav_type_request) != type_hash_map_.end() &&
-    type_hash_map_[nav_type_request] == goal_hash)
-  {
-    type_hash_map_.erase(nav_type_request);
-  }
 }
 
 void Cyberdog_app::handlLableGetRequest(
