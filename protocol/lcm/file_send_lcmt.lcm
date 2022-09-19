@@ -1,0 +1,3 @@
+struct file_send_lcmt {
+    string  data; // 按行发送，第一行文件名，最后一行MD5值，20hz发送，MD5后停止发送，接受方设置超时时间判断发送结束
+}

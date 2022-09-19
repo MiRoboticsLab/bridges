@@ -73,18 +73,17 @@ Cyberdog_app::Cyberdog_app()
   wifi_strength(0),
   sn("")
 {
-  if (sn == "") {
-    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
-    sn_ger_srv_ =
-      node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
-    if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
-      ERROR("call sn server not avalible");
-      sn = "unaviable";
-    }
+  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
+  sn_ger_srv_ =
+    node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
+  if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
+    ERROR("call sn server not avalible");
+    sn = "unaviable";
+  } else {
     auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
     auto future_result = sn_ger_srv_->async_send_request(req);
-    if (!(rclcpp::spin_until_future_complete(node, future_result) ==
+    if (!(rclcpp::spin_until_future_complete(node, future_result, std::chrono::seconds(3)) ==
       rclcpp::FutureReturnCode::SUCCESS))
     {
       ERROR("call get sn service failed!");
@@ -92,8 +91,8 @@ Cyberdog_app::Cyberdog_app()
     } else {
       sn = future_result.get()->message;
     }
-    INFO("sn:%s", sn.c_str());
   }
+  INFO("sn:%s", sn.c_str());
   INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
 
@@ -241,6 +240,10 @@ Cyberdog_app::Cyberdog_app()
 
   navigation_client_ =
     rclcpp_action::create_client<Navigation>(this, "CyberdogNavigation");
+
+  nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
+    "plan", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::uploadNavPath, this, _1));
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -732,7 +735,7 @@ void Cyberdog_app::HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg)
   CyberdogJson::Add(progress_response, "upgrade_progress", 0);
   if (msg.data < 0) {
     CyberdogJson::Add(progress_response, "download_progress", -1);
-    CyberdogJson::Add(progress_response, "code", msg.data);
+    CyberdogJson::Add(progress_response, "code", std::abs(msg.data));
   } else {
     CyberdogJson::Add(progress_response, "download_progress", msg.data);
     CyberdogJson::Add(progress_response, "code", 0);
@@ -740,7 +743,7 @@ void Cyberdog_app::HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg)
   CyberdogJson::Document2String(progress_response, response_string);
 
   // INFO("upgrade_progress: %d", 0);
-  INFO("download_progress: %d", msg.data);
+  INFO("download_progress: %d, response: %s", msg.data, response_string.c_str());
 
   send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
 }
@@ -752,7 +755,7 @@ void Cyberdog_app::HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg)
 
   if (msg.data < 0) {
     CyberdogJson::Add(progress_response, "upgrade_progress", -1);
-    CyberdogJson::Add(progress_response, "code", msg.data);
+    CyberdogJson::Add(progress_response, "code", std::abs(msg.data));
   } else {
     CyberdogJson::Add(progress_response, "upgrade_progress", msg.data);
     CyberdogJson::Add(progress_response, "code", 0);
@@ -760,7 +763,7 @@ void Cyberdog_app::HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg)
   CyberdogJson::Add(progress_response, "download_progress", 0);
   CyberdogJson::Document2String(progress_response, response_string);
 
-  INFO("upgrade_progress: %d", msg.data);
+  INFO("upgrade_progress: %d, response: %s", msg.data, response_string.c_str());
   // INFO("download_progress: %d", 0);
 
   send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
@@ -979,7 +982,7 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
   return true;
 }
 
-void Cyberdog_app::handleMappingRequest(
+void Cyberdog_app::handleNavigationAction(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
@@ -988,7 +991,7 @@ void Cyberdog_app::handleMappingRequest(
   std::string status;
   double goal_x, goal_y;
   CyberdogJson::Get(json_resquest, "status", status);
-  INFO("handleMappingRequest");
+  INFO("handleNavigationAction");
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
@@ -1016,35 +1019,107 @@ void Cyberdog_app::handleMappingRequest(
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
   } else if (status == "STOP_AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AUTO_DOCKING;
+  } else if (status == "START_FOLLOW") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_FOLLOW;
+  } else if (status == "STOP_FOLLOW") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_FOLLOW;
+  } else if (status == "START_UWB_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
+  } else if (status == "STOP_UWB_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_UWB_TRACKING;
   } else {
     ERROR("Unavailable navigation type: %s", status.c_str());
     retrunErrorGrpc(writer);
   }
-  auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal);
-  auto mode_result =
-    navigation_client_->async_get_result(mode_goal_handle.get());
+
+  auto return_result = [&](int result_code) {
+      rapidjson::StringBuffer strBuf;
+      rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+      json_writer.StartObject();
+      json_writer.Key("result");
+      json_writer.Int(result_code);
+      json_writer.EndObject();
+      response_string = strBuf.GetString();
+      grpc_respond.set_namecode(::grpcapi::SendRequest::NAV_ACTION);
+      grpc_respond.set_data(response_string);
+      writer->Write(grpc_respond);
+    };
+
+  auto return_feedback = [&](int feedback_code, const std::string & feedback_msg) {
+      rapidjson::StringBuffer strBuf;
+      rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+      json_writer.StartObject();
+      json_writer.Key("feedback_code");
+      json_writer.Int(feedback_code);
+      json_writer.Key("feedback_msg");
+      json_writer.String(feedback_msg.c_str());
+      json_writer.EndObject();
+      response_string = strBuf.GetString();
+      grpc_respond.set_namecode(::grpcapi::SendRequest::NAV_ACTION);
+      grpc_respond.set_data(response_string);
+      writer->Write(grpc_respond);
+    };
+
+  std::mutex writer_mutex;
+  auto feedback_callback =
+    [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
+      const std::shared_ptr<const Navigation::Feedback> feedback) {
+      std::shared_lock<std::shared_mutex> readlock(nav_map_mutex_);
+      std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
+      size_t goal_hash = goal_id_hash_fun(goal_handel_ptr->get_goal_id());
+      if (hash_handle_map_.find(goal_hash) != hash_handle_map_.end()) {
+        INFO_STREAM(
+          "feedback_code: " << feedback->feedback_code << " feedback_msg: " <<
+            feedback->feedback_msg);
+        writer_mutex.lock();
+        return_feedback(feedback->feedback_code, feedback->feedback_msg);
+        writer_mutex.unlock();
+      }
+    };
+  rclcpp_action::Client<Navigation>::SendGoalOptions goal_options;
+  goal_options.feedback_callback;
+  auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal, goal_options);
   uint8_t result = 2;
-  mode_result.wait_for(std::chrono::seconds(60));
-  if (mode_goal_handle.get()->is_result_aware()) {
-    if (mode_result.get().result->result ==
-      protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
-    {
-      INFO("Navigation action success");
+  bool result_timeout = false;
+  if (mode_goal_handle.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
+    nav_map_mutex_.lock();
+    std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
+    size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
+    hash_handle_map_[goal_hash] = mode_goal_handle.get();
+    nav_map_mutex_.unlock();
+    auto mode_result =
+      navigation_client_->async_get_result(mode_goal_handle.get());
+    if (mode_result.wait_for(std::chrono::seconds(600)) == std::future_status::ready) {
+      if (mode_result.get().result->result ==
+        protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
+      {
+        INFO("Navigation action success");
+      } else {
+        WARN("Navigation action fail");
+      }
+      result = mode_result.get().result->result;
     } else {
-      WARN("Navigation action fail");
+      WARN("Navigation action result timeout");
+      result_timeout = true;
     }
-    result = mode_result.get().result->result;
+  } else {
+    WARN("Navigation action request timeout");
+    writer_mutex.lock();
+    retrunErrorGrpc(writer);
+    writer_mutex.unlock();
+    return;
   }
-  rapidjson::StringBuffer strBuf;
-  rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
-  json_writer.StartObject();
-  json_writer.Key("result");
-  json_writer.Int(result);
-  json_writer.EndObject();
-  response_string = strBuf.GetString();
-  grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_MAPPING_RQUEST);
-  grpc_respond.set_data(response_string);
-  writer->Write(grpc_respond);
+  std::unique_lock<std::shared_mutex> write_lock(nav_map_mutex_);
+  writer_mutex.lock();
+  if (result_timeout) {
+    retrunErrorGrpc(writer);
+  } else {
+    return_result(result);
+  }
+  writer_mutex.unlock();
+  std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
+  size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
+  hash_handle_map_.erase(goal_hash);
 }
 
 void Cyberdog_app::handlLableGetRequest(
@@ -1197,6 +1272,28 @@ void Cyberdog_app::handlLableSetRequest(
   grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_SET_LABLE_REQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("path_point");
+  writer.StartArray();
+  for (auto & pose_stamp : msg->poses) {
+    writer.StartObject();
+    writer.Key("px");
+    writer.Double(pose_stamp.pose.position.x);
+    writer.Key("py");
+    writer.Double(pose_stamp.pose.position.y);
+    writer.EndObject();
+  }
+  writer.EndArray();
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  INFO("sending navigation global plan");
+  send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
 }
 
 void Cyberdog_app::ProcessMsg(
@@ -1707,8 +1804,8 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::MAP_GET_LABLE_REQUEST: {
         handlLableGetRequest(json_resquest, grpc_respond, writer);
       } break;
-    case ::grpcapi::SendRequest::MAP_MAPPING_RQUEST: {
-        handleMappingRequest(json_resquest, grpc_respond, writer);
+    case ::grpcapi::SendRequest::NAV_ACTION: {
+        handleNavigationAction(json_resquest, grpc_respond, writer);
       } break;
     case 55001: {
         std_msgs::msg::Bool msg;

@@ -37,6 +37,7 @@ public:
   static int open_nb_socket(const char * addr, const char * port)
   {
     struct addrinfo hints;
+    memset(&hints, 0, sizeof(struct addrinfo));
     hints.ai_family = AF_UNSPEC;             /* IPv4 or IPv6 */
     hints.ai_socktype = SOCK_STREAM;             /* Must be TCP */
     int sockfd = -1;
@@ -64,11 +65,17 @@ public:
     /* free servinfo */
     freeaddrinfo(servinfo);
     /* make non-blocking */
+#if !defined(WIN32)
     if (sockfd != -1) {
-      int flags = fcntl(sockfd, F_GETFL, 0);
-      fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
+      fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK);
     }
-                #if defined(__VMS)
+#else
+    if (sockfd != INVALID_SOCKET) {
+      int iMode = 1;
+      ioctlsocket(sockfd, FIONBIO, &iMode);
+    }
+#endif
+#if defined(__VMS)
     /*
                     OpenVMS only partially implements fcntl. It works on file descriptors
                     but silently fails on socket descriptors. So we need to fall back on
@@ -76,7 +83,7 @@ public:
     */
     int on = 1;
     if (sockfd != -1) {ioctl(sockfd, FIONBIO, &on);}
-                #endif
+#endif
     /* return the new socket fd */
     return sockfd;
   }

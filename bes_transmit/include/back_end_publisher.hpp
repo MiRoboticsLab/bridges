@@ -31,56 +31,50 @@ void publish_callback(void ** unused, struct mqtt_response_publish * published);
 class Backend_Publisher final
 {
 public:
-  Backend_Publisher()
-  : sockfd(-1), addr_("127.0.0.1"),
-    port_("8081"), topic_("dog_to_bes"), is_stop_(false)
+  explicit Backend_Publisher(const std::string & topic_name = "cyberdog/base_info/submit")
+  : sockfd(-1), addr_("10.38.205.52"),
+    port_("1883"), topic_(topic_name), is_stop_(false)
   {
   }
   ~Backend_Publisher()
   {
-    thread_sync_->join();
-  }
-
-  void Init()
-  {
-    while (rclcpp::ok()) {
-      sockfd = PosixSocket::open_nb_socket(addr_.c_str(), port_.c_str());
-      if (sockfd == -1) {
-        ERROR("Failed to open socket: ");
-        return;
-      }
-      mqtt_init(
-        &client, sockfd, sendbuf, sizeof(sendbuf), recvbuf, sizeof(recvbuf),
-        publish_callback);
-      const char * client_id = NULL;
-      uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
-      mqtt_connect(&client, client_id, NULL, NULL, 0, NULL, NULL, connect_flags, 400);
-      if (client.error != MQTT_OK) {
-        ERROR("error: %s\n", mqtt_error_str(client.error));
-        if (sockfd != -1) {
-          close(sockfd);
-        }
-      }
-      auto func = [this]() {
-          while (!is_stop_ && rclcpp::ok()) {
-            mqtt_sync(&client);
-            std::this_thread::sleep_for(std::chrono::microseconds(100000U));
-          }
-        };
-      thread_sync_ = std::make_unique<std::thread>(func);
-      std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    if (thread_sync_ && thread_sync_->joinable()) {
+      thread_sync_->join();
     }
   }
 
-  void Publish(const char * application_message)
+  bool Init()
   {
-    time_t timer;
-    time(&timer);
-    struct tm tm_info;
-    localtime_r(&timer, &tm_info);
-    char timebuf[26];
-    strftime(timebuf, 26, "%Y-%m-%d %H:%M:%S", &tm_info);
-    INFO("published : \"%s\"", application_message);
+    sockfd = PosixSocket::open_nb_socket(addr_.c_str(), port_.c_str());
+    if (sockfd == -1) {
+      ERROR("Failed to open socket");
+      return false;
+    }
+    mqtt_init(
+      &client, sockfd, sendbuf, sizeof(sendbuf), recvbuf, sizeof(recvbuf),
+      publish_callback);
+    const char * client_id = NULL;
+    uint8_t connect_flags = MQTT_CONNECT_CLEAN_SESSION;
+    mqtt_connect(&client, client_id, NULL, NULL, 0, NULL, NULL, connect_flags, 400);
+    if (client.error != MQTT_OK) {
+      ERROR("error: %s\n", mqtt_error_str(client.error));
+      if (sockfd != -1) {
+        close(sockfd);
+      }
+      return false;
+    }
+    auto func = [this]() {
+        while (!is_stop_ && rclcpp::ok()) {
+          mqtt_sync(&client);
+          std::this_thread::sleep_for(std::chrono::microseconds(100000U));
+        }
+      };
+    thread_sync_ = std::make_unique<std::thread>(func);
+    return true;
+  }
+
+  bool Publish(const char * application_message)
+  {
     mqtt_publish(
       &client, topic_.c_str(), application_message, strlen(
         application_message) + 1, MQTT_PUBLISH_QOS_0);
@@ -90,7 +84,13 @@ public:
         close(sockfd);
       }
       is_stop_ = true;
+      if (thread_sync_ && thread_sync_->joinable()) {
+        thread_sync_->join();
+      }
+      return false;
     }
+    INFO("published : %s", application_message);
+    return true;
   }
 
 private:
