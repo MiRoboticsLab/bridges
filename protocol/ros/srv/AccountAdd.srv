@@ -1,0 +1,7 @@
+# request
+string member
+
+---
+
+# response
+bool status

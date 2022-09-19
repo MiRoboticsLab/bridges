@@ -62,6 +62,8 @@
 #include "protocol/srv/audio_execute.hpp"
 #include "protocol/srv/get_map_label.hpp"
 #include "protocol/srv/set_map_label.hpp"
+#include "protocol/srv/account_add.hpp"
+#include "protocol/srv/account_search.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -315,6 +317,12 @@ private:
 
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
+
+  // account member add
+  rclcpp::Client<protocol::srv::AccountAdd>::SharedPtr query_account_add_client_;
+
+  // account member search
+  rclcpp::Client<protocol::srv::AccountSearch>::SharedPtr query_account_search_client_;
 
   // process map message
   void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
