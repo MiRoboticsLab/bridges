@@ -1244,29 +1244,27 @@ void Cyberdog_app::handlLableSetRequest(
 
   INFO("handlLableSetRequest has_label %d", has_label);
 
-  if (has_label) {
-    auto request = std::make_shared<protocol::srv::SetMapLabel::Request>();
-    request->label = map_label;
-    request->only_delete = only_delete;
+  auto request = std::make_shared<protocol::srv::SetMapLabel::Request>();
+  request->label = map_label;
+  request->only_delete = only_delete;
 
-    if (!set_label_client_->wait_for_service()) {
-      INFO("set map label server not avalible");
-      return;
-    }
-    std::chrono::seconds timeout(5);
-    auto future_result = set_label_client_->async_send_request(request);
-    std::future_status status = future_result.wait_for(timeout);
-    if (status == std::future_status::ready) {
-      if (future_result.get()->success ==
-        protocol::srv::SetMapLabel_Response::RESULT_SUCCESS)
-      {
-        INFO("Succeed call map_label services.");
-      } else {
-        INFO("failed call map_label services.");
-      }
+  if (!set_label_client_->wait_for_service()) {
+    INFO("set map label server not avalible");
+    return;
+  }
+  std::chrono::seconds timeout(5);
+  auto future_result = set_label_client_->async_send_request(request);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    if (future_result.get()->success ==
+      protocol::srv::SetMapLabel_Response::RESULT_SUCCESS)
+    {
+      INFO("Succeed call map_label services.");
     } else {
-      INFO("Failed to call map_label services.");
+      INFO("failed call map_label services.");
     }
+  } else {
+    INFO("Failed to call map_label services.");
   }
 
   grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_SET_LABLE_REQUEST);
