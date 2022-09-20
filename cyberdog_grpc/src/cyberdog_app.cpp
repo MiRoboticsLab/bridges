@@ -1370,6 +1370,81 @@ void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
   send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
 }
 
+
+bool Cyberdog_app::HandleAccountAdd(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  if (!query_account_add_client_->wait_for_service()) {
+    INFO(
+      "call queryaccountadd server not avaiable"
+    );
+    return false;
+  }
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(3);
+  auto req = std::make_shared<protocol::srv::AccountAdd::Request>();
+  CyberdogJson::Get(json_resquest, "member", req->member);
+  INFO("account name is: %s", req->member.c_str());
+  auto future_result = query_account_add_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO("success to call queryaccountadd request services.");
+  } else {
+    INFO("Failed to call queryaccountadd request  services.");
+  }
+  CyberdogJson::Add(json_response, "success", future_result.get()->status);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set mic state response encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
+
+bool Cyberdog_app::HandleAccountSearch(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  if (!query_account_search_client_->wait_for_service()) {
+    INFO(
+      "call queryaccountsearch server not avaiable"
+    );
+    return false;
+  }
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(3);
+  auto req = std::make_shared<protocol::srv::AccountSearch::Request>();
+  // AccountSeatch.srv中request为string member，但是app发送的键为"account"
+  // CyberdogJson::Get(json_resquest, "member", req->member);
+  CyberdogJson::Get(json_resquest, "account", req->member);
+  INFO("request->member: %s", req->member.c_str());
+  auto future_result = query_account_search_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO("success to call querysearchadd request services.");
+  } else {
+    INFO("Failed to call querysearchadd request  services.");
+  }
+
+  CyberdogJson::Add(json_response, "data", future_result.get()->data);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set mic state response encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  // grpc_respond.set_namecode(grpc_request->namecode());
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
+
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -1832,67 +1907,19 @@ void Cyberdog_app::ProcessMsg(
         writer->Write(grpc_respond);
         app_disconnect_pub_->publish(msg);
       } break;
+
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
-        if (!query_account_add_client_->wait_for_service()) {
-          INFO(
-            "call queryaccountadd server not avaiable"
-          );
+        if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
           return;
         }
-        std::chrono::seconds timeout(3);
-        auto req = std::make_shared<protocol::srv::AccountAdd::Request>();
-        CyberdogJson::Get(json_resquest, "member", req->member);
-        INFO("account name is: %s", req->member.c_str());
-        auto future_result = query_account_add_client_->async_send_request(req);
-        std::future_status status = future_result.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          INFO("success to call queryaccountadd request services.");
-        } else {
-          INFO("Failed to call queryaccountadd request  services.");
-        }
-        CyberdogJson::Add(json_response, "success", future_result.get()->status);
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          ERROR("error while set mic state response encoding to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
-        break;
-      }
+      } break;
 
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_SEARCH: {
-        if (!query_account_search_client_->wait_for_service()) {
-          INFO(
-            "call queryaccountsearch server not avaiable"
-          );
+        if (!HandleAccountSearch(json_resquest, grpc_respond, writer)) {
           return;
         }
-        std::chrono::seconds timeout(3);
-        auto req = std::make_shared<protocol::srv::AccountSearch::Request>();
-        // AccountSeatch.srv中request为string member，但是app发送的键为"account"
-        // CyberdogJson::Get(json_resquest, "member", req->member);
-        CyberdogJson::Get(json_resquest, "account", req->member);
-        INFO("request->member: %s", req->member.c_str());
-        auto future_result = query_account_search_client_->async_send_request(req);
-        std::future_status status = future_result.wait_for(timeout);
-        if (status == std::future_status::ready) {
-          INFO("success to call querysearchadd request services.");
-        } else {
-          INFO("Failed to call querysearchadd request  services.");
-        }
+      } break;
 
-        CyberdogJson::Add(json_response, "data", future_result.get()->data);
-        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-          ERROR("error while set mic state response encoding to json");
-          retrunErrorGrpc(writer);
-          return;
-        }
-        grpc_respond.set_namecode(grpc_request->namecode());
-        grpc_respond.set_data(rsp_string);
-        writer->Write(grpc_respond);
-        break;
-      }
     default:
       break;
   }
