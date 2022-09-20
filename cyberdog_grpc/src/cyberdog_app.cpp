@@ -241,6 +241,9 @@ Cyberdog_app::Cyberdog_app()
 
   navigation_client_ =
     rclcpp_action::create_client<Navigation>(this, "CyberdogNavigation");
+
+  account_delete_client_ =
+    this->create_client<protocol::srv::AccountDelete>("account_delete");
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1327,6 +1330,45 @@ void Cyberdog_app::ProcessMsg(
     return;
   }
   switch (grpc_request->namecode()) {
+    case ::grpcapi::SendRequest::ACCOUNT_MEMBER_DELETE:
+      {
+        INFO("enter the case delete................1111111111111111...................");
+        if (!account_delete_client_->wait_for_service()) {
+          INFO(
+            "call account delete serve not avaiable"
+          );
+          return;
+        }
+        auto req = std::make_shared<protocol::srv::AccountDelete::Request>();
+        INFO("[Account_delete_server]: enter case");
+        CyberdogJson::Get(json_resquest, "member", req->member);
+        // call ros service
+        std::chrono::seconds timeout(3);
+        INFO("enter the case delete................22222222222222222222...................");
+        auto future_result = account_delete_client_->async_send_request(req);
+        INFO("enter the case delete................3333333333333333333333...................");
+        std::future_status status = future_result.wait_for(timeout);
+        INFO("enter the case delete................4444444444444444444444...................");
+        if (status == std::future_status::ready) {
+          INFO(
+            "success to call set mic state request services.");
+        } else {
+          INFO(
+            "Failed to call set mic state request  services.");
+        }
+        CyberdogJson::Add(json_response, "status", future_result.get()->status);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while set mic state response encoding to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        INFO("[Account_delete_server]: the rsp_string is %s", rsp_string.c_str());
+        INFO("enter the case delete................55555555555555555555555...................");
+
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+      }
+      break;
     case ::grpcapi::SendRequest::GET_DEVICE_INFO:
       {
         if (!query_dev_info_client_->wait_for_service()) {
