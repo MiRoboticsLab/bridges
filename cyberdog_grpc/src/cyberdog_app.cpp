@@ -1136,18 +1136,24 @@ void Cyberdog_app::handlLableGetRequest(
 {
   if (!get_label_client_->wait_for_service()) {
     INFO("get map label server not avalible");
+    retrunErrorGrpc(grpc_writer);
     return;
   }
   auto request = std::make_shared<protocol::srv::GetMapLabel::Request>();
   CyberdogJson::Get(json_resquest, "mapName", request->map_name);
-  std::chrono::seconds timeout(5);
+  std::chrono::seconds timeout(10);
 
   auto future_result = get_label_client_->async_send_request(request);
   std::future_status status = future_result.wait_for(timeout);
 
   if (status == std::future_status::ready) {
-    // if (future_result.get()->success ==
-    //     protocol::srv::GetMapLabel_Response::RESULT_SUCCESS) {
+    if (future_result.get()->success ==
+      protocol::srv::GetMapLabel_Response::RESULT_SUCCESS)
+    {
+      INFO("get_label services succeeded.");
+    } else {
+      WARN("get_label services failed.");
+    }
     protocol::msg::MapLabel labels = future_result.get()->label;
     grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_GET_LABLE_REQUEST);
     rapidjson::StringBuffer strBuf;
@@ -1155,6 +1161,8 @@ void Cyberdog_app::handlLableGetRequest(
     writer.StartObject();
     writer.Key("mapName");
     writer.String(labels.map_name.c_str());
+    writer.Key("success");
+    writer.Int(future_result.get()->success);
     writer.Key("locationLabelInfo");
     writer.StartArray();
     for (int i = 0; i < labels.labels.size(); ++i) {
@@ -1200,16 +1208,9 @@ void Cyberdog_app::handlLableGetRequest(
     writer.EndObject();
     string data = strBuf.GetString();
     grpc_respond.set_data(data);
-
-    std::cout << "json data: " << data << std::endl;
-
-
-    INFO("Succeed call get map_label services.");
-    // } else {
-    //   INFO("failed call get map_label services.");
-    // }
   } else {
-    INFO("Failed to call get map_label services.");
+    ERROR("Failed to call get map_label services.");
+    retrunErrorGrpc(grpc_writer);
   }
   grpc_writer->Write(grpc_respond);
 }
@@ -1260,21 +1261,29 @@ void Cyberdog_app::handlLableSetRequest(
     INFO("set map label server not avalible");
     return;
   }
-  std::chrono::seconds timeout(5);
+  std::chrono::seconds timeout(10);
   auto future_result = set_label_client_->async_send_request(request);
   std::future_status status = future_result.wait_for(timeout);
+  Document json_response(kObjectType);
   if (status == std::future_status::ready) {
     if (future_result.get()->success ==
       protocol::srv::SetMapLabel_Response::RESULT_SUCCESS)
     {
-      INFO("Succeed call map_label services.");
+      INFO("set_label services succeeded.");
     } else {
-      INFO("failed call map_label services.");
+      WARN("set_label services failed.");
     }
+    CyberdogJson::Add(json_response, "success", static_cast<int>(future_result.get()->success));
   } else {
-    INFO("Failed to call map_label services.");
+    ERROR("calling set_label services timeout.");
+    retrunErrorGrpc(writer);
+    return;
   }
-
+  if (!CyberdogJson::Document2String(json_response, response_string)) {
+    ERROR("error while encoding to json");
+    retrunErrorGrpc(writer);
+    return;
+  }
   grpc_respond.set_namecode(::grpcapi::SendRequest::MAP_SET_LABLE_REQUEST);
   grpc_respond.set_data(response_string);
   writer->Write(grpc_respond);
