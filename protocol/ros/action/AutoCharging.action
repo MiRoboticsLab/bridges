@@ -1,0 +1,17 @@
+#goal definition
+geometry_msgs/PoseStamped pose
+uint8 start
+uint8 AUTOCHARGING_GOAL_TYPE_STOP = 0
+uint8 AUTOCHARGING_GOAL_TYPE_START = 1
+---
+#result definition
+uint8 result
+uint8 AUTOCHARGING_RESULT_TYPE_SUCCESS = 0 
+uint8 AUTOCHARGING_RESULT_TYPE_ACCEPT = 1
+uint8 AUTOCHARGING_RESULT_TYPE_UNAVALIBLE =2
+uint8 AUTOCHARGING_RESULT_TYPE_FAILED = 3
+uint8 AUTOCHARGING_RESULT_TYPE_REJECT = 4
+uint8 AUTOCHARGING_RESULT_TYPE_CANCEL = 5
+---
+# feedback definition
+uint8 charging_stage
