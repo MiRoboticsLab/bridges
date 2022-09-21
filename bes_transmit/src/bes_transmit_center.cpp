@@ -112,6 +112,11 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   device_info_client_ =
     http_node_ptr_->create_client<protocol::srv::DeviceInfo>(
     "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
+  INFO("http client is ready");
+
+  if (bpub_ptr_->Init()) {
+    INFO("mqtt publisher is ready");
+  }
 }
 
 cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
@@ -125,7 +130,23 @@ void cyberdog::bridge::Transmit_Waiter::Run()
 
 void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)
 {
-  bpub_ptr_->Publish(msg->data.c_str());
+  rapidjson::Document json_msg(kObjectType);
+  std::string sn, uid, str_to_be_sent;
+  if (!getDevInf(sn, uid)) {
+    return;
+  }
+  if (!json_msg.Parse<0>(msg->data.c_str()).HasParseError()) {
+    common::CyberdogJson::Add(json_msg, "account", uid);
+    common::CyberdogJson::Add(json_msg, "number", sn);
+  } else {
+    WARN("Parse json error!");
+    return;
+  }
+  if (!CyberdogJson::Document2String(json_msg, str_to_be_sent)) {
+    ERROR("Error while msg json converting to string!");
+    return;
+  }
+  bpub_ptr_->Publish(str_to_be_sent.c_str());
 }
 
 void cyberdog::bridge::Transmit_Waiter::MqttSubCallback(const std::string & msg)
@@ -199,8 +220,8 @@ bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string 
   if (status == std::future_status::ready) {
     std::string info = future_result.get()->info;
     if (!json_dev_inf_doc.Parse<0>(info.c_str()).HasParseError()) {
-      return cyberdog::common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
-             cyberdog::common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+      return common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
+             common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
     } else {
       WARN("Parse json error!");
     }

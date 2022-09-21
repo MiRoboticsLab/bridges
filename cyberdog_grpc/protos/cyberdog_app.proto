@@ -49,6 +49,8 @@ message SendRequest {
         DEVICE_VOLUME_SET = 1012;
         DEVICE_MIC_SET = 1013;
         DEVICE_AUDIO_SET = 1014;
+        ACCOUNT_MEMBER_ADD = 1020;
+        ACCOUNT_MEMBER_SEARCH = 1021;
         VISUAL_BACKEND_MSG = 2001;
         VISUAL_FRONTEND_MSG = 2002;
         AUDIO_AUTHENTICATION_REQUEST = 3001;
@@ -69,8 +71,9 @@ message SendRequest {
     	MAP_DATA_REQUEST = 6001;
         MAP_SET_LABLE_REQUEST = 6002;
         MAP_GET_LABLE_REQUEST = 6003;
-        MAP_MAPPING_RQUEST = 6004;
+        NAV_ACTION = 6004;
         MAP_DOG_POSE_REQUEST = 6005;
+        NAV_PLAN_PATH = 6006;
     }
 }
 

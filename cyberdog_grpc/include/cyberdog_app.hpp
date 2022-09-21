@@ -40,6 +40,7 @@
 #include "msg_dispatcher.hpp"
 #include "protocol/action/navigation.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include "nav_msgs/msg/path.hpp"
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
@@ -61,6 +62,8 @@
 #include "protocol/srv/audio_execute.hpp"
 #include "protocol/srv/get_map_label.hpp"
 #include "protocol/srv/set_map_label.hpp"
+#include "protocol/srv/account_add.hpp"
+#include "protocol/srv/account_search.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -77,15 +80,6 @@ using rapidjson::Document;
 using rapidjson::kObjectType;
 namespace carpo_cyberdog_app
 {
-enum NavType
-{
-  START_MAPPIMG,
-  STOP_MAPPIMG,
-  AB_NAV,
-  FOLLOWING,
-  DOCKING,
-  LOCOLIZATION
-};
 class Cyberdog_app : public rclcpp::Node
 {
 public:
@@ -241,6 +235,21 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  bool HandleGetDeviceInfoRequest(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  bool HandleAccountAdd(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  bool HandleAccountSearch(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   // Report current process
   void ReportCurrentProgress();
 
@@ -319,6 +328,12 @@ private:
   // audio mic state
   rclcpp::Client<protocol::srv::AudioExecute>::SharedPtr audio_execute_client_;
 
+  // account member add
+  rclcpp::Client<protocol::srv::AccountAdd>::SharedPtr query_account_add_client_;
+
+  // account member search
+  rclcpp::Client<protocol::srv::AccountSearch>::SharedPtr query_account_search_client_;
+
   // process map message
   void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
   void processDogPose(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
@@ -341,15 +356,18 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
 
-  void handleMappingRequest(
+  void handleNavigationAction(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
     navigation_client_;
-  std::map<NavType, size_t> type_hash_map_;
   std::map<size_t, rclcpp_action::Client<protocol::action::Navigation>::GoalHandle::SharedPtr>
   hash_handle_map_;
   std::shared_mutex nav_map_mutex_;
+
+  void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
+  rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
+
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
