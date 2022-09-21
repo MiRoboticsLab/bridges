@@ -61,6 +61,7 @@
 #include "protocol/srv/audio_execute.hpp"
 #include "protocol/srv/get_map_label.hpp"
 #include "protocol/srv/set_map_label.hpp"
+#include "protocol/srv/account_delete.hpp"  // account_delete.hpp
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -356,6 +357,9 @@ private:
 
   // test
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
+
+  // account delete state
+  rclcpp::Client<protocol::srv::AccountDelete>::SharedPtr account_delete_client_;  // Accountdelete服务客户端声明
 
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };
