@@ -252,6 +252,57 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  void motionServoRequestHandle(
+    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void motionCMDRequestHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void deviceNameSwitchHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void deviceNameSetHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void deviceValuemSetHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void deviceVolumeSetHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void deviceMicSetHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void deviceAudioSetHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void audioAuthenticationRequestHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void audioAuthenticationResponseHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void audioVoicePrintTrainStartHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void audioVoicePrintTrainCancelHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void audioVoicePrintDataHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   // Report current process
   void ReportCurrentProgress();
 
