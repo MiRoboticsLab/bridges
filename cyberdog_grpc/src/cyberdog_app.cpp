@@ -1015,6 +1015,13 @@ void Cyberdog_app::handleNavigationAction(
     geometry_msgs::msg::PoseStamped goal;
     goal.pose.position.x = goal_x;
     goal.pose.position.y = goal_y;
+    if (json_resquest.HasMember("theta")) {
+      double yaw;
+      CyberdogJson::Get(json_resquest, "theta", yaw);
+      goal.pose.orientation = tf2::toMsg(getQuaternionFromYaw(yaw));
+    } else {
+      goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
+    }
     mode_goal.poses.push_back(goal);
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
   } else if (status == "STOP_NAVIGATION_AB") {
