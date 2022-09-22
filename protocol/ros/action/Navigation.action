@@ -18,6 +18,8 @@ uint8 nav_type
 
 geometry_msgs/PoseStamped[] poses # 导航的目标点设置
 
+string map_name
+
 uint8 TRACING_AUTO = 200 # 自主选择跟随位置
 uint8 TRACING_BEHIND = 201 # 在目标后侧跟随
 uint8 TRACING_LEFT = 202 # 在目标的左侧跟随

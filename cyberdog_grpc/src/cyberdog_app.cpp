@@ -1005,6 +1005,11 @@ void Cyberdog_app::handleNavigationAction(
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
   } else if (status == "STOP") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_MAPPING;
+    if (json_resquest.HasMember("map_name")) {
+      std::string mn;
+      CyberdogJson::Get(json_resquest, "map_name", mn);
+      mode_goal.map_name = mn;
+    }
   } else if (status == "NAVIGATION_AB") {
     if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
       ERROR("NAVIGATION_AB should have goalX and goalY settings");
