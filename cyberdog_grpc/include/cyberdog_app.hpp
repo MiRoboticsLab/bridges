@@ -41,6 +41,8 @@
 #include "protocol/action/navigation.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2/utils.h"
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
@@ -368,6 +370,10 @@ private:
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
 
+  tf2::Quaternion getQuaternionFromYaw(const double & yaw)
+  {
+    return tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw);
+  }
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
