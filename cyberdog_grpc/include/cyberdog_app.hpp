@@ -66,6 +66,7 @@
 #include "protocol/srv/set_map_label.hpp"
 #include "protocol/srv/account_add.hpp"
 #include "protocol/srv/account_search.hpp"
+#include "protocol/srv/account_delete.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -252,6 +253,11 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  bool HandleAccountDelete(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   void motionServoRequestHandle(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
@@ -386,6 +392,9 @@ private:
 
   // account member search
   rclcpp::Client<protocol::srv::AccountSearch>::SharedPtr query_account_search_client_;
+
+  // account member search
+  rclcpp::Client<protocol::srv::AccountDelete>::SharedPtr query_account_delete_client_;
 
   // process map message
   void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
