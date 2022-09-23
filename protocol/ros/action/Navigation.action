@@ -12,6 +12,8 @@ uint8 NAVIGATION_TYPE_START_AUTO_DOCKING = 9
 uint8 NAVIGATION_TYPE_STOP_AUTO_DOCKING = 10
 uint8 NAVIGATION_TYPE_START_UWB_TRACKING = 11
 uint8 NAVIGATION_TYPE_STOP_UWB_TRACKING = 12
+uint8 NAVIGATION_TYPE_START_HUMAN_RECOGNITION = 13
+uint8 NAVIGATION_TYPE_STOP_HUMAN_RECOGNITION = 14
 uint8 NAVIGATION_GOAL_TYPE_AB = 101
 uint8 NAVIGATION_GOAL_TYPE_FOLLOW = 102
 uint8 nav_type
@@ -19,6 +21,8 @@ uint8 nav_type
 geometry_msgs/PoseStamped[] poses # 导航的目标点设置
 
 string map_name
+
+sensor_msgs/RegionOfInterest tracking_roi
 
 uint8 TRACING_AUTO = 200 # 自主选择跟随位置
 uint8 TRACING_BEHIND = 201 # 在目标后侧跟随
