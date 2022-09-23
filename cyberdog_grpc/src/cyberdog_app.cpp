@@ -410,7 +410,7 @@ void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::
       wifi_strength = msg->strength;
     }
     INFO_MILLSECONDS(
-      10000, "Wifi ssid: %s. signal strength: %d.", msg->ssid.c_str(), msg->strength);
+      2000, "Wifi ssid: %s. signal strength: %d.", msg->ssid.c_str(), msg->strength);
     if (different_ip) {
       INFO("local_ip ip :%s,pheneIp ip :%s", msg->robot_ip.c_str(), msg->provider_ip.c_str());
       destroyGrpc();
