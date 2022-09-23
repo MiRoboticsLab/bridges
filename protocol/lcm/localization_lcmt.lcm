@@ -1,6 +1,8 @@
 struct localization_lcmt {
-  float xyz[3];
-  float vxyz[3];
-  float rpy[3];
-  float omegaBody[3];
+  float xyz[3]; // 表达在腿式里程计坐标系的机身位置
+  float vxyz[3]; // 表达在腿式里程计坐标系的机身线速度
+  float rpy[3]; // 机身欧拉角
+  float omegaBody[3]; // 表达在机身坐标系的机身角速度
+  float vBody[3]; // 表达在机身坐标系的机身线速度
+  int64_t timestamp; // 时间戳，单位nanoseconds
 }
