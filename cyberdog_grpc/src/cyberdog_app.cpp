@@ -1011,6 +1011,11 @@ void Cyberdog_app::handleNavigationAction(
   auto mode_goal = Navigation::Goal();
   if (status == "START") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
+    bool outdoor(false);
+    if (json_resquest.HasMember("outdoor")) {
+      CyberdogJson::Get(json_resquest, "outdoor", outdoor);
+    }
+    mode_goal.outdoor = outdoor;
   } else if (status == "STOP") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_MAPPING;
     if (json_resquest.HasMember("map_name")) {
