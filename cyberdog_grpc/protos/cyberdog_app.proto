@@ -75,6 +75,7 @@ message SendRequest {
         NAV_ACTION = 6004;
         MAP_DOG_POSE_REQUEST = 6005;
         NAV_PLAN_PATH = 6006;
+        TRACKING_OBJ = 6007;
     }
 }
 
