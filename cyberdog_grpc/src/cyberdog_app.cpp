@@ -256,6 +256,10 @@ Cyberdog_app::Cyberdog_app()
   nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
     "plan", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::uploadNavPath, this, _1));
+
+  tracking_person_sub_ = create_subscription<protocol::msg::Person>(
+    "plan", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::publishTrackingPersonCB, this, _1));
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1305,6 +1309,58 @@ void Cyberdog_app::handlLableSetRequest(
   writer->Write(grpc_respond);
 }
 
+void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("path_point");
+  writer.StartArray();
+  for (auto & pose_stamp : msg->poses) {
+    writer.StartObject();
+    writer.Key("px");
+    writer.Double(pose_stamp.pose.position.x);
+    writer.Key("py");
+    writer.Double(pose_stamp.pose.position.y);
+    writer.EndObject();
+  }
+  writer.EndArray();
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  INFO("sending navigation global plan");
+  send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
+}
+
+void Cyberdog_app::publishTrackingPersonCB(const protocol::msg::Person::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("tracking_objects");
+  writer.StartArray();
+  for (auto & info : msg->body_info.infos) {
+    writer.StartObject();
+    writer.Key("roi");
+    writer.StartObject();
+    writer.Key("x_offset");
+    writer.Int(info.roi.x_offset);
+    writer.Key("y_offset");
+    writer.Int(info.roi.y_offset);
+    writer.Key("height");
+    writer.Int(info.roi.height);
+    writer.Key("width");
+    writer.Int(info.roi.width);
+    writer.EndObject();
+    writer.Key("reid");
+    writer.String(info.reid.c_str());
+    writer.EndObject();
+  }
+  writer.EndArray();
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::TRACKING_OBJ, param);
+}
+
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
   const Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
@@ -1372,29 +1428,6 @@ bool Cyberdog_app::HandleGetDeviceInfoRequest(
   writer->Write(grpc_respond);
   return true;
 }
-
-void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
-{
-  rapidjson::StringBuffer strBuf;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
-  writer.StartObject();
-  writer.Key("path_point");
-  writer.StartArray();
-  for (auto & pose_stamp : msg->poses) {
-    writer.StartObject();
-    writer.Key("px");
-    writer.Double(pose_stamp.pose.position.x);
-    writer.Key("py");
-    writer.Double(pose_stamp.pose.position.y);
-    writer.EndObject();
-  }
-  writer.EndArray();
-  writer.EndObject();
-  std::string param = strBuf.GetString();
-  INFO("sending navigation global plan");
-  send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
-}
-
 
 bool Cyberdog_app::HandleAccountAdd(
   const Document & json_resquest,

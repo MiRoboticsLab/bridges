@@ -67,6 +67,7 @@
 #include "protocol/srv/account_add.hpp"
 #include "protocol/srv/account_search.hpp"
 #include "protocol/srv/account_delete.hpp"
+#include "protocol/msg/person.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -426,7 +427,6 @@ private:
   std::map<size_t, rclcpp_action::Client<protocol::action::Navigation>::GoalHandle::SharedPtr>
   hash_handle_map_;
   std::shared_mutex nav_map_mutex_;
-
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
 
@@ -434,6 +434,10 @@ private:
   {
     return tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw);
   }
+
+  // for tracking
+  rclcpp::Subscription<protocol::msg::Person>::SharedPtr tracking_person_sub_;
+  void publishTrackingPersonCB(const protocol::msg::Person::SharedPtr msg);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
