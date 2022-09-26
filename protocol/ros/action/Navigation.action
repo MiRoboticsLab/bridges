@@ -30,6 +30,8 @@ uint8 TRACING_LEFT = 202 # 在目标的左侧跟随
 uint8 TRACING_RIGHT = 203 # 在目标的右侧跟随
 uint8 relative_pos # 相对方位，以上方定义的枚举值指定
 float32 keep_distance # 与跟随目标所保持的距离
+
+bool outdoor
 ---
 #result definition
 uint8 result
