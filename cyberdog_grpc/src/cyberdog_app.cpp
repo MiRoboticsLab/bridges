@@ -174,11 +174,11 @@ Cyberdog_app::Cyberdog_app()
     "camera_service");
 
   // ota
-  download_subscriber_ = this->create_subscription<std_msgs::msg::Int32>(
+  download_subscriber_ = this->create_subscription<protocol::msg::OtaUpdate>(
     "ota_download_percentage", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::HandleDownloadPercentageMsgs, this, _1));
 
-  upgrade_subscriber_ = this->create_subscription<std_msgs::msg::Int32>(
+  upgrade_subscriber_ = this->create_subscription<protocol::msg::OtaUpdate>(
     "ota_upgrade_percentage", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::HandleUpgradePercentageMsgs, this, _1));
 
@@ -743,43 +743,33 @@ bool Cyberdog_app::HandleOTAStatusRequest(
   return true;
 }
 
-void Cyberdog_app::HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg)
+void Cyberdog_app::HandleDownloadPercentageMsgs(const protocol::msg::OtaUpdate msg)
 {
   Document progress_response(kObjectType);
   std::string response_string;
 
   CyberdogJson::Add(progress_response, "upgrade_progress", 0);
-  if (msg.data < 0) {
-    CyberdogJson::Add(progress_response, "download_progress", -1);
-    CyberdogJson::Add(progress_response, "code", std::abs(msg.data));
-  } else {
-    CyberdogJson::Add(progress_response, "download_progress", msg.data);
-    CyberdogJson::Add(progress_response, "code", 0);
-  }
+  CyberdogJson::Add(progress_response, "download_progress", msg.progress);
+  CyberdogJson::Add(progress_response, "code", msg.code);
   CyberdogJson::Document2String(progress_response, response_string);
 
   // INFO("upgrade_progress: %d", 0);
-  INFO("download_progress: %d, response: %s", msg.data, response_string.c_str());
+  INFO("download response: %s", response_string.c_str());
 
   send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
 }
 
-void Cyberdog_app::HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg)
+void Cyberdog_app::HandleUpgradePercentageMsgs(const protocol::msg::OtaUpdate msg)
 {
   Document progress_response(kObjectType);
   std::string response_string;
 
-  if (msg.data < 0) {
-    CyberdogJson::Add(progress_response, "upgrade_progress", -1);
-    CyberdogJson::Add(progress_response, "code", std::abs(msg.data));
-  } else {
-    CyberdogJson::Add(progress_response, "upgrade_progress", msg.data);
-    CyberdogJson::Add(progress_response, "code", 0);
-  }
   CyberdogJson::Add(progress_response, "download_progress", 0);
+  CyberdogJson::Add(progress_response, "upgrade_progress", msg.progress);
+  CyberdogJson::Add(progress_response, "code", msg.code);
   CyberdogJson::Document2String(progress_response, response_string);
 
-  INFO("upgrade_progress: %d, response: %s", msg.data, response_string.c_str());
+  INFO("upgrade response: %s", response_string.c_str());
   // INFO("download_progress: %d", 0);
 
   send_grpc_msg(::grpcapi::SendRequest::OTA_PROCESS_QUERY_REQUEST, response_string);
@@ -1524,7 +1514,7 @@ bool Cyberdog_app::HandleAccountDelete(
   }
   auto req = std::make_shared<protocol::srv::AccountDelete::Request>();
   CyberdogJson::Get(json_resquest, "member", req->member);
-  INFO("req->member is: ", req->member.c_str());
+  INFO("req->member is: %s", req->member.c_str());
   // call ros service
   auto future_result = query_account_delete_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(timeout);
