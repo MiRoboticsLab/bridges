@@ -258,7 +258,7 @@ Cyberdog_app::Cyberdog_app()
     std::bind(&Cyberdog_app::uploadNavPath, this, _1));
 
   tracking_person_sub_ = create_subscription<protocol::msg::Person>(
-    "plan", rclcpp::SystemDefaultsQoS(),
+    "person", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::publishTrackingPersonCB, this, _1));
 }
 
