@@ -32,6 +32,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <set>
 
 #include "cyberdog_app_server.hpp"
 #include "transmit_files.hpp"
@@ -284,6 +285,7 @@ void Cyberdog_app::HeartBeat()
 {
   rclcpp::WallRate r(500ms);
   std::string ipv4;
+  bool connect_mark(false);
   while (rclcpp::ok()) {
     if (can_process_messages_) {
       update_time_mutex_.lock();
@@ -308,6 +310,7 @@ void Cyberdog_app::HeartBeat()
         }
       }
       if (!hearbeat_result) {
+        connect_mark = false;
         if (heartbeat_err_cnt_++ >= APP_CONNECTED_FAIL_CNT) {
           std_msgs::msg::Bool msg;
           msg.data = false;
@@ -318,6 +321,10 @@ void Cyberdog_app::HeartBeat()
           }
         }
       } else {
+        if (!connect_mark) {
+          connect_mark = true;
+          publishNotCompleteSendingFiles();
+        }
         heartbeat_err_cnt_ = 0;
         std_msgs::msg::Bool msg;
         msg.data = true;
@@ -2071,14 +2078,6 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::NAV_ACTION: {
         handleNavigationAction(json_resquest, grpc_respond, writer);
       } break;
-    case 55001: {
-        std_msgs::msg::Bool msg;
-        msg.data = true;
-        grpc_respond.set_namecode(55001);
-        grpc_respond.set_data("");
-        writer->Write(grpc_respond);
-        app_disconnect_pub_->publish(msg);
-      } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
           return;
@@ -2093,6 +2092,14 @@ void Cyberdog_app::ProcessMsg(
         if (!HandleAccountDelete(json_resquest, grpc_respond, writer)) {
           return;
         }
+      } break;
+    case 55001: {  // for testing
+        std_msgs::msg::Bool msg;
+        msg.data = true;
+        grpc_respond.set_namecode(55001);
+        grpc_respond.set_data("");
+        writer->Write(grpc_respond);
+        app_disconnect_pub_->publish(msg);
       } break;
     default:
       break;
@@ -2112,8 +2119,14 @@ void Cyberdog_app::ProcessGetFile(
         uint32_t command = 255;
         CyberdogJson::Get(json_request, "command", command);
         if (!processCameraMsg(grpc_request->namecode(), command, writer)) {
+          ERROR("Send file error. Please check your connection!");
           return;
         }
+      } break;
+    case ::grpcapi::SendRequest::DOWNLOAD_FILE: {
+        std::string file_name;
+        CyberdogJson::Get(json_request, "file_name", file_name);
+        TransmitFiles::SendFile(writer, file_name);
       } break;
     default: {
         ERROR("nameCode is wrong for calling getFile service!");
@@ -2146,5 +2159,26 @@ bool Cyberdog_app::processCameraMsg(
     result = 7;
   }
   return TransmitFiles::ReturnCameraFile(writer, result, msg);
+}
+
+void Cyberdog_app::publishNotCompleteSendingFiles()
+{
+  std::set<std::string> files_need_to_be_sent;
+  TransmitFiles::SendFile(nullptr, std::string(), std::string(), 0, true, &files_need_to_be_sent);
+  if (!files_need_to_be_sent.empty()) {
+    INFO("There are some files need to be downloaded to the phone.");
+    rapidjson::StringBuffer strBuf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+    writer.StartObject();
+    writer.Key("file_name");
+    writer.StartArray();
+    for (auto & name : files_need_to_be_sent) {
+      writer.String(name.c_str());
+    }
+    writer.EndArray();
+    writer.EndObject();
+    std::string param = strBuf.GetString();
+    send_grpc_msg(::grpcapi::SendRequest::FILES_NOT_DOWNLOAD_COMPLETE, param);
+  }
 }
 }  // namespace carpo_cyberdog_app

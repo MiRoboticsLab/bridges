@@ -18,6 +18,8 @@
 #include <sys/time.h>
 #include <string>
 #include <sstream>
+#include <set>
+#include <mutex>
 #include "./cyberdog_app.grpc.pb.h"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
@@ -35,22 +37,46 @@ public:
     uint8_t result,
     const std::string & msg)
   {
-    ::grpcapi::FileChunk chunk;
     if (result != 0) {
       SendErrorCode(result, writer);
       return false;
     }
-    std::string file_name, file_name_with_path;
+    std::string file_name;
     size_t file_size = 0;
-    if (!parseCameraServiceResponseString(msg, file_size, file_name)) {
+    if (!ParseCameraServiceResponseString(msg, file_size, file_name)) {
       ERROR("Not able to parse msg from camera_service.");
       SendErrorCode(8, writer);
       return false;
     }
+    return SendFile(writer, file_name, "/home/mi/Camera/", file_size);
+  }
+
+  static void SendErrorCode(uint32_t code, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
+  {
+    ::grpcapi::FileChunk chunk;
+    chunk.set_error_code(code);
+    writer->Write(chunk);
+  }
+
+  static bool SendFile(
+    ::grpc::ServerWriter<::grpcapi::FileChunk> * writer,
+    const std::string & file_name,
+    const std::string & name_prefix = "/home/mi/Camera/",
+    size_t file_size = 0,
+    bool get_uncomplete_files = false,
+    std::set<std::string> * file_set = nullptr)
+  {
+    static std::set<std::string> uncomplete_files;
+    static std::mutex file_set_mutex;
+    if (get_uncomplete_files && file_set) {
+      std::unique_lock<std::mutex> lock(file_set_mutex);
+      *file_set = uncomplete_files;
+      return true;
+    }
+    ::grpcapi::FileChunk chunk;
     chunk.set_file_name(file_name);
-    chunk.set_file_size(uint32_t(file_size));
     INFO_STREAM("The file name is " << file_name << ", size is " << uint32_t(file_size));
-    file_name_with_path = "/home/mi/Camera/" + file_name;
+    std::string file_name_with_path = name_prefix + file_name;
     char data[CHUNK_SIZE];
     std::ifstream infile;
     infile.open(file_name_with_path, std::ifstream::in | std::ifstream::binary);
@@ -59,6 +85,12 @@ public:
       SendErrorCode(9, writer);
       return false;
     }
+    if (file_size == 0) {
+      infile.seekg(0, infile.end);
+      file_size = infile.tellg();
+      infile.seekg(0, infile.beg);
+    }
+    chunk.set_file_size(uint32_t(file_size));
     chunk.set_error_code(0);
     int chunk_num = 0;
     timeval start, end;
@@ -77,6 +109,7 @@ public:
         }
       }
       if (unexpected_interruption) {
+        uncomplete_files.insert(file_name);
         break;
       }
       INFO_STREAM("Finish sending chunk num " << chunk_num++);
@@ -91,18 +124,17 @@ public:
         ", it takes: " << double(end.tv_sec - start.tv_sec) + double(end.tv_usec - start.tv_usec) /
         1000000 << " seconds.");
     remove(file_name_with_path.c_str());
+    std::unique_lock<std::mutex> lock(file_set_mutex);
+    if (!uncomplete_files.empty()) {
+      auto itr = uncomplete_files.find(file_name);
+      if (itr != uncomplete_files.end()) {
+        uncomplete_files.erase(itr);
+      }
+    }
     return true;
   }
 
-  static void SendErrorCode(uint32_t code, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
-  {
-    ::grpcapi::FileChunk chunk;
-    chunk.set_error_code(code);
-    writer->Write(chunk);
-  }
-
-private:
-  static bool parseCameraServiceResponseString(
+  static bool ParseCameraServiceResponseString(
     const std::string & str,
     size_t & file_size,
     std::string & file_name)

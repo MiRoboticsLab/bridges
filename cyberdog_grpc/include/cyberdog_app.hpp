@@ -355,10 +355,10 @@ private:
     uint8_t result,
     const std::string & msg,
     uint32_t namecode);
-
-  void ResetOTAFlags();
+  void publishNotCompleteSendingFiles();
 
   // ota
+  void ResetOTAFlags();
   void HandleDownloadPercentageMsgs(const protocol::msg::OtaUpdate msg);
   void HandleUpgradePercentageMsgs(const protocol::msg::OtaUpdate msg);
   void HandleUpgradeRebootMsgs(const std_msgs::msg::Bool msg);
