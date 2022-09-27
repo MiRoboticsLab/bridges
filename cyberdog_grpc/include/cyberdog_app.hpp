@@ -68,6 +68,7 @@
 #include "protocol/srv/account_search.hpp"
 #include "protocol/srv/account_delete.hpp"
 #include "protocol/msg/person.hpp"
+#include "protocol/msg/ota_update.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -358,11 +359,11 @@ private:
   void ResetOTAFlags();
 
   // ota
-  void HandleDownloadPercentageMsgs(const std_msgs::msg::Int32 msg);
-  void HandleUpgradePercentageMsgs(const std_msgs::msg::Int32 msg);
+  void HandleDownloadPercentageMsgs(const protocol::msg::OtaUpdate msg);
+  void HandleUpgradePercentageMsgs(const protocol::msg::OtaUpdate msg);
   void HandleUpgradeRebootMsgs(const std_msgs::msg::Bool msg);
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr download_subscriber_ {nullptr};
-  rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr upgrade_subscriber_ {nullptr};
+  rclcpp::Subscription<protocol::msg::OtaUpdate>::SharedPtr download_subscriber_ {nullptr};
+  rclcpp::Subscription<protocol::msg::OtaUpdate>::SharedPtr upgrade_subscriber_ {nullptr};
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reboot_subscriber_ {nullptr};
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
 
