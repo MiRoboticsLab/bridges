@@ -64,23 +64,25 @@ public:
     const std::string & file_name,
     const std::string & name_prefix = "/home/mi/Camera/",
     size_t file_size = 0,
-    bool get_uncomplete_files = false,
     std::set<std::string> * file_set = nullptr)
   {
     static std::set<std::string> uncomplete_files;
     static std::mutex file_set_mutex;
     if (!writer && file_set) {
-      for (auto & file : *file_set) {
-        uncomplete_files.insert(file);
-        INFO_STREAM("Add auto saved file: " << file << " to uncomplete list.");
+      std::unique_lock<std::mutex> lock(file_set_mutex);
+      if (file_set->empty()) {
+        for (auto & file : *file_set) {
+          uncomplete_files.insert(file);
+          INFO_STREAM("Add auto saved file: " << file << " to uncomplete list.");
+        }
+      } else {
+        *file_set = uncomplete_files;
+        INFO("Get uncomplete list.");
       }
       return true;
-    }
-    if (get_uncomplete_files && file_set) {
-      std::unique_lock<std::mutex> lock(file_set_mutex);
-      *file_set = uncomplete_files;
-      INFO("Get uncomplete list.");
-      return true;
+    } else if (!writer) {
+      ERROR("Illegal calling SendFile!");
+      return false;
     }
 
     thread_counts_++;

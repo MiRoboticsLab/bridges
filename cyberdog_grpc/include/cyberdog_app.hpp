@@ -356,6 +356,8 @@ private:
     const std::string & msg,
     uint32_t namecode);
   void publishNotCompleteSendingFiles();
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr autosaved_file_sub_;
+  void autoSavedFileCB(const std_msgs::msg::String::SharedPtr msg);
 
   // ota
   void ResetOTAFlags();

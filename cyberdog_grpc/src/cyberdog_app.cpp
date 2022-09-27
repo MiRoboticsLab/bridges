@@ -175,6 +175,9 @@ Cyberdog_app::Cyberdog_app()
   // photo and video recording
   camera_service_client_ = this->create_client<protocol::srv::CameraService>(
     "camera_service");
+  autosaved_file_sub_ = this->create_subscription<std_msgs::msg::String>(
+    "autosaved_video_file", 100,
+    std::bind(&Cyberdog_app::autoSavedFileCB, this, _1));
 
   // ota
   download_subscriber_ = this->create_subscription<protocol::msg::OtaUpdate>(
@@ -247,6 +250,7 @@ Cyberdog_app::Cyberdog_app()
     "dog_pose", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::processDogPose, this, _1));
 
+  // mapping and navigation
   set_label_client_ = this->create_client<protocol::srv::SetMapLabel>(
     "set_label", rmw_qos_profile_services_default, callback_group_);
 
@@ -2170,7 +2174,7 @@ bool Cyberdog_app::processCameraMsg(
 void Cyberdog_app::publishNotCompleteSendingFiles()
 {
   std::set<std::string> files_need_to_be_sent;
-  TransmitFiles::SendFile(nullptr, std::string(), std::string(), 0, true, &files_need_to_be_sent);
+  TransmitFiles::SendFile(nullptr, std::string(), std::string(), 0, &files_need_to_be_sent);
   if (!files_need_to_be_sent.empty()) {
     INFO("There are some files need to be downloaded to the phone.");
     rapidjson::StringBuffer strBuf;
@@ -2186,5 +2190,11 @@ void Cyberdog_app::publishNotCompleteSendingFiles()
     std::string param = strBuf.GetString();
     send_grpc_msg(::grpcapi::SendRequest::FILES_NOT_DOWNLOAD_COMPLETE, param);
   }
+}
+
+void Cyberdog_app::autoSavedFileCB(const std_msgs::msg::String::SharedPtr msg)
+{
+  std::set<std::string> autosaved_file {msg->data};
+  TransmitFiles::SendFile(nullptr, std::string(), std::string(), 0, &autosaved_file);
 }
 }  // namespace carpo_cyberdog_app
