@@ -20,6 +20,7 @@
 #include <sstream>
 #include <set>
 #include <mutex>
+#include <atomic>
 #include "./cyberdog_app.grpc.pb.h"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
@@ -68,11 +69,21 @@ public:
   {
     static std::set<std::string> uncomplete_files;
     static std::mutex file_set_mutex;
+    if (!writer && file_set) {
+      for (auto & file : *file_set) {
+        uncomplete_files.insert(file);
+        INFO_STREAM("Add auto saved file: " << file << " to uncomplete list.");
+      }
+      return true;
+    }
     if (get_uncomplete_files && file_set) {
       std::unique_lock<std::mutex> lock(file_set_mutex);
       *file_set = uncomplete_files;
+      INFO("Get uncomplete list.");
       return true;
     }
+
+    thread_counts_++;
     ::grpcapi::FileChunk chunk;
     chunk.set_file_name(file_name);
     INFO_STREAM("The file name is " << file_name << ", size is " << uint32_t(file_size));
@@ -109,7 +120,9 @@ public:
         }
       }
       if (unexpected_interruption) {
+        file_set_mutex.lock();
         uncomplete_files.insert(file_name);
+        file_set_mutex.unlock();
         break;
       }
       INFO_STREAM("Finish sending chunk num " << chunk_num++);
@@ -124,6 +137,7 @@ public:
         ", it takes: " << double(end.tv_sec - start.tv_sec) + double(end.tv_usec - start.tv_usec) /
         1000000 << " seconds.");
     remove(file_name_with_path.c_str());
+
     std::unique_lock<std::mutex> lock(file_set_mutex);
     if (!uncomplete_files.empty()) {
       auto itr = uncomplete_files.find(file_name);
@@ -131,6 +145,7 @@ public:
         uncomplete_files.erase(itr);
       }
     }
+    thread_counts_--;
     return true;
   }
 
@@ -150,6 +165,8 @@ public:
     ss >> file_size;
     return true;
   }
+
+  static std::atomic_int thread_counts_;
 };  // class TransmitFiles
 }  // namespace carpo_cyberdog_app
 #endif  // TRANSMIT_FILES_HPP_"

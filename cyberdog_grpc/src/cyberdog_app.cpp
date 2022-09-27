@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 #include <set>
+#include <atomic>
 
 #include "cyberdog_app_server.hpp"
 #include "transmit_files.hpp"
@@ -59,6 +60,7 @@ using Navigation = protocol::action::Navigation;
 
 namespace carpo_cyberdog_app
 {
+std::atomic_int TransmitFiles::thread_counts_ = 0;
 static int64_t requestNumber;
 Cyberdog_app::Cyberdog_app()
 : Node("app_server"),
@@ -2142,7 +2144,9 @@ bool Cyberdog_app::processCameraMsg(
 {
   uint8_t result;
   std::string msg;
-  if (!callCameraService(command, result, msg)) {
+  if (TransmitFiles::thread_counts_ > 5) {
+    result = 10;
+  } else if (!callCameraService(command, result, msg)) {
     result = 7;
   }
   return returnResponse(writer, result, msg, namecode);
@@ -2155,7 +2159,9 @@ bool Cyberdog_app::processCameraMsg(
 {
   uint8_t result;
   std::string msg;
-  if (!callCameraService(command, result, msg)) {
+  if (TransmitFiles::thread_counts_ > 5) {
+    result = 10;
+  } else if (!callCameraService(command, result, msg)) {
     result = 7;
   }
   return TransmitFiles::ReturnCameraFile(writer, result, msg);
