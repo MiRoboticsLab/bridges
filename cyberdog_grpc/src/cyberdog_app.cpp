@@ -1073,7 +1073,7 @@ void Cyberdog_app::handleNavigationAction(
       CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
       mode_goal.relative_pos = relative_pos;
     }
-    if (json_resquest.HasMember("relative_pos")) {
+    if (json_resquest.HasMember("keep_distance")) {
       CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
     }
   } else if (status == "STOP_HUMAN_TRACKING") {
