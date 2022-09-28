@@ -69,6 +69,7 @@
 #include "protocol/srv/account_delete.hpp"
 #include "protocol/msg/person.hpp"
 #include "protocol/msg/ota_update.hpp"
+#include "protocol/srv/body_region.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -441,6 +442,11 @@ private:
   // for tracking
   rclcpp::Subscription<protocol::msg::Person>::SharedPtr tracking_person_sub_;
   void publishTrackingPersonCB(const protocol::msg::Person::SharedPtr msg);
+  rclcpp::Client<protocol::srv::BodyRegion>::SharedPtr select_tracking_human_client_;
+  void selectTrackingObject(
+    Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;

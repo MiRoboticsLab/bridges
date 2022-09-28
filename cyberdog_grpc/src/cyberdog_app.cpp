@@ -127,7 +127,7 @@ Cyberdog_app::Cyberdog_app()
   // ros interaction codes
   motion_servo_response_sub_ =
     this->create_subscription<protocol::msg::MotionServoResponse>(
-    "motion_servo_response", rclcpp::SystemDefaultsQoS(),
+    "motion_servo_response", 1000,
     std::bind(&Cyberdog_app::motion_servo_rsp_callback, this, _1));
 
   motion_servo_request_pub_ =
@@ -176,7 +176,7 @@ Cyberdog_app::Cyberdog_app()
   camera_service_client_ = this->create_client<protocol::srv::CameraService>(
     "camera_service");
   autosaved_file_sub_ = this->create_subscription<std_msgs::msg::String>(
-    "autosaved_video_file", 100,
+    "autosaved_video_file", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::autoSavedFileCB, this, _1));
 
   // ota
@@ -264,9 +264,12 @@ Cyberdog_app::Cyberdog_app()
     "plan", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::uploadNavPath, this, _1));
 
+  // tracking
   tracking_person_sub_ = create_subscription<protocol::msg::Person>(
-    "person", rclcpp::SystemDefaultsQoS(),
+    "person", 300,
     std::bind(&Cyberdog_app::publishTrackingPersonCB, this, _1));
+  select_tracking_human_client_ = this->create_client<protocol::srv::BodyRegion>(
+    "tracking_object_srv", rmw_qos_profile_services_default, callback_group_);
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1063,6 +1066,18 @@ void Cyberdog_app::handleNavigationAction(
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
   } else if (status == "STOP_UWB_TRACKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_UWB_TRACKING;
+  } else if (status == "START_HUMAN_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_HUMAN_TRACKING;
+    if (json_resquest.HasMember("relative_pos")) {
+      uint32_t relative_pos;
+      CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
+      mode_goal.relative_pos = relative_pos;
+    }
+    if (json_resquest.HasMember("relative_pos")) {
+      CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
+    }
+  } else if (status == "STOP_HUMAN_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_HUMAN_TRACKING;
   } else {
     ERROR("Unavailable navigation type: %s", status.c_str());
     retrunErrorGrpc(writer);
@@ -1367,6 +1382,51 @@ void Cyberdog_app::publishTrackingPersonCB(const protocol::msg::Person::SharedPt
   writer.EndObject();
   std::string param = strBuf.GetString();
   send_grpc_msg(::grpcapi::SendRequest::TRACKING_OBJ, param);
+}
+
+void Cyberdog_app::selectTrackingObject(
+  Document & json_resquest, Document & json_response,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  if (!select_tracking_human_client_->wait_for_service()) {
+    ERROR("tracking_object_srv server not avaiable");
+    retrunErrorGrpc(writer);
+    return;
+  }
+  rapidjson::Value roi;
+  CyberdogJson::Get(json_resquest, "roi", roi);
+  if (!roi.IsObject() || !roi.HasMember("x_offset") || !roi.HasMember("y_offset") ||
+    !roi.HasMember("height") || !roi.HasMember("width"))
+  {
+    ERROR("format of tracking object json is not correct.");
+    retrunErrorGrpc(writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::BodyRegion::Request>();
+  req->roi.x_offset = roi["x_offset"].GetInt();
+  req->roi.y_offset = roi["y_offset"].GetInt();
+  req->roi.height = roi["height"].GetInt();
+  req->roi.width = roi["width"].GetInt();
+  std::chrono::seconds timeout(10);
+  auto future_result = select_tracking_human_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO("Got tracking_object_srv result.");
+    CyberdogJson::Add(json_response, "success", future_result.get()->success);
+  } else {
+    ERROR("call tracking_object_srv timeout.");
+    retrunErrorGrpc(writer);
+    return;
+  }
+  std::string rsp_string;
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set tracking_object_srv response encoding to json");
+    retrunErrorGrpc(writer);
+    return;
+  }
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
 }
 
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
@@ -2083,6 +2143,9 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::NAV_ACTION: {
         handleNavigationAction(json_resquest, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::SELECTED_TRACKING_OBJ: {
+        selectTrackingObject(json_resquest, json_response, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
