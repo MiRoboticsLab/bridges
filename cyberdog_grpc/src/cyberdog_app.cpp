@@ -266,7 +266,7 @@ Cyberdog_app::Cyberdog_app()
 
   // tracking
   tracking_person_sub_ = create_subscription<protocol::msg::Person>(
-    "person", rclcpp::SystemDefaultsQoS(),
+    "person", 300,
     std::bind(&Cyberdog_app::publishTrackingPersonCB, this, _1));
   select_tracking_human_client_ = this->create_client<protocol::srv::BodyRegion>(
     "tracking_object_srv", rmw_qos_profile_services_default, callback_group_);
@@ -1066,6 +1066,18 @@ void Cyberdog_app::handleNavigationAction(
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
   } else if (status == "STOP_UWB_TRACKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_UWB_TRACKING;
+  } else if (status == "START_HUMAN_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_HUMAN_TRACKING;
+    if (json_resquest.HasMember("relative_pos")) {
+      uint32_t relative_pos;
+      CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
+      mode_goal.relative_pos = relative_pos;
+    }
+    if (json_resquest.HasMember("relative_pos")) {
+      CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
+    }
+  } else if (status == "STOP_HUMAN_TRACKING") {
+    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_HUMAN_TRACKING;
   } else {
     ERROR("Unavailable navigation type: %s", status.c_str());
     retrunErrorGrpc(writer);
