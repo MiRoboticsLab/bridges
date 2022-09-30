@@ -10,9 +10,8 @@ timeout_us = 1234567
 
 [[array]]
 description = ""
-can_package_num = 1
-can_id = ["0x00834100"]
-array_size = [8]
+can_package_num = 2
+can_id = ["0x00834100", "0x00834101"]
 array_name = "battery_status"
 
 [[array]]
