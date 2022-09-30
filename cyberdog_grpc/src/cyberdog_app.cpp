@@ -265,8 +265,10 @@ Cyberdog_app::Cyberdog_app()
     std::bind(&Cyberdog_app::uploadNavPath, this, _1));
 
   // tracking
+  rclcpp::SensorDataQoS tracking_qos;
+  tracking_qos.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
   tracking_person_sub_ = create_subscription<protocol::msg::Person>(
-    "person", 300,
+    "person", tracking_qos,
     std::bind(&Cyberdog_app::publishTrackingPersonCB, this, _1));
   select_tracking_human_client_ = this->create_client<protocol::srv::BodyRegion>(
     "tracking_object_srv", rmw_qos_profile_services_default, callback_group_);
@@ -1128,7 +1130,7 @@ void Cyberdog_app::handleNavigationAction(
       }
     };
   rclcpp_action::Client<Navigation>::SendGoalOptions goal_options;
-  goal_options.feedback_callback;
+  goal_options.feedback_callback = feedback_callback;
   auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal, goal_options);
   uint8_t result = 2;
   bool result_timeout = false;
@@ -1408,7 +1410,7 @@ void Cyberdog_app::selectTrackingObject(
   req->roi.y_offset = roi["y_offset"].GetInt();
   req->roi.height = roi["height"].GetInt();
   req->roi.width = roi["width"].GetInt();
-  std::chrono::seconds timeout(10);
+  std::chrono::seconds timeout(60);
   auto future_result = select_tracking_human_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(timeout);
   if (status == std::future_status::ready) {
