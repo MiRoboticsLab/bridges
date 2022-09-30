@@ -50,7 +50,7 @@ bool Cyberdog_App_Client::sendHeartBeat(
   ClientContext context;
   context.set_deadline(
     std::chrono::system_clock::now() +
-    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(8)));
+    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(3)));
   /*
   gpr_timespec timespec;
   timespec.tv_sec = 2;
