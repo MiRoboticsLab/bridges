@@ -1,0 +1,21 @@
+
+# request
+# Control map command type
+uint8 MAP_COMMAND_TYPE_UNKNOWN = 0
+uint8 MAP_COMMAND_TYPE_INSERT = 1  # add command
+uint8 MAP_COMMAND_TYPE_DELETE = 2  # delete command
+uint8 MAP_COMMAND_TYPE_UPDATE = 3  # update command
+uint8 MAP_COMMAND_TYPE_QUERY = 4   # query command
+uint8 MAP_COMMAND_TYPE_LOAD = 5    # load command
+
+# slam build module type
+uint8 MAP_BUILD_TYPE_UNKNOWN = 0
+uint8 MAP_BUILD_TYPE_LIDAR = 1
+uint8 MAP_BUILD_TYPE_VISION = 2
+
+uint8 command         # control command
+uint8 map_build_type  # building map type
+string request        # json format
+---
+# response
+string response # json format
