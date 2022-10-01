@@ -1,0 +1,3 @@
+float64 scan_seconds
+---
+string[] device_name_list
