@@ -1,0 +1,7 @@
+---
+uint32 session_id
+uint16 master
+uint16 slave1
+uint16 slave2
+uint16 slave3
+uint16 slave4
