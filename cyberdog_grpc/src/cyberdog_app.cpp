@@ -272,6 +272,12 @@ Cyberdog_app::Cyberdog_app()
     std::bind(&Cyberdog_app::publishTrackingPersonCB, this, _1));
   select_tracking_human_client_ = this->create_client<protocol::srv::BodyRegion>(
     "tracking_object_srv", rmw_qos_profile_services_default, callback_group_);
+
+  // bluetooth
+  scan_bluetooth_device_client_ =
+    this->create_client<protocol::srv::BLEScan>("scan_bluetooth_device");
+  connect_bluetooth_device_client_ =
+    this->create_client<protocol::srv::BLEConnect>("connect_bluetooth_device");
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1431,6 +1437,78 @@ void Cyberdog_app::selectTrackingObject(
   writer->Write(grpc_respond);
 }
 
+void Cyberdog_app::scanBluetoothDevice(
+  Document & json_resquest, Document & json_response,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!scan_bluetooth_device_client_->wait_for_service()) {
+    ERROR("scan_bluetooth_device server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  double scan_seconds;
+  CyberdogJson::Get(json_resquest, "scan_seconds", scan_seconds);
+  auto req = std::make_shared<protocol::srv::BLEScan::Request>();
+  req->scan_seconds = scan_seconds;
+  std::chrono::seconds timeout(int64_t(scan_seconds * 2));
+  auto future_result = scan_bluetooth_device_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    std::vector<std::string> devices = future_result.get()->device_name_list;
+    writer.StartObject();
+    writer.Key("device_name_list");
+    writer.StartArray();
+    for (auto & dev : devices) {
+      writer.String(dev.c_str());
+    }
+    writer.EndArray();
+    writer.EndObject();
+  } else {
+    ERROR("call scan_bluetooth_device timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::connectBluetoothDevice(
+  Document & json_resquest, Document & json_response,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!connect_bluetooth_device_client_->wait_for_service()) {
+    ERROR("connect_bluetooth_device server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::BLEConnect::Request>();
+  if (json_resquest.HasMember("device_name")) {
+    std::string name;
+    CyberdogJson::Get(json_resquest, "device_name", name);
+    req->device_name = name;
+  }
+  std::chrono::seconds timeout(20);
+  auto future_result = connect_bluetooth_device_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    CyberdogJson::Add(json_response, "result", future_result.get()->result);
+  }
+  std::string rsp_string;
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set connect_bluetooth_device response encoding to json");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(rsp_string);
+  grpc_writer->Write(grpc_respond);
+}
+
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
   const Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
@@ -2148,6 +2226,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::SELECTED_TRACKING_OBJ: {
         selectTrackingObject(json_resquest, json_response, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::BLUETOOTH_SCAN: {
+        scanBluetoothDevice(json_resquest, json_response, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::BLUETOOTH_CONNECT: {
+        connectBluetoothDevice(json_resquest, json_response, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
