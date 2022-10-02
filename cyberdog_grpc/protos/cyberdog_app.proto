@@ -79,6 +79,8 @@ message SendRequest {
         NAV_PLAN_PATH = 6006;
         TRACKING_OBJ = 6007;
         SELECTED_TRACKING_OBJ = 6008;
+        BLUETOOTH_SCAN = 8001;
+        BLUETOOTH_CONNECT = 8002;
     }
 }
 
