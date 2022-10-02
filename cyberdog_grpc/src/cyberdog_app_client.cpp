@@ -40,7 +40,9 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
     INFO("sendMsg error code:%d", status.error_code());
     return false;
   }
-  INFO_STREAM("sendMsg rpc success. namecode: " << msg.namecode() << " params: " << msg.params());
+  INFO_STREAM(
+    "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
+    (msg.namecode() != 4001u ? msg.params() : std::string("map data ...")));
   return true;
 }
 bool Cyberdog_App_Client::sendHeartBeat(
