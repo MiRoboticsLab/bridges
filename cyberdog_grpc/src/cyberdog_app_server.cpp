@@ -19,13 +19,13 @@
 #include <memory>
 
 CyberdogAppImpl::CyberdogAppImpl(const std::string & db)
-: decision_(NULL)
+: decision_(nullptr)
 {
 }
 
 bool CyberdogAppImpl::isPeerAvalible(std::string peer)
 {
-  if (decision_ == NULL) {
+  if (!decision_) {
     return false;
   }
   // std::cout << "peer:" << peer << "self_ip:" << decision_->getServiceIp() << std::endl;

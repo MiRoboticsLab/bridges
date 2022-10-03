@@ -28,7 +28,9 @@
 
 #define CHUNK_SIZE 4194304  // 4MB
 
-namespace carpo_cyberdog_app
+namespace cyberdog
+{
+namespace bridges
 {
 class TransmitFiles
 {
@@ -170,5 +172,6 @@ public:
 
   static std::atomic_int thread_counts_;
 };  // class TransmitFiles
-}  // namespace carpo_cyberdog_app
-#endif  // TRANSMIT_FILES_HPP_"
+}  // namespace bridges
+}  // namespace cyberdog
+#endif  // TRANSMIT_FILES_HPP_
