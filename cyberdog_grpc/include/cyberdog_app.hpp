@@ -86,7 +86,9 @@ using string = std::string;
 using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
 using rapidjson::kObjectType;
-namespace carpo_cyberdog_app
+namespace cyberdog
+{
+namespace bridges
 {
 class Cyberdog_app : public rclcpp::Node
 {
@@ -470,6 +472,7 @@ private:
 
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };
-}  // namespace carpo_cyberdog_app
+}  // namespace bridges
+}  // namespace cyberdog
 
 #endif  // CYBERDOG_APP_HPP_

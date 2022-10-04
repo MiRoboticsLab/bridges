@@ -23,7 +23,7 @@ int main(int argc, char ** argv)
   LOGGER_MAIN_INSTANCE("cyberdog_grpc");
   cyberdog::debug::register_signal();
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<carpo_cyberdog_app::Cyberdog_app>();
+  auto node = std::make_shared<cyberdog::bridges::Cyberdog_app>();
   rclcpp::executors::MultiThreadedExecutor exec_;
   exec_.add_node(node->get_node_base_interface());
   exec_.spin();
