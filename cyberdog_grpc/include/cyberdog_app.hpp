@@ -70,6 +70,8 @@
 #include "protocol/msg/person.hpp"
 #include "protocol/msg/ota_update.hpp"
 #include "protocol/srv/body_region.hpp"
+#include "protocol/srv/ble_scan.hpp"
+#include "protocol/srv/ble_connect.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -447,6 +449,18 @@ private:
     Document & json_resquest, Document & json_response,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  // bluetooth
+  rclcpp::Client<protocol::srv::BLEScan>::SharedPtr scan_bluetooth_device_client_;
+  rclcpp::Client<protocol::srv::BLEConnect>::SharedPtr connect_bluetooth_device_client_;
+  void scanBluetoothDevice(
+    Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void connectBluetoothDevice(
+    Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
