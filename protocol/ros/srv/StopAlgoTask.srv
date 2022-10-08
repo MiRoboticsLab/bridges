@@ -1,0 +1,11 @@
+uint8 ALGO_TASK_ALL= 0
+uint8 ALGO_TASK_AB = 1
+uint8 ALGO_TASK_FOLLOW = 3 # 万物跟随
+uint8 ALGO_TASK_MAPPING = 5
+uint8 ALGO_TASK_LOCALIZATION = 7
+uint8 ALGO_TASK_AUTO_DOCKING = 9
+uint8 ALGO_TASK_UWB_TRACKING = 11
+uint8 ALGO_TASK_HUMAN_TRACKING = 13
+uint8 task_id
+---
+bool result # true normal, false abnormal
