@@ -147,6 +147,20 @@ Cyberdog_app::Cyberdog_app()
   visual_request_pub_ = this->create_publisher<std_msgs::msg::String>(
     "frontend_message", rclcpp::SystemDefaultsQoS());
 
+  // code for ai
+  ai_face_entry_client_ =
+    this->create_client<protocol::srv::FaceEntry>("cyberdog_face_entry_srv");
+  ai_face_recognition_client_ =
+    this->create_client<protocol::srv::FaceRec>("cyberdog_face_recognition_srv");
+  ai_face_entry_sub_ =
+    this->create_subscription<protocol::msg::FaceEntryResult>(
+    "face_entry_msg", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::face_entry_result_callback, this, _1));
+  ai_face_recognition_sub_ =
+    this->create_subscription<protocol::msg::FaceRecognitionResult>(
+    "face_rec_msg", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::face_rec_result_callback, this, _1));
+
   // code for audio program
   audio_voiceprint_result_sub_ =
     this->create_subscription<protocol::msg::AudioVoiceprintResult>(
@@ -566,6 +580,28 @@ void Cyberdog_app::backend_message_callback(
   const std_msgs::msg::String::SharedPtr msg)
 {
   send_grpc_msg(::grpcapi::SendRequest::VISUAL_BACKEND_MSG, msg->data);
+}
+
+// for ai
+void Cyberdog_app::face_entry_result_callback(
+  const protocol::msg::FaceEntryResult::SharedPtr msg)
+{
+  INFO("grpc success to get face entry result.");
+  Document json_response(kObjectType);
+  CyberdogJson::Add(json_response, "result", msg->result);
+  CyberdogJson::Add(json_response, "username", msg->username);
+  send_grpc_msg(::grpcapi::SendRequest::FACE_ENTRY_RESULT_PUBLISH, json_response);
+  INFO("grpc success to send face entry result.");
+}
+void Cyberdog_app::face_rec_result_callback(
+  const protocol::msg::FaceRecognitionResult::SharedPtr msg)
+{
+  INFO("grpc success to get face recognition result.");
+  Document json_response(kObjectType);
+  CyberdogJson::Add(json_response, "result", msg->result);
+  CyberdogJson::Add(json_response, "username", msg->username);
+  send_grpc_msg(::grpcapi::SendRequest::FACE_RECOGNITION_RESULT_PUBLISH, json_response);
+  INFO("grpc success to send face recognition result.");
 }
 
 //  for audio
@@ -2129,6 +2165,69 @@ void Cyberdog_app::ProcessMsg(
         msg.data = grpc_request->params();
         visual_request_pub_->publish(msg);
       } break;
+    // ai code
+    case ::grpcapi::SendRequest::FACE_ENTRY_REQUEST: {
+        INFO("grpc get face entry request from app.");
+        if (!ai_face_entry_client_->wait_for_service()) {
+          WARN("face entry server is not avalible");
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::FaceEntry::Request>();
+        CyberdogJson::Get(json_resquest, "command", req->command);
+        CyberdogJson::Get(json_resquest, "username", req->username);
+        CyberdogJson::Get(json_resquest, "oriname", req->oriname);
+        CyberdogJson::Get(json_resquest, "ishost", req->ishost);
+        protocol::srv::FaceEntry::Response rsp;
+        auto future_result = ai_face_entry_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          INFO("success to call face entry response services.");
+        } else {
+          WARN("Failed to call face entry response services.");
+        }
+        rsp.result = future_result.get()->result;
+        CyberdogJson::Add(json_response, "result", rsp.result);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while encoding authenticate response to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_namecode(grpc_request->namecode());
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+        INFO("grpc send face entry response to app.");
+      } break;
+    case ::grpcapi::SendRequest::FACE_RECORDING_REQUEST: {
+        INFO("grpc get face recognition request from app.");
+        if (!ai_face_recognition_client_->wait_for_service()) {
+          WARN("face recognition server is not avalible");
+          return;
+        }
+        std::chrono::seconds timeout(3);
+        auto req = std::make_shared<protocol::srv::FaceRec::Request>();
+        CyberdogJson::Get(json_resquest, "command", req->command);
+        CyberdogJson::Get(json_resquest, "username", req->username);
+        protocol::srv::FaceRec::Response rsp;
+        auto future_result = ai_face_recognition_client_->async_send_request(req);
+        std::future_status status = future_result.wait_for(timeout);
+        if (status == std::future_status::ready) {
+          INFO("success to call face recognition response services.");
+        } else {
+          WARN("Failed to call face recognition response services.");
+        }
+        rsp.result = future_result.get()->result;
+        CyberdogJson::Add(json_response, "result", rsp.result);
+        if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+          ERROR("error while encoding authenticate response to json");
+          retrunErrorGrpc(writer);
+          return;
+        }
+        grpc_respond.set_namecode(grpc_request->namecode());
+        grpc_respond.set_data(rsp_string);
+        writer->Write(grpc_respond);
+        INFO("grpc send face recognition response to app.");
+      } break;
     case ::grpcapi::SendRequest::DEVICE_NAME_SWITCH: {
         deviceNameSwitchHandle(json_resquest, json_response, grpc_respond, writer);
       } break;
@@ -2258,7 +2357,9 @@ void Cyberdog_app::ProcessMsg(
         writer->Write(grpc_respond);
         app_disconnect_pub_->publish(msg);
       } break;
-    default:
+    default: {
+        INFO("检查case:FACE_ENTRY_REQUEST是否添加进去了");
+      }
       break;
   }
 }
