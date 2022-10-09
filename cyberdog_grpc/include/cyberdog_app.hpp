@@ -51,6 +51,8 @@
 #include "protocol/msg/bms_status.hpp"
 #include "protocol/msg/label.hpp"
 #include "protocol/msg/map_label.hpp"
+#include "protocol/msg/face_recognition_result.hpp"
+#include "protocol/msg/face_entry_result.hpp"
 #include "protocol/srv/audio_auth_id.hpp"
 #include "protocol/srv/audio_auth_token.hpp"
 #include "protocol/srv/ota_server_cmd.hpp"
@@ -72,6 +74,8 @@
 #include "protocol/srv/body_region.hpp"
 #include "protocol/srv/ble_scan.hpp"
 #include "protocol/srv/ble_connect.hpp"
+#include "protocol/srv/face_entry.hpp"
+#include "protocol/srv/face_rec.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -323,6 +327,14 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr visual_request_pub_;
   void backend_message_callback(const std_msgs::msg::String::SharedPtr msg);
+
+  // ai program
+  rclcpp::Client<protocol::srv::FaceEntry>::SharedPtr ai_face_entry_client_;
+  rclcpp::Client<protocol::srv::FaceRec>::SharedPtr ai_face_recognition_client_;
+  rclcpp::Subscription<protocol::msg::FaceEntryResult>::SharedPtr ai_face_entry_sub_;
+  rclcpp::Subscription<protocol::msg::FaceRecognitionResult>::SharedPtr ai_face_recognition_sub_;
+  void face_entry_result_callback(const protocol::msg::FaceEntryResult::SharedPtr msg);
+  void face_rec_result_callback(const protocol::msg::FaceRecognitionResult::SharedPtr msg);
 
   // audio program
   rclcpp::Client<protocol::srv::AudioAuthId>::SharedPtr audio_auth_request;
