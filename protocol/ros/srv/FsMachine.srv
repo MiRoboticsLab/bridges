@@ -1,0 +1,6 @@
+string target_state
+
+---
+
+uint8 current_state
+int32 code

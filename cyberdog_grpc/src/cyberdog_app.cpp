@@ -58,7 +58,9 @@ using rapidjson::kObjectType;
 
 using Navigation = protocol::action::Navigation;
 
-namespace carpo_cyberdog_app
+namespace cyberdog
+{
+namespace bridges
 {
 std::atomic_int TransmitFiles::thread_counts_ = 0;
 static int64_t requestNumber;
@@ -2346,4 +2348,5 @@ void Cyberdog_app::autoSavedFileCB(const std_msgs::msg::String::SharedPtr msg)
   std::set<std::string> autosaved_file {msg->data};
   TransmitFiles::SendFile(nullptr, std::string(), std::string(), 0, &autosaved_file);
 }
-}  // namespace carpo_cyberdog_app
+}  // namespace bridges
+}  // namespace cyberdog
