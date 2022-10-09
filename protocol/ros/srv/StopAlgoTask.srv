@@ -1,3 +1,6 @@
 uint8 task_id
+string map_name
 ---
-bool result # true normal, false abnormal
+int8 SUCCESS  = 0
+int8 FAILED  = 1
+int8 result 
