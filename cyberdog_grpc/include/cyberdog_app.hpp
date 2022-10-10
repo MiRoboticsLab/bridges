@@ -276,6 +276,14 @@ private:
     const Document & json_resquest, Document & json_response,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void faceEntryRequestHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void faceRecRequestHandle(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void deviceNameSwitchHandle(
     const Document & json_resquest, Document & json_response,
     ::grpcapi::RecResponse & grpc_respond,
