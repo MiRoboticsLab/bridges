@@ -1661,8 +1661,6 @@ bool Cyberdog_app::HandleAccountSearch(
     );
     return false;
   }
-  Document json_response(kObjectType);
-  std::string rsp_string;
   std::chrono::seconds timeout(3);
   auto req = std::make_shared<protocol::srv::AccountSearch::Request>();
   // AccountSeatch.srv中request为string member，但是app发送的键为"account"
@@ -1677,14 +1675,9 @@ bool Cyberdog_app::HandleAccountSearch(
     INFO("Failed to call querysearchadd request  services.");
   }
 
-  CyberdogJson::Add(json_response, "data", future_result.get()->data);
-  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
-    ERROR("error while set mic state response encoding to json");
-    retrunErrorGrpc(writer);
-    return false;
-  }
   // grpc_respond.set_namecode(grpc_request->namecode());
-  grpc_respond.set_data(rsp_string);
+  INFO("grpc_respond is : %s", future_result.get()->data.c_str());
+  grpc_respond.set_data(future_result.get()->data);
   writer->Write(grpc_respond);
   return true;
 }
