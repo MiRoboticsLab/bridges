@@ -280,6 +280,9 @@ Cyberdog_app::Cyberdog_app()
     "plan", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::uploadNavPath, this, _1));
 
+  stop_nav_action_client_ = this->create_client<protocol::srv::StopAlgoTask>(
+    "stop_algo_task", rmw_qos_profile_services_default, callback_group_);
+
   // tracking
   rclcpp::SensorDataQoS tracking_qos;
   tracking_qos.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
@@ -1066,28 +1069,19 @@ void Cyberdog_app::handleNavigationAction(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  int timeout = 60;
+  int nav_timeout = 600;
   std::string response_string;
-  std::string status;
+  std::string type;
   double goal_x, goal_y;
-  CyberdogJson::Get(json_resquest, "status", status);
+  CyberdogJson::Get(json_resquest, "type", type);
   INFO("handleNavigationAction");
   auto mode_goal = Navigation::Goal();
-  if (status == "START") {
+  if (type == "MAPPING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
     bool outdoor(false);
-    if (json_resquest.HasMember("outdoor")) {
-      CyberdogJson::Get(json_resquest, "outdoor", outdoor);
-    }
+    CyberdogJson::Get(json_resquest, "outdoor", outdoor);
     mode_goal.outdoor = outdoor;
-  } else if (status == "STOP") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_MAPPING;
-    if (json_resquest.HasMember("map_name")) {
-      std::string mn;
-      CyberdogJson::Get(json_resquest, "map_name", mn);
-      mode_goal.map_name = mn;
-    }
-  } else if (status == "NAVIGATION_AB") {
+  } else if (type == "NAVIGATION_AB") {
     if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
       ERROR("NAVIGATION_AB should have goalX and goalY settings");
       retrunErrorGrpc(writer);
@@ -1100,31 +1094,21 @@ void Cyberdog_app::handleNavigationAction(
     if (json_resquest.HasMember("theta")) {
       double yaw;
       CyberdogJson::Get(json_resquest, "theta", yaw);
-      goal.pose.orientation = tf2::toMsg(getQuaternionFromYaw(yaw));
+      goal.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw));
     } else {
       goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
     }
     mode_goal.poses.push_back(goal);
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
-  } else if (status == "STOP_NAVIGATION_AB") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AB;
-  } else if (status == "START_NAVIGATION") {
+  } else if (type == "RELOCOLIZATION") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
-  } else if (status == "STOP_NAVIGATION") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_LOCALIZATION;
-  } else if (status == "START_AUTO_DOCKING") {
+  } else if (type == "AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
-  } else if (status == "STOP_AUTO_DOCKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_AUTO_DOCKING;
-  } else if (status == "START_FOLLOW") {
+  } else if (type == "FOLLOW") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_FOLLOW;
-  } else if (status == "STOP_FOLLOW") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_FOLLOW;
-  } else if (status == "START_UWB_TRACKING") {
+  } else if (type == "UWB_TRACKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
-  } else if (status == "STOP_UWB_TRACKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_UWB_TRACKING;
-  } else if (status == "START_HUMAN_TRACKING") {
+  } else if (type == "HUMAN_TRACKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_HUMAN_TRACKING;
     if (json_resquest.HasMember("relative_pos")) {
       uint32_t relative_pos;
@@ -1134,10 +1118,8 @@ void Cyberdog_app::handleNavigationAction(
     if (json_resquest.HasMember("keep_distance")) {
       CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
     }
-  } else if (status == "STOP_HUMAN_TRACKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_STOP_HUMAN_TRACKING;
   } else {
-    ERROR("Unavailable navigation type: %s", status.c_str());
+    ERROR("Unavailable navigation type: %s", type.c_str());
     retrunErrorGrpc(writer);
   }
 
@@ -1149,7 +1131,6 @@ void Cyberdog_app::handleNavigationAction(
       json_writer.Int(result_code);
       json_writer.EndObject();
       response_string = strBuf.GetString();
-      grpc_respond.set_namecode(::grpcapi::SendRequest::NAV_ACTION);
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
     };
@@ -1164,7 +1145,18 @@ void Cyberdog_app::handleNavigationAction(
       json_writer.String(feedback_msg.c_str());
       json_writer.EndObject();
       response_string = strBuf.GetString();
-      grpc_respond.set_namecode(::grpcapi::SendRequest::NAV_ACTION);
+      grpc_respond.set_data(response_string);
+      writer->Write(grpc_respond);
+    };
+
+  auto return_accept = [&](bool accepted) {
+      rapidjson::StringBuffer strBuf;
+      rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+      json_writer.StartObject();
+      json_writer.Key("accepted");
+      json_writer.Bool(accepted);
+      json_writer.EndObject();
+      response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
     };
@@ -1191,6 +1183,12 @@ void Cyberdog_app::handleNavigationAction(
   uint8_t result = 2;
   bool result_timeout = false;
   if (mode_goal_handle.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
+    if (!mode_goal_handle.get()) {
+      WARN("Navigation action request rejected");
+      return_accept(false);
+      return;
+    }
+    return_accept(true);
     nav_map_mutex_.lock();
     std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
     size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
@@ -1198,13 +1196,13 @@ void Cyberdog_app::handleNavigationAction(
     nav_map_mutex_.unlock();
     auto mode_result =
       navigation_client_->async_get_result(mode_goal_handle.get());
-    if (mode_result.wait_for(std::chrono::seconds(600)) == std::future_status::ready) {
+    if (mode_result.wait_for(std::chrono::seconds(nav_timeout)) == std::future_status::ready) {
       if (mode_result.get().result->result ==
         protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
       {
-        INFO("Navigation action success");
+        INFO("Navigation action succeeded");
       } else {
-        WARN("Navigation action fail");
+        WARN("Navigation action failed");
       }
       result = mode_result.get().result->result;
     } else {
@@ -1213,15 +1211,13 @@ void Cyberdog_app::handleNavigationAction(
     }
   } else {
     WARN("Navigation action request timeout");
-    writer_mutex.lock();
-    retrunErrorGrpc(writer);
-    writer_mutex.unlock();
+    return_accept(false);
     return;
   }
   std::unique_lock<std::shared_mutex> write_lock(nav_map_mutex_);
   writer_mutex.lock();
   if (result_timeout) {
-    retrunErrorGrpc(writer);
+    return_result(10);
   } else {
     return_result(result);
   }
@@ -1466,7 +1462,7 @@ void Cyberdog_app::selectTrackingObject(
   req->roi.y_offset = roi["y_offset"].GetInt();
   req->roi.height = roi["height"].GetInt();
   req->roi.width = roi["width"].GetInt();
-  std::chrono::seconds timeout(60);
+  std::chrono::seconds timeout(30);
   auto future_result = select_tracking_human_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(timeout);
   if (status == std::future_status::ready) {
@@ -1487,8 +1483,42 @@ void Cyberdog_app::selectTrackingObject(
   writer->Write(grpc_respond);
 }
 
-void Cyberdog_app::scanBluetoothDevices(
-  Document & json_resquest,
+void Cyberdog_app::handleStopAction(
+  const Document & json_resquest, Document & json_response,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  uint32_t type = 0;
+  CyberdogJson::Get(json_resquest, "type", type);
+  auto request = std::make_shared<protocol::srv::StopAlgoTask::Request>();
+  request->task_id = type;
+  if (request->task_id == protocol::srv::StopAlgoTask::Request::ALGO_TASK_MAPPING) {
+    std::string map_name("");
+    CyberdogJson::Get(json_resquest, "map_name", map_name);
+    request->map_name = map_name;
+  }
+  auto future_result = stop_nav_action_client_->async_send_request(request);
+  std::chrono::seconds timeout(30);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO("Got stop_algo_task result.");
+    CyberdogJson::Add(json_response, "result", future_result.get()->result);
+  } else {
+    ERROR("call stop_algo_task timeout.");
+    CyberdogJson::Add(json_response, "result", 10);
+  }
+  std::string rsp_string;
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set stop_algo_task response encoding to json");
+    retrunErrorGrpc(writer);
+    return;
+  }
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::scanBluetoothDevice(
+  Document & json_resquest, Document & json_response,
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
