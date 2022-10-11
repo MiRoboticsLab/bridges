@@ -1,0 +1,10 @@
+[controller]
+actuators = ["audio"]
+states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
+default_time = 100 # milliseconds
+default_state = "Uninitialized"
+
+
+[actuator.audio]
+states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
+times = [60000, 100, 100, 100, 100, 100, 100, 100, 100]
