@@ -274,7 +274,7 @@ Cyberdog_app::Cyberdog_app()
     "get_label", rmw_qos_profile_services_default, callback_group_);
 
   navigation_client_ =
-    rclcpp_action::create_client<Navigation>(this, "CyberdogNavigation");
+    rclcpp_action::create_client<Navigation>(this, "start_algo_task");
 
   nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
     "plan", rclcpp::SystemDefaultsQoS(),
