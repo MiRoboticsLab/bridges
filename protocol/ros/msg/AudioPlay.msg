@@ -50,3 +50,6 @@ uint8 PID_BATTERY_CHARGE_COMPELETE = 104 # 充电完成了
 uint8 PID_AI_PLEASE_ENABLE = 124       # 请登录app账号以启用小爱在线功能
 uint8 PID_AI_ENABLE_SUCCESS = 125      # 小爱在线功能启动
 uint8 PID_AI_SERVICE_EXPIRED = 127     # 语音登录已过期
+uint8 PID_TEST_HARDWARE_AUDIO = 3000          # 当前为语音硬件测试
+uint8 PID_TEST_STAGE_ONE = 3001               # 第一阶段测试结束。请查看测试结果并记录后，进行第二阶段测试
+uint8 PID_TEST_STAGE_THREE = 3003             # 第三阶段测试结束，请查看测试结果并记录
