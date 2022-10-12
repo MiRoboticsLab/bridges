@@ -1,5 +1,0 @@
-# play target, contains MiniLed, HeadLed and TailLed 
-MiniLed = 0
-HeadLed = 1
-TailLed = 2
-
