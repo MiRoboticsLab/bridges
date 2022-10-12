@@ -1108,16 +1108,16 @@ void Cyberdog_app::handleNavigationAction(
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_FOLLOW;
   } else if (type == "UWB_TRACKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
+    uint32_t relative_pos = 0;
+    CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
+    mode_goal.relative_pos = relative_pos;
+    CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
   } else if (type == "HUMAN_TRACKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_HUMAN_TRACKING;
-    if (json_resquest.HasMember("relative_pos")) {
-      uint32_t relative_pos;
-      CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
-      mode_goal.relative_pos = relative_pos;
-    }
-    if (json_resquest.HasMember("keep_distance")) {
-      CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
-    }
+    uint32_t relative_pos = 0;
+    CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
+    mode_goal.relative_pos = relative_pos;
+    CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
   } else {
     ERROR("Unavailable navigation type: %s", type.c_str());
     retrunErrorGrpc(writer);
@@ -1491,10 +1491,10 @@ void Cyberdog_app::handleStopAction(
   std::string type;
   CyberdogJson::Get(json_resquest, "type", type);
   auto request = std::make_shared<protocol::srv::StopAlgoTask::Request>();
-  if (type == "MAPPING") {
-    std::string map_name("");
-    CyberdogJson::Get(json_resquest, "map_name", map_name);
-    request->map_name = map_name;
+  if (type == "ALL") {
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_ALL;
+  } else if (type == "MAPPING") {
+    CyberdogJson::Get(json_resquest, "map_name", request->map_name);
     request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_MAPPING;
   } else if (type == "NAVIGATION_AB") {
     request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_AB;
