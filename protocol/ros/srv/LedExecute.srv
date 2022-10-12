@@ -1,49 +1,89 @@
 
-
-# mode
-uint8 SET_EXISTED_EFFECT =0x00     #已有灯效模式
-uint8 SET_BRIGHTNESS =0x01         #设置灯效亮度
-uint8 SET_USER_EFFECT =0x02        #用户自定义灯效
-
 # client 
-uint8 BMS =0 
-uint8 BLUETOOTH =1
-uint8 AUDIO =2
-uint8 CONNECTOR =3
+string UNDEFINED ="undefined"                   #调试时可用，优先级最高。       
+string BMS ="bms"
+string CONNECTOR ="connector"
+ 
 
 # target
-uint8 HEAD_LED =0
-uint8 TAIL_LED =1
-uint8 MINI_LED =2
+uint8 HEAD_LED =1
+uint8 TAIL_LED =2
+uint8 MINI_LED =3
 
-# runtime  
-uint64 COMMAND_OFF = 0 #灯效时长为0 ms
-uint64 COMMAND_ALWAYSON = 0xFFFFFFFFFFFFFFFF # 若需要设着灯效常亮，可以将timeout字段设置为  protocol::srv::LedExecute::Request::COMMAND_ALWAYSON
+
+# mode
+uint8 SYSTEM_PREDEFINED =0x01          #使用系统预定义的模式，此模式下，用户只需从effect字段中
+                                       #（0x08～0x1D）选择所需灯效。r_value、g_value、b_value字段无意义。
+                                       #例如 effect = 0x09代表红常亮。
+uint8 USER_DEFINED =0x02               #使用用户自定义的模式，此模式下，灯效由effect和r_value、g_value、
+                                       #b_value字段联合决定。effect字段决定灯亮的方式，r_value、g_value、b_value
+                                       #字段决定灯效的颜色。例如 effect = 0x01 r_value =255 g_value =0 b_value=0
+                                       #代表红常亮。
 
 # effect
-uint8 OFF =0x00                        #常灭
-uint8 RED_ON =0x01                     #红灯常亮
-uint8 RED_BLINK =0x02                  #红灯闪烁
-uint8 RED_BREATH =0x03                 #红灯呼吸
-uint8 RED_ONE_BY_ONE =0x04             #红灯逐个点亮
+#HEAD_LED和TAIL_LED的基础灯效（0x01 ～0x07），在 mode = USER_DEFINED 时配合r_value、g_value、b_value使用。
+uint8 ON =0x01                         #常亮
+uint8 BLINK =0x02                      #闪烁
+uint8 BLINK_FAST =0x03                 #快速闪烁    
+uint8 BREATH =0x04                     #呼吸
+uint8 BREATH_FAST =0x05                #快速呼吸 
+uint8 ONE_BY_ONE =0x06                 #逐个点亮
+uint8 ONE_BY_ONE_FAST =0x07            #快速逐个点亮 
 
-uint8 GREEN_ON =0x05                   #绿灯常亮
-uint8 GREEN_BLINK =0x06                #绿灯闪烁
-uint8 GREEN_BREATH =0x07               #绿灯呼吸
-uint8 GREEN_ONE_BY_ONE =0x08           #绿灯逐个点亮
+# HEAD_LED和TAIL_LE系统预定义的灯效（0x08 ～0x1D ），在mode = SYSTEM_PREDEFINED 时有效。
+uint8 OFF =0x08                        #常灭
+uint8 RED_ON =0x09                     #红灯常亮
+uint8 RED_BLINK =0x0A                  #红灯闪烁
+uint8 RED_BLINK_FAST =0x0B             #红灯快速闪烁
+uint8 RED_BREATH =0x0C                 #红灯呼吸
+uint8 RED_BREATH_FAST =0x0D            #红灯快速呼吸
+uint8 RED_ONE_BY_ONE =0x0E             #红灯逐个点亮
+uint8 RED_ONE_BY_ONE_FAST =0x0F        #红灯快速逐个点亮
 
-uint8 YELLOW_ON =0x09                   #黄灯常亮
-uint8 YELLOW_BLINK =0x0A                #黄灯闪烁
-uint8 YELLOW_BREATH =0x0B               #黄灯呼吸
-uint8 YELLOW_ONE_BY_ONE =0x0C           #黄灯逐个点亮
+uint8 GREEN_ON =0x10                   #绿灯常亮
+uint8 GREEN_BLINK =0x11                #绿灯闪烁
+uint8 GREEN_BLINK_FAST =0x12           #绿灯快速闪烁
+uint8 GREEN_BREATH =0x13               #绿灯呼吸
+uint8 GREEN_BREATH_FAST =0x14          #绿灯快速呼吸
+uint8 GREEN_ONE_BY_ONE =0x15           #绿灯逐个点亮
+uint8 GREEN_ONE_BY_ONE_FAST =0x16      #绿灯快速逐个点亮
+
+uint8 YELLOW_ON =0x17                  #黄灯常亮
+uint8 YELLOW_BLINK =0x18               #黄灯闪烁
+uint8 YELLOW_BLINK_FAST =0x19          #黄灯快速闪烁
+uint8 YELLOW_BREATH =0x1A              #黄灯呼吸
+uint8 YELLOW_BREATH_FAST =0x1B         #黄灯快速呼吸
+uint8 YELLOW_ONE_BY_ONE =0x1C          #黄灯逐个点亮
+uint8 YELLOW_ONE_BY_ONE_FAST =0x1D     #黄灯快速逐个点亮
+
+# MINI_LED系统预置灯效   
+uint8 PIC_1 = 0x20
+uint8 PIC_2 = 0x21
+uint8 PIC_ANIMATION = 0x22
+
 # request
-uint8 mode         # 模式取值 见协议中常量定义
-uint8 client       # "bms";"bluetooth";"audio" ..;
-uint8 target       # "tail_led", "head_led","mini_led" ...
-uint8 priority     # response priority(逻辑暂缺)
-uint64 runtime     # 灯效执行时间，单位ms
-uint8 effect       # 灯效 见协议中常量定义
-uint8 brightness   #亮度 0~255
+
+string client                          # 灯的使用模块，例如"bms";"bluetooth";"connector" 具体见协议中常量定义
+uint8 target                           # 用户希望使用的灯，可选择 HEAD_LED , TAIL_LED, MINI_LED
+uint8 mode                             # 用户采用的模式（自定义/预置），取值见协议中常量定义
+uint8 effect                           # 灯效，见协议中常量定义
+uint8 r_value                          # 自定义模式下，红色通道的灰度值，取值范围0～255，其它模式下无意义。
+uint8 g_value                          # 自定义模式下，绿色通道的灰度值，取值范围0～255，其它模式下无意义。
+uint8 b_value                          # 自定义模式下，蓝色通道的灰度值，取值范围0～255，其它模式下无意义。
+
+
 ---
 # response 
+int32 SUCCEED =0                       # 当前请求参数合理，优先级最高，请求灯效执行成功
+
+int32 TARGET_ERROR =1                  # 当前请求的target参数为空或者不在可选列表中
+int32 PRIORITY_ERROR =2                # 当前请求的优先级为空或者不在预设优先级列表中
+int32 MODE_ERROR = 3                   # 当前请求的mode参数为空或者不在可选列表中
+int32 EFFECT_ERROR =4                  # 当前请求的effect参数为空或者不在可选列表中
+int32 R_VALUE_ERROR =5                 # 当前请求的r_value参数超出0～255范围
+int32 G_VALUE_ERROR =6                 # 当前请求的g_value参数超出0～255范围
+int32 B_VALUE_ERROR =7                 # 当前请求的b_value参数出0～255范围
+int32 LOW_PRIORITY = 8                 # 当前请求优先级较低，无法立即执行请求灯效
+int32 TIMEOUT =255
+
 int32 code #执行结果
