@@ -1488,14 +1488,29 @@ void Cyberdog_app::handleStopAction(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  uint32_t type = 0;
+  std::string type;
   CyberdogJson::Get(json_resquest, "type", type);
   auto request = std::make_shared<protocol::srv::StopAlgoTask::Request>();
-  request->task_id = type;
-  if (request->task_id == protocol::srv::StopAlgoTask::Request::ALGO_TASK_MAPPING) {
+  if (type == "MAPPING") {
     std::string map_name("");
     CyberdogJson::Get(json_resquest, "map_name", map_name);
     request->map_name = map_name;
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_MAPPING;
+  } else if (type == "NAVIGATION_AB") {
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_AB;
+  } else if (type == "RELOCOLIZATION") {
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_LOCALIZATION;
+  } else if (type == "AUTO_DOCKING") {
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_AUTO_DOCKING;
+  } else if (type == "FOLLOW") {
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_FOLLOW;
+  } else if (type == "UWB_TRACKING") {
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_UWB_TRACKING;
+  } else if (type == "HUMAN_TRACKING") {
+    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_HUMAN_TRACKING;
+  } else {
+    ERROR("Unavailable action type: %s", type.c_str());
+    retrunErrorGrpc(writer);
   }
   auto future_result = stop_nav_action_client_->async_send_request(request);
   std::chrono::seconds timeout(30);
