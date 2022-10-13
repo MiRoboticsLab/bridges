@@ -555,7 +555,7 @@ void Cyberdog_app::callMotionServoCmd(
   INFO("callMotionServoCmd.");
   std::chrono::seconds timeout(5);
 
-  if (!motion_ressult_client_->wait_for_service()) {
+  if (!motion_ressult_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO("callMotionServoCmd server not avalible");
     return;
   }
@@ -1223,7 +1223,7 @@ void Cyberdog_app::handlLableGetRequest(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
-  if (!get_label_client_->wait_for_service()) {
+  if (!get_label_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO("get map label server not avalible");
     retrunErrorGrpc(grpc_writer);
     return;
@@ -1346,7 +1346,7 @@ void Cyberdog_app::handlLableSetRequest(
   request->label = map_label;
   request->only_delete = only_delete;
 
-  if (!set_label_client_->wait_for_service()) {
+  if (!set_label_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO("set map label server not avalible");
     return;
   }
@@ -1435,7 +1435,7 @@ void Cyberdog_app::selectTrackingObject(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!select_tracking_human_client_->wait_for_service()) {
+  if (!select_tracking_human_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("tracking_object_srv server not avaiable");
     retrunErrorGrpc(writer);
     return;
@@ -1480,7 +1480,7 @@ void Cyberdog_app::scanBluetoothDevice(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
-  if (!scan_bluetooth_device_client_->wait_for_service()) {
+  if (!scan_bluetooth_device_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("scan_bluetooth_device server not avaiable");
     retrunErrorGrpc(grpc_writer);
     return;
@@ -1527,7 +1527,7 @@ void Cyberdog_app::connectBluetoothDevice(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
-  if (!connect_bluetooth_device_client_->wait_for_service()) {
+  if (!connect_bluetooth_device_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("connect_bluetooth_device server not avaiable");
     retrunErrorGrpc(grpc_writer);
     return;
@@ -1570,7 +1570,7 @@ bool Cyberdog_app::HandleGetDeviceInfoRequest(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!query_dev_info_client_->wait_for_service()) {
+  if (!query_dev_info_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call querydevinfo server not avaiable"
     );
@@ -1638,7 +1638,7 @@ bool Cyberdog_app::HandleAccountAdd(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!query_account_add_client_->wait_for_service()) {
+  if (!query_account_add_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call queryaccountadd server not avaiable"
     );
@@ -1673,7 +1673,7 @@ bool Cyberdog_app::HandleAccountSearch(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!query_account_search_client_->wait_for_service()) {
+  if (!query_account_search_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call queryaccountsearch server not avaiable"
     );
@@ -1708,7 +1708,7 @@ bool Cyberdog_app::HandleAccountDelete(
   Document json_response(kObjectType);
   std::string rsp_string;
   std::chrono::seconds timeout(3);
-  if (!query_account_delete_client_->wait_for_service()) {
+  if (!query_account_delete_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call account delete serve not avaiable"
     );
@@ -1803,7 +1803,7 @@ void Cyberdog_app::faceEntryRequestHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   INFO("grpc get face entry request from app.");
-  if (!ai_face_entry_client_->wait_for_service()) {
+  if (!ai_face_entry_client_->wait_for_service(std::chrono::seconds(3))) {
     WARN("face entry server is not avalible");
     return;
   }
@@ -1840,7 +1840,7 @@ void Cyberdog_app::faceRecRequestHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   INFO("grpc get face recognition request from app.");
-  if (!ai_face_recognition_client_->wait_for_service()) {
+  if (!ai_face_recognition_client_->wait_for_service(std::chrono::seconds(3))) {
     WARN("face recognition server is not avalible");
     return;
   }
@@ -1874,7 +1874,7 @@ void Cyberdog_app::deviceNameSwitchHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!dev_name_enable_client_->wait_for_service()) {
+  if (!dev_name_enable_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call set nickname switch server not avaiable"
     );
@@ -1909,7 +1909,7 @@ void Cyberdog_app::deviceNameSetHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!dev_name_set_client_->wait_for_service()) {
+  if (!dev_name_set_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call setnickname server not avaiable"
     );
@@ -1945,7 +1945,7 @@ void Cyberdog_app::deviceVolumeSetHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!audio_volume_set_client_->wait_for_service()) {
+  if (!audio_volume_set_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call volume set server not avalible");
     retrunErrorGrpc(writer);
@@ -1981,7 +1981,7 @@ void Cyberdog_app::deviceMicSetHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!audio_execute_client_->wait_for_service()) {
+  if (!audio_execute_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call mic set server not avalible");
     retrunErrorGrpc(writer);
@@ -2021,7 +2021,7 @@ void Cyberdog_app::deviceAudioSetHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!audio_action_set_client_->wait_for_service()) {
+  if (!audio_action_set_client_->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call audio action set server not avalible");
     retrunErrorGrpc(writer);
@@ -2057,7 +2057,7 @@ void Cyberdog_app::audioAuthenticationRequestHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!audio_auth_request->wait_for_service()) {
+  if (!audio_auth_request->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "callAuthenticateRequest server not avalible");
     return;
@@ -2094,7 +2094,7 @@ void Cyberdog_app::audioAuthenticationResponseHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!audio_auth_response->wait_for_service()) {
+  if (!audio_auth_response->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "callAuthenticateResponse server not avalible");
     return;
@@ -2138,7 +2138,7 @@ void Cyberdog_app::audioVoicePrintTrainStartHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!audio_voiceprint_train->wait_for_service()) {
+  if (!audio_voiceprint_train->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call voiceprint train start server not avalible");
     return;
@@ -2167,7 +2167,7 @@ void Cyberdog_app::audioVoicePrintTrainCancelHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!audio_voiceprint_train->wait_for_service()) {
+  if (!audio_voiceprint_train->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call voiceprint train cancel server not avalible");
     return;
@@ -2193,7 +2193,7 @@ void Cyberdog_app::audioVoicePrintDataHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  if (!voiceprints_data_notify->wait_for_service()) {
+  if (!voiceprints_data_notify->wait_for_service(std::chrono::seconds(3))) {
     INFO(
       "call voiceprints data server not avalible");
     return;
