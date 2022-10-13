@@ -1,6 +1,6 @@
 # Testing normal usage STD_CAN with std_frame
 protocol = "can"
-name = "tof_rear"
+name = "rear_right_tof"
 
 can_interface = "can0"
 extended_frame = true
@@ -8,48 +8,38 @@ canfd_enable = false
 timeout_us = 1234567
 
 
-#left
+#rear_right
 [[array]]
 description = ""
 can_package_num = 8
-can_id = ["0x02054000", "0x02054001", "0x02054002", "0x02054003", "0x02054004", "0x02054005", "0x02054006", "0x02054007"]
-array_name = "left_tof_data_array"
+can_id = ["0x050F4000", "0x050F4001", "0x050F4002", "0x050F4003", "0x050F4004", "0x050F4005", "0x050F4006", "0x050F4007"]
+array_name = "data_array"
 
 
 [[var]]
 description = ""
-can_id = "0x02054008"
-var_name = "left_tof_data_clock"
+can_id = "0x050F4008"
+var_name = "data_clock"
 var_type = "u64"
 parser_param = [0, 7]
 
-#right
 [[array]]
 description = ""
 can_package_num = 8
-can_id = ["0x02074000", "0x02074001", "0x02074002", "0x02074003", "0x02074004", "0x02074005", "0x02074006", "0x02074007"]
-array_name = "right_tof_data_array"
+can_id = ["0x050F4009", "0x050F400A", "0x050F400B", "0x050F400C", "0x050F400D", "0x050F400E", "0x050F400F", "0x050F4010"]
+array_name = "intensity_array"
 
 
 [[var]]
 description = ""
-can_id = "0x02074008"
-var_name = "right_tof_data_clock"
-var_type = "u64"
-parser_param = [0, 7]
-
-
-
-[[var]]
-description = ""
-can_id = "0x020F2200"
+can_id = "0x050F2200"
 var_name = "enable_on_ack"
 var_type = "i8"
 parser_param = [0, 0]
 
 [[var]]
 description = ""
-can_id = "0x020F2400"
+can_id = "0x050F2400"
 var_name = "enable_off_ack"
 var_type = "i8"
 parser_param = [0, 0]
@@ -58,13 +48,13 @@ parser_param = [0, 0]
 [[cmd]]
 description = ""
 cmd_name = "enable_on"
-can_id = "0x020E2200"
+can_id = "0x050E2200"
 ctrl_len = 1
 ctrl_data = ["0x00"]
 
 [[cmd]]
 description = ""
 cmd_name = "enable_off"
-can_id = "0x020E2400"
+can_id = "0x050E2400"
 ctrl_len = 1
 ctrl_data = ["0x00"]
