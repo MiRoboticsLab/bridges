@@ -1,0 +1,60 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "left_head_tof"
+
+can_interface = "can1"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+#left
+[[array]]
+description = ""
+can_package_num = 8
+can_id = ["0x018F4000", "0x018F4001", "0x018F4002", "0x018F4003", "0x018F4004", "0x018F4005", "0x018F4006", "0x018F4007"]
+array_name = "data_array"
+
+
+[[var]]
+description = ""
+can_id = "0x018F4008"
+var_name = "data_clock"
+var_type = "u64"
+parser_param = [0, 7]
+
+
+[[array]]
+description = ""
+can_package_num = 8
+can_id = ["0x018F4009", "0x018F400A", "0x018F400B", "0x018F400C", "0x018F400D", "0x018F400E", "0x018F400F", "0x018F4010"]
+array_name = "intensity_array"
+
+
+[[var]]
+description = ""
+can_id = "0x018F2200"
+var_name = "enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+[[var]]
+description = ""
+can_id = "0x018F2400"
+var_name = "enable_off_ack"
+var_type = "i8"
+parser_param = [0, 0]
+
+
+[[cmd]]
+description = ""
+cmd_name = "enable_on"
+can_id = "0x018E2200"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "enable_off"
+can_id = "0x018E2400"
+ctrl_len = 1
+ctrl_data = ["0x00"]
