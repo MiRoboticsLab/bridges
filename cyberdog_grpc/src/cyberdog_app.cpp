@@ -1495,12 +1495,21 @@ void Cyberdog_app::scanBluetoothDevice(
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
-    std::vector<std::string> devices = future_result.get()->device_name_list;
+    auto devices = future_result.get()->device_info_list;
     writer.StartObject();
-    writer.Key("device_name_list");
+    writer.Key("device_info_list");
     writer.StartArray();
     for (auto & dev : devices) {
-      writer.String(dev.c_str());
+      writer.StartObject();
+      writer.Key("mac");
+      writer.String(dev.mac.c_str());
+      writer.Key("name");
+      writer.String(dev.name.c_str());
+      writer.Key("addr_type");
+      writer.String(dev.addr_type.c_str());
+      writer.Key("device_type");
+      writer.Int(dev.device_type);
+      writer.EndObject();
     }
     writer.EndArray();
     writer.EndObject();
@@ -1524,10 +1533,19 @@ void Cyberdog_app::connectBluetoothDevice(
     return;
   }
   auto req = std::make_shared<protocol::srv::BLEConnect::Request>();
-  if (json_resquest.HasMember("device_name")) {
-    std::string name;
-    CyberdogJson::Get(json_resquest, "device_name", name);
-    req->device_name = name;
+  if (json_resquest.HasMember("selected_device")) {
+    rapidjson::Value selected_device;
+    CyberdogJson::Get(json_resquest, "selected_device", selected_device);
+    if (!selected_device.IsObject() || !selected_device.HasMember("mac") ||
+      !selected_device.HasMember("addr_type") || !selected_device.HasMember("name"))
+    {
+      ERROR("format of connect bluetooth json is not correct.");
+      retrunErrorGrpc(grpc_writer);
+      return;
+    }
+    CyberdogJson::Get(selected_device, "mac", req->selected_device.mac);
+    CyberdogJson::Get(selected_device, "name", req->selected_device.name);
+    CyberdogJson::Get(selected_device, "addr_type", req->selected_device.addr_type);
   }
   std::chrono::seconds timeout(20);
   auto future_result = connect_bluetooth_device_client_->async_send_request(req);
