@@ -163,7 +163,8 @@ private:
   void callMotionServoCmd(
     const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
     protocol::srv::MotionResultCmd::Response & rep);
-  void retrunErrorGrpc(::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void retrunErrorGrpc(
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer, int error_code = -1);
 
   /**
    * @brief handle ota stauts

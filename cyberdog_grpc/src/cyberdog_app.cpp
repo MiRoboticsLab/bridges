@@ -759,11 +759,18 @@ void Cyberdog_app::send_grpc_msg(int code, const std::string & msg)
 
 //  message pump
 void Cyberdog_app::retrunErrorGrpc(
-  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer,
+  int error_code)
 {
   ::grpcapi::RecResponse grpc_respond;
-  grpc_respond.set_data("ERROR");
-  writer->Write(grpc_respond);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+  json_writer.StartObject();
+  json_writer.Key("error_code");
+  json_writer.Int(error_code);
+  std::string response_string = strBuf.GetString();
+  grpc_respond.set_data(response_string);
+  grpc_writer->Write(grpc_respond);
 }
 
 bool Cyberdog_app::HandleOTAStatusRequest(
@@ -1492,9 +1499,10 @@ void Cyberdog_app::scanBluetoothDevice(
   CyberdogJson::Get(json_resquest, "scan_seconds", scan_seconds);
   auto req = std::make_shared<protocol::srv::BLEScan::Request>();
   req->scan_seconds = scan_seconds;
-  std::chrono::seconds timeout(int64_t(scan_seconds * 2));
   auto future_result = scan_bluetooth_device_client_->async_send_request(req);
-  std::future_status status = future_result.wait_for(timeout);
+  std::future_status status = future_result.wait_for(
+    scan_seconds < 5.0 ? std::chrono::seconds(
+      5) : std::chrono::seconds(int64_t(scan_seconds * 1.5)));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
