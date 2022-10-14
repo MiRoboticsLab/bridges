@@ -294,6 +294,9 @@ Cyberdog_app::Cyberdog_app()
     this->create_client<protocol::srv::BLEScan>("scan_bluetooth_device");
   connect_bluetooth_device_client_ =
     this->create_client<protocol::srv::BLEConnect>("connect_bluetooth_device");
+  disconnected_unexpected_sub_ = create_subscription<std_msgs::msg::Bool>(
+    "bluetooth_disconnected_unexpected", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::disconnectedUnexpectedCB, this, _1));
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1476,7 +1479,7 @@ void Cyberdog_app::selectTrackingObject(
 }
 
 void Cyberdog_app::scanBluetoothDevice(
-  Document & json_resquest, Document & json_response,
+  Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
@@ -1547,9 +1550,8 @@ void Cyberdog_app::connectBluetoothDevice(
     CyberdogJson::Get(selected_device, "name", req->selected_device.name);
     CyberdogJson::Get(selected_device, "addr_type", req->selected_device.addr_type);
   }
-  std::chrono::seconds timeout(20);
   auto future_result = connect_bluetooth_device_client_->async_send_request(req);
-  std::future_status status = future_result.wait_for(timeout);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(20));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
@@ -1563,6 +1565,16 @@ void Cyberdog_app::connectBluetoothDevice(
   }
   grpc_respond.set_data(rsp_string);
   grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::BLUETOOTH_DISCONNECTED_UNEXPECTED, param);
 }
 
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
@@ -2355,7 +2367,7 @@ void Cyberdog_app::ProcessMsg(
         selectTrackingObject(json_resquest, json_response, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::BLUETOOTH_SCAN: {
-        scanBluetoothDevice(json_resquest, json_response, grpc_respond, writer);
+        scanBluetoothDevice(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::BLUETOOTH_CONNECT: {
         connectBluetoothDevice(json_resquest, json_response, grpc_respond, writer);

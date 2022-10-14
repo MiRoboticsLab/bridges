@@ -476,13 +476,15 @@ private:
   rclcpp::Client<protocol::srv::BLEScan>::SharedPtr scan_bluetooth_device_client_;
   rclcpp::Client<protocol::srv::BLEConnect>::SharedPtr connect_bluetooth_device_client_;
   void scanBluetoothDevice(
-    Document & json_resquest, Document & json_response,
+    Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void connectBluetoothDevice(
     Document & json_resquest, Document & json_response,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr disconnected_unexpected_sub_;
+  void disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr msg);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
