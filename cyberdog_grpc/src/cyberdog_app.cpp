@@ -1532,8 +1532,8 @@ void Cyberdog_app::handleStopAction(
   writer->Write(grpc_respond);
 }
 
-void Cyberdog_app::scanBluetoothDevice(
-  Document & json_resquest, Document & json_response,
+void Cyberdog_app::scanBluetoothDevices(
+  Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
