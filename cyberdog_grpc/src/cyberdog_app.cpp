@@ -290,13 +290,15 @@ Cyberdog_app::Cyberdog_app()
     "tracking_object_srv", rmw_qos_profile_services_default, callback_group_);
 
   // bluetooth
-  scan_bluetooth_device_client_ =
-    this->create_client<protocol::srv::BLEScan>("scan_bluetooth_device");
+  scan_bluetooth_devices_client_ =
+    this->create_client<protocol::srv::BLEScan>("scan_bluetooth_devices");
   connect_bluetooth_device_client_ =
     this->create_client<protocol::srv::BLEConnect>("connect_bluetooth_device");
   disconnected_unexpected_sub_ = create_subscription<std_msgs::msg::Bool>(
     "bluetooth_disconnected_unexpected", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::disconnectedUnexpectedCB, this, _1));
+  current_connected_bluetooth_client_ =
+    this->create_client<protocol::srv::BLEScan>("current_connected_bluetooth_devices");
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1485,12 +1487,12 @@ void Cyberdog_app::selectTrackingObject(
   writer->Write(grpc_respond);
 }
 
-void Cyberdog_app::scanBluetoothDevice(
+void Cyberdog_app::scanBluetoothDevices(
   Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
-  if (!scan_bluetooth_device_client_->wait_for_service(std::chrono::seconds(3))) {
+  if (!scan_bluetooth_devices_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("scan_bluetooth_device server not avaiable");
     retrunErrorGrpc(grpc_writer);
     return;
@@ -1499,7 +1501,7 @@ void Cyberdog_app::scanBluetoothDevice(
   CyberdogJson::Get(json_resquest, "scan_seconds", scan_seconds);
   auto req = std::make_shared<protocol::srv::BLEScan::Request>();
   req->scan_seconds = scan_seconds;
-  auto future_result = scan_bluetooth_device_client_->async_send_request(req);
+  auto future_result = scan_bluetooth_devices_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(
     scan_seconds < 5.0 ? std::chrono::seconds(
       5) : std::chrono::seconds(int64_t(scan_seconds * 1.5)));
@@ -1583,6 +1585,49 @@ void Cyberdog_app::disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr
   writer.EndObject();
   std::string param = strBuf.GetString();
   send_grpc_msg(::grpcapi::SendRequest::BLUETOOTH_DISCONNECTED_UNEXPECTED, param);
+}
+
+void Cyberdog_app::currentConnectedBluetoothDevices(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!scan_bluetooth_devices_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("current_connected_bluetooth_devices server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::BLEScan::Request>();
+  auto future_result = current_connected_bluetooth_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    auto devices = future_result.get()->device_info_list;
+    writer.StartObject();
+    writer.Key("device_info_list");
+    writer.StartArray();
+    for (auto & dev : devices) {
+      writer.StartObject();
+      writer.Key("mac");
+      writer.String(dev.mac.c_str());
+      writer.Key("name");
+      writer.String(dev.name.c_str());
+      writer.Key("addr_type");
+      writer.String(dev.addr_type.c_str());
+      writer.Key("device_type");
+      writer.Int(dev.device_type);
+      writer.EndObject();
+    }
+    writer.EndArray();
+    writer.EndObject();
+  } else {
+    ERROR("call current_connected_bluetooth_devices timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
 }
 
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
@@ -2375,10 +2420,13 @@ void Cyberdog_app::ProcessMsg(
         selectTrackingObject(json_resquest, json_response, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::BLUETOOTH_SCAN: {
-        scanBluetoothDevice(json_resquest, grpc_respond, writer);
+        scanBluetoothDevices(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::BLUETOOTH_CONNECT: {
         connectBluetoothDevice(json_resquest, json_response, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::BLUETOOTH_CONNECTED_DEVICES: {
+        currentConnectedBluetoothDevices(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
