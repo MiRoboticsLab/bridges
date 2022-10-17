@@ -1,4 +1,5 @@
-enable = false
+enable = true
+use_static_mac = false
 
 front_back_threshold = 7.0
 left_right_threshold = 7.0
@@ -14,4 +15,12 @@ AoA_L_NMAX = -40.0
 AoA_L_PMAX = 60.0
 AoA_R_NMAX = -48.0
 AoA_R_PMAX = 48.0
+
+[UWBConnectionInfo]
+session_id = 0x00000100
+controller_mac = 0x0001
+head_tof_mac = 0x0002
+head_uwb_mac = 0x0003
+rear_tof_mac = 0x0004
+rear_uwb_mac = 0x0005
 
