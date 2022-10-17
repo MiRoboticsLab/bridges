@@ -76,6 +76,7 @@
 #include "protocol/srv/ble_connect.hpp"
 #include "protocol/srv/face_entry.hpp"
 #include "protocol/srv/face_rec.hpp"
+#include "protocol/srv/stop_algo_task.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -459,10 +460,11 @@ private:
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
 
-  tf2::Quaternion getQuaternionFromYaw(const double & yaw)
-  {
-    return tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw);
-  }
+  void handleStopAction(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  rclcpp::Client<protocol::srv::StopAlgoTask>::SharedPtr stop_nav_action_client_;
 
   // for tracking
   rclcpp::Subscription<protocol::msg::Person>::SharedPtr tracking_person_sub_;
