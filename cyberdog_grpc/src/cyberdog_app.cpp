@@ -2464,6 +2464,9 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::SELECTED_TRACKING_OBJ: {
         selectTrackingObject(json_resquest, json_response, grpc_respond, writer);
       } break;
+    case ::grpcapi::SendRequest::STOP_NAV_ACTION: {
+        handleStopAction(json_resquest, json_response, grpc_respond, writer);
+      } break;
     case ::grpcapi::SendRequest::BLUETOOTH_SCAN: {
         scanBluetoothDevices(json_resquest, grpc_respond, writer);
       } break;
