@@ -1,6 +1,6 @@
-# Testing normal usage STD_CAN with std_frame
+# rear led  can toml 
 protocol = "can"
-name = "tail_led"
+name = "rear_led"
 
 can_interface = "can0"
 extended_frame = true
@@ -9,36 +9,16 @@ timeout_us = 1234567
 
 
 [[cmd]]
-description = ""
+description = "rear enable on cmd"
 cmd_name = "enable_on"
-can_id = "0x01030200"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+can_id = "0x02082A00"
+ctrl_len = 0
+ctrl_data = []
 
-[[cmd]]
-description = ""
-cmd_name = "enable_off"
-can_id = "0x01030400"
-ctrl_len = 1
-ctrl_data = ["0x00"]
 
-[[cmd]]
-description = ""
-cmd_name = "PIC_1"
-can_id = "0x01030600"
-ctrl_len = 1
-ctrl_data = ["0x00"]
-
-[[cmd]]
-description = ""
-cmd_name = "PIC_2"
-can_id = "0x01030700"
-ctrl_len = 1
-ctrl_data = ["0x00"]
-
-[[cmd]]
-description = ""
-cmd_name = "PIC_ANIMATION"
-can_id = "0x01030800"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+[[var]]
+description = "rear enable on ack"
+can_id = "0x02092A00"
+var_name = "enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
