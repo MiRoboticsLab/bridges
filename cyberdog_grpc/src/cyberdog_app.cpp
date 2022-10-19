@@ -302,6 +302,10 @@ Cyberdog_app::Cyberdog_app()
     std::bind(&Cyberdog_app::disconnectedUnexpectedCB, this, _1));
   current_connected_bluetooth_client_ =
     this->create_client<protocol::srv::BLEScan>("current_connected_bluetooth_devices");
+  ble_battery_client_ =
+    this->create_client<protocol::srv::GetBLEBatteryLevel>("ble_device_battery_level");
+  ble_device_firmware_version_client_ =
+    this->create_client<std_srvs::srv::Trigger>("ble_device_firmware_version");
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1633,7 +1637,6 @@ void Cyberdog_app::disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr
 }
 
 void Cyberdog_app::currentConnectedBluetoothDevices(
-  Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
@@ -1668,6 +1671,70 @@ void Cyberdog_app::currentConnectedBluetoothDevices(
     writer.EndObject();
   } else {
     ERROR("call current_connected_bluetooth_devices timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::getBLEBatteryLevelHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!ble_battery_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("ble_device_battery_level server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::GetBLEBatteryLevel::Request>();
+  auto future_result = ble_battery_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    bool connected = future_result.get()->connected;
+    float persentage = future_result.get()->persentage;
+    writer.StartObject();
+    writer.Key("connected");
+    writer.Bool(connected);
+    writer.Key("persentage");
+    writer.Bool(persentage);
+    writer.EndObject();
+  } else {
+    ERROR("call ble_device_battery_level timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::getBLEFirmwareVersionHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!ble_device_firmware_version_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("ble_device_firmware_version server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = ble_device_firmware_version_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    bool success = future_result.get()->success;
+    std::string message = future_result.get()->message;
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(success);
+    writer.Key("message");
+    writer.String(message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call ble_device_firmware_version timeout.");
     retrunErrorGrpc(grpc_writer);
     return;
   }
@@ -2474,7 +2541,13 @@ void Cyberdog_app::ProcessMsg(
         connectBluetoothDevice(json_resquest, json_response, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::BLUETOOTH_CONNECTED_DEVICES: {
-        currentConnectedBluetoothDevices(json_resquest, grpc_respond, writer);
+        currentConnectedBluetoothDevices(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::BLE_DIVICE_FIRMWARE_VERSION: {
+        getBLEFirmwareVersionHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::BLE_DEVICE_BATTERY_LEVEL: {
+        getBLEBatteryLevelHandle(grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {

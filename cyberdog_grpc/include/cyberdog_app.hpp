@@ -77,6 +77,7 @@
 #include "protocol/srv/face_entry.hpp"
 #include "protocol/srv/face_rec.hpp"
 #include "protocol/srv/stop_algo_task.hpp"
+#include "protocol/srv/get_ble_battery_level.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -85,6 +86,7 @@
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "std_srvs/srv/trigger.hpp"
 #include "threadsafe_queue.hpp"
 #include "time_interval.hpp"
 using string = std::string;
@@ -479,6 +481,8 @@ private:
   rclcpp::Client<protocol::srv::BLEScan>::SharedPtr scan_bluetooth_devices_client_;
   rclcpp::Client<protocol::srv::BLEConnect>::SharedPtr connect_bluetooth_device_client_;
   rclcpp::Client<protocol::srv::BLEScan>::SharedPtr current_connected_bluetooth_client_;
+  rclcpp::Client<protocol::srv::GetBLEBatteryLevel>::SharedPtr ble_battery_client_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr ble_device_firmware_version_client_;
   void scanBluetoothDevices(
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
@@ -490,7 +494,12 @@ private:
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr disconnected_unexpected_sub_;
   void disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr msg);
   void currentConnectedBluetoothDevices(
-    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void getBLEBatteryLevelHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void getBLEFirmwareVersionHandle(
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 

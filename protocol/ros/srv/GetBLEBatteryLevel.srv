@@ -1,0 +1,3 @@
+---
+bool connected
+float32 persentage  # 0.0~1.0
