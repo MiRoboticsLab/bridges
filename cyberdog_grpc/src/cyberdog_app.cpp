@@ -1106,6 +1106,9 @@ void Cyberdog_app::handleNavigationAction(
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
   } else if (type == "RELOCOLIZATION") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
+    bool outdoor(false);
+    CyberdogJson::Get(json_resquest, "outdoor", outdoor);
+    mode_goal.outdoor = outdoor;
   } else if (type == "AUTO_DOCKING") {
     mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
   } else if (type == "FOLLOW") {
@@ -1264,6 +1267,8 @@ void Cyberdog_app::handlLableGetRequest(
     writer.String(labels.map_name.c_str());
     writer.Key("success");
     writer.Int(future_result.get()->success);
+    writer.Key("is_outdoor");
+    writer.Bool(labels.is_outdoor);
     writer.Key("locationLabelInfo");
     writer.StartArray();
     for (int i = 0; i < labels.labels.size(); ++i) {
@@ -1324,8 +1329,9 @@ void Cyberdog_app::handlLableSetRequest(
   bool has_label = false;
   std::string response_string;
   bool only_delete = false;
-
+  bool is_outdoor = false;
   CyberdogJson::Get(json_resquest, "mapName", map_label.map_name);
+  CyberdogJson::Get(json_resquest, "is_outdoor", map_label.is_outdoor);
   CyberdogJson::Get(json_resquest, "only_delete", only_delete);
   INFO("handlLableSetRequest %s, %d", map_label.map_name.c_str(), only_delete);
   if (json_resquest.HasMember("locationLabelInfo") &&
