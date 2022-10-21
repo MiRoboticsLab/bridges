@@ -90,6 +90,7 @@ message SendRequest {
         BLUETOOTH_CONNECTED_DEVICES = 8004;
         BLE_DIVICE_FIRMWARE_VERSION = 8005;
         BLE_DEVICE_BATTERY_LEVEL = 8006;
+        DELETE_BLE_HISTORY = 8007;
     }
 }
 
