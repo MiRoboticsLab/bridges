@@ -1,7 +1,7 @@
 std_msgs/Header header
 
 uint16 batt_volt
-int16 batt_curr
+uint16 batt_curr
 uint8 batt_soc
 int16 batt_temp
 uint8 batt_st
