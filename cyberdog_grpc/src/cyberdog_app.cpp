@@ -1573,6 +1573,10 @@ void Cyberdog_app::scanBluetoothDevices(
       writer.String(dev.addr_type.c_str());
       writer.Key("device_type");
       writer.Int(dev.device_type);
+      writer.Key("firmware_version");
+      writer.String(dev.firmware_version.c_str());
+      writer.Key("battery_level");
+      writer.Double(static_cast<double>(dev.battery_level));
       writer.EndObject();
     }
     writer.EndArray();
@@ -1667,6 +1671,10 @@ void Cyberdog_app::currentConnectedBluetoothDevices(
       writer.String(dev.addr_type.c_str());
       writer.Key("device_type");
       writer.Int(dev.device_type);
+      writer.Key("firmware_version");
+      writer.String(dev.firmware_version.c_str());
+      writer.Key("battery_level");
+      writer.Double(static_cast<double>(dev.battery_level));
       writer.EndObject();
     }
     writer.EndArray();
