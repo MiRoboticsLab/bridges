@@ -301,7 +301,7 @@ Cyberdog_app::Cyberdog_app()
     "bluetooth_disconnected_unexpected", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::disconnectedUnexpectedCB, this, _1));
   current_connected_bluetooth_client_ =
-    this->create_client<protocol::srv::BLEScan>("current_connected_bluetooth_devices");
+    this->create_client<protocol::srv::BLEScan>("get_connected_bluetooth_info");
   ble_battery_client_ =
     this->create_client<protocol::srv::GetBLEBatteryLevel>("ble_device_battery_level");
   ble_device_firmware_version_client_ =
@@ -1652,7 +1652,7 @@ void Cyberdog_app::currentConnectedBluetoothDevices(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
-  if (!scan_bluetooth_devices_client_->wait_for_service(std::chrono::seconds(3))) {
+  if (!current_connected_bluetooth_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("current_connected_bluetooth_devices server not avaiable");
     retrunErrorGrpc(grpc_writer);
     return;
