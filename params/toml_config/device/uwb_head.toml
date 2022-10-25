@@ -39,8 +39,8 @@ parser_param = [0, 0]
 description = ""
 cmd_name = "head_enable_initial"
 can_id = "0x048A2100"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+ctrl_len = 0
+ctrl_data = []
 
 [[cmd]]
 description = ""
@@ -88,8 +88,8 @@ parser_param = [0, 0]
 description = ""
 cmd_name = "head_tof_enable_initial"
 can_id = "0x018A2100"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+ctrl_len = 0
+ctrl_data = []
 
 [[cmd]]
 description = ""

@@ -41,6 +41,7 @@
 #include "protocol/action/navigation.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/path.hpp"
+#include "nav2_msgs/srv/save_map.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
 #include "net_avalible.hpp"
@@ -76,6 +77,8 @@
 #include "protocol/srv/ble_connect.hpp"
 #include "protocol/srv/face_entry.hpp"
 #include "protocol/srv/face_rec.hpp"
+#include "protocol/srv/stop_algo_task.hpp"
+#include "protocol/srv/get_ble_battery_level.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -84,6 +87,7 @@
 #include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "std_srvs/srv/trigger.hpp"
 #include "threadsafe_queue.hpp"
 #include "time_interval.hpp"
 using string = std::string;
@@ -459,10 +463,11 @@ private:
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
 
-  tf2::Quaternion getQuaternionFromYaw(const double & yaw)
-  {
-    return tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw);
-  }
+  void handleStopAction(
+    const Document & json_resquest, Document & json_response,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  rclcpp::Client<protocol::srv::StopAlgoTask>::SharedPtr stop_nav_action_client_;
 
   // for tracking
   rclcpp::Subscription<protocol::msg::Person>::SharedPtr tracking_person_sub_;
@@ -474,9 +479,13 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // bluetooth
-  rclcpp::Client<protocol::srv::BLEScan>::SharedPtr scan_bluetooth_device_client_;
+  rclcpp::Client<protocol::srv::BLEScan>::SharedPtr scan_bluetooth_devices_client_;
   rclcpp::Client<protocol::srv::BLEConnect>::SharedPtr connect_bluetooth_device_client_;
-  void scanBluetoothDevice(
+  rclcpp::Client<protocol::srv::BLEScan>::SharedPtr current_connected_bluetooth_client_;
+  rclcpp::Client<protocol::srv::GetBLEBatteryLevel>::SharedPtr ble_battery_client_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr ble_device_firmware_version_client_;
+  rclcpp::Client<nav2_msgs::srv::SaveMap>::SharedPtr delete_ble_history_client_;
+  void scanBluetoothDevices(
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
@@ -486,6 +495,19 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr disconnected_unexpected_sub_;
   void disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr msg);
+  void currentConnectedBluetoothDevices(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void getBLEBatteryLevelHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void getBLEFirmwareVersionHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void deleteBLEHistoryHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;

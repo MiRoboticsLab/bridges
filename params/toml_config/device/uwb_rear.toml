@@ -39,8 +39,8 @@ parser_param = [0, 0]
 description = ""
 cmd_name = "rear_tof_enable_initial"
 can_id = "0x020A2100"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+ctrl_len = 0
+ctrl_data = []
 
 [[cmd]]
 description = ""
@@ -89,8 +89,8 @@ parser_param = [0, 0]
 description = ""
 cmd_name = "rear_enable_initial"
 can_id = "0x050A2100"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+ctrl_len = 0
+ctrl_data = []
 
 [[cmd]]
 description = ""
