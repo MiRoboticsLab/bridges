@@ -1887,6 +1887,7 @@ bool Cyberdog_app::HandleAccountAdd(
     retrunErrorGrpc(writer);
     return false;
   }
+  INFO("account_add_server grpc_response is: %s", rsp_string.c_str());
   grpc_respond.set_data(rsp_string);
   writer->Write(grpc_respond);
   return true;
@@ -1918,7 +1919,7 @@ bool Cyberdog_app::HandleAccountSearch(
   }
 
   // grpc_respond.set_namecode(grpc_request->namecode());
-  INFO("grpc_respond is : %s", future_result.get()->data.c_str());
+  INFO("account_search_server grpc_respond is : %s", future_result.get()->data.c_str());
   grpc_respond.set_data(future_result.get()->data);
   writer->Write(grpc_respond);
   return true;
@@ -1958,6 +1959,7 @@ bool Cyberdog_app::HandleAccountDelete(
     retrunErrorGrpc(writer);
     return false;
   }
+  INFO("Account_delete_server grpc_respond is: %s", rsp_string.c_str());
   grpc_respond.set_data(rsp_string);
   writer->Write(grpc_respond);
   return true;
