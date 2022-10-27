@@ -1,0 +1,8 @@
+# request
+string command
+
+---
+
+# response
+UserInformation[] result
+bool success
