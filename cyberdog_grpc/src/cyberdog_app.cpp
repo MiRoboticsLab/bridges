@@ -83,7 +83,7 @@ Cyberdog_app::Cyberdog_app()
   sn_ger_srv_ =
     node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
   if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
-    ERROR("call sn server not avalible");
+    ERROR("call sn server not available");
     sn = "unaviable";
   } else {
     auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
@@ -113,6 +113,10 @@ Cyberdog_app::Cyberdog_app()
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
+
+  ready_nodification_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
+    "ready_notify", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::managerReadyCB, this, _1));
 
   timer_interval.init();
 
@@ -334,10 +338,9 @@ void Cyberdog_app::HeartBeat()
   std::string ipv4;
   bool connect_mark(false);
   while (rclcpp::ok()) {
-    if (can_process_messages_) {
+    if (can_process_messages_ && cyberdog_manager_ready_) {
       update_time_mutex_.lock();
-      bool connector_timeout =
-        std::chrono::duration_cast<std::chrono::seconds>(
+      bool connector_timeout = std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::system_clock::now() - connector_update_time_point_).count() > 5;
       update_time_mutex_.unlock();
       bool hearbeat_result(false);
@@ -446,6 +449,10 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
+  if (!cyberdog_manager_ready_) {
+    INFO_MILLSECONDS(10000, "cyberdog_manager is not ready");
+    return;
+  }
   update_time_mutex_.lock();
   connector_update_time_point_ = std::chrono::system_clock::now();
   update_time_mutex_.unlock();
@@ -570,7 +577,7 @@ void Cyberdog_app::callMotionServoCmd(
   std::chrono::seconds timeout(5);
 
   if (!motion_ressult_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("callMotionServoCmd server not avalible");
+    ERROR("callMotionServoCmd server not available");
     return;
   }
 
@@ -793,7 +800,7 @@ bool Cyberdog_app::HandleOTAStatusRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    INFO("ota server not avalible");
+    ERROR("ota server not available");
     return false;
   }
 
@@ -878,7 +885,7 @@ bool Cyberdog_app::HandleOTAVersionQueryRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    INFO("ota server not avalible");
+    ERROR("ota server not available");
     return false;
   }
 
@@ -919,7 +926,7 @@ bool Cyberdog_app::HandleOTAStartDownloadRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    INFO("ota server not avalible");
+    ERROR("ota server not available");
     return false;
   }
 
@@ -955,7 +962,7 @@ bool Cyberdog_app::HandleOTAStartUpgradeRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    INFO("ota server not avalible");
+    ERROR("ota server not available");
     return false;
   }
 
@@ -992,7 +999,7 @@ bool Cyberdog_app::HandleOTAProcessQueryRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    INFO("ota server not avalible");
+    ERROR("ota server not available");
     return false;
   }
 
@@ -1034,7 +1041,7 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
   std::string response_string;
   std::chrono::seconds timeout(10);
   if (!ota_client_->wait_for_service(timeout)) {
-    INFO("ota server not avalible");
+    ERROR("ota server not available");
     return false;
   }
 
@@ -1241,7 +1248,7 @@ void Cyberdog_app::handlLableGetRequest(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
   if (!get_label_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("get map label server not avalible");
+    ERROR("get map label server not available");
     retrunErrorGrpc(grpc_writer);
     return;
   }
@@ -1367,7 +1374,7 @@ void Cyberdog_app::handlLableSetRequest(
   request->only_delete = only_delete;
 
   if (!set_label_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("set map label server not avalible");
+    ERROR("set map label server not available");
     return;
   }
   std::chrono::seconds timeout(10);
@@ -2030,7 +2037,7 @@ void Cyberdog_app::faceEntryRequestHandle(
 {
   INFO("grpc get face entry request from app.");
   if (!ai_face_entry_client_->wait_for_service(std::chrono::seconds(3))) {
-    WARN("face entry server is not avalible");
+    WARN("face entry server is not available");
     return;
   }
   std::chrono::seconds timeout(3);
@@ -2067,7 +2074,7 @@ void Cyberdog_app::faceRecRequestHandle(
 {
   INFO("grpc get face recognition request from app.");
   if (!ai_face_recognition_client_->wait_for_service(std::chrono::seconds(3))) {
-    WARN("face recognition server is not avalible");
+    WARN("face recognition server is not available");
     return;
   }
   std::chrono::seconds timeout(3);
@@ -2172,8 +2179,8 @@ void Cyberdog_app::deviceVolumeSetHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!audio_volume_set_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "call volume set server not avalible");
+    ERROR(
+      "call volume set server not available");
     retrunErrorGrpc(writer);
     return;
   }
@@ -2208,8 +2215,8 @@ void Cyberdog_app::deviceMicSetHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!audio_execute_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "call mic set server not avalible");
+    ERROR(
+      "call mic set server not available");
     retrunErrorGrpc(writer);
     return;
   }
@@ -2248,8 +2255,8 @@ void Cyberdog_app::deviceAudioSetHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!audio_action_set_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "call audio action set server not avalible");
+    ERROR(
+      "call audio action set server not available");
     retrunErrorGrpc(writer);
     return;
   }
@@ -2284,8 +2291,8 @@ void Cyberdog_app::audioAuthenticationRequestHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!audio_auth_request->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "callAuthenticateRequest server not avalible");
+    ERROR(
+      "callAuthenticateRequest server not available");
     return;
   }
   std::chrono::seconds timeout(3);
@@ -2321,8 +2328,8 @@ void Cyberdog_app::audioAuthenticationResponseHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!audio_auth_response->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "callAuthenticateResponse server not avalible");
+    ERROR(
+      "callAuthenticateResponse server not available");
     return;
   }
   std::chrono::seconds timeout(3);
@@ -2365,8 +2372,8 @@ void Cyberdog_app::audioVoicePrintTrainStartHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!audio_voiceprint_train->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "call voiceprint train start server not avalible");
+    ERROR(
+      "call voiceprint train start server not available");
     return;
   }
   std::chrono::seconds timeout(3);
@@ -2394,8 +2401,8 @@ void Cyberdog_app::audioVoicePrintTrainCancelHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!audio_voiceprint_train->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "call voiceprint train cancel server not avalible");
+    ERROR(
+      "call voiceprint train cancel server not available");
     return;
   }
   std::chrono::seconds timeout(3);
@@ -2420,8 +2427,8 @@ void Cyberdog_app::audioVoicePrintDataHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!voiceprints_data_notify->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
-      "call voiceprints data server not avalible");
+    ERROR(
+      "call voiceprints data server not available");
     return;
   }
   std::chrono::seconds timeout(3);
