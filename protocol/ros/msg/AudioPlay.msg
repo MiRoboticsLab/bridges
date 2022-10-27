@@ -43,6 +43,7 @@ uint16 PID_FACE_RECOGNITION_REQUEST = 39       # 开始人脸识别，请正对�
 uint16 PID_FACE_DEGREE_HEAD_TILT = 40          # 请不要歪头
 uint16 PID_FACE_RECGONITION_FINISH = 41        # 人脸识别成功
 uint16 PID_FACE_RECGONITION_TIMEOUT = 42       # 人脸识别已经超时，请重新尝试
+uint16 PID_FACE_ALREADY_EXIST = 43             # 人脸已存在，请不要录入同一张脸
 uint16 PID_BATTERY_CAPICITY_LOW = 101   # 电量低于10%
 uint16 PID_BATTERY_IN_CHARGING = 102    # 现在开始充电
 uint16 PID_FACE_ENTRY_START = 103       # 人脸录入开始，蹲在面前不要动
