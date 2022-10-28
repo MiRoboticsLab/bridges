@@ -7,4 +7,4 @@ default_state = "Uninitialized"
 
 [actuator.audio]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
-times = [120000, 60000, 60000, 60000, 60000, 60000, 60000, 60000, 60000]
+times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]

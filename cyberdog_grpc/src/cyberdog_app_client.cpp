@@ -42,7 +42,7 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
   }
   INFO_STREAM(
     "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
-    (msg.namecode() != 4001u ? msg.params() : std::string("map data ...")));
+    (msg.namecode() != 6001u ? msg.params() : std::string("map data ...")));
   return true;
 }
 bool Cyberdog_App_Client::sendHeartBeat(

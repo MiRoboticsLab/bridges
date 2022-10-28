@@ -1,20 +1,19 @@
 [connector]                     # WiFi 连接
-[connector.initialization]                  # WiFi 连接:初始化
-[connector.initialization.hz] # float
-update_status = 1.0
-check_internet = 0.2
-reset_signal = 5.0
+[connector.initialization]      # WiFi 连接:初始化
+[connector.initialization.hz]   # float
+update_status = 1.0                 # 更新连接状态数据
+reset_signal = 5.0                  # 重置信号量（用于判断touch超时）
 
-[connector.initialization.cmd] # string
+[connector.initialization.cmd]  # string
 check_internet_cmd = "ping -c 3 mi.com; echo $?"
 
-[connector.initialization.timeout_s] # int
-wifi_service = 30
-ip_service = 1
-touch_signal_effective = 60
-camera_signal_effective = 1
-wifi_wait_time_same = 3
-wifi_wait_time_different = 7
+[connector.initialization.timeout_s]    # int
+wait_for_service = 3                        # 等待 service 出现
+wait_for_wifi_service_response = 20         # 等待 wifi service 响应
+wait_for_camera_service_response = 10       # 等待 camera service 响应
+touch_signal_effective = 120                # 触摸板有效期
+same_wifi_connector_wait = 3                # 相同 wifi 连接等待时间（处理时间）
+different_wifi_connector_wait = 10          # 不同 wifi 连接等待时间（处理时间）
 
 [connector.initialization.topic] # string
 connector = "connector_state"
