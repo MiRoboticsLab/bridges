@@ -3,6 +3,7 @@
 
 string TYPE_TASK="task"                 # 任务
 string TYPE_MODULE="module"             # 模块
+string TYPE_AI="AI"                     # 人工智能（Artificial intelligence）
 
 string MODE_FACTORY="factory"           # 厂家
 string MODE_USER="user"                 # 用户
@@ -15,6 +16,10 @@ string MODE_SEQUENCE="sequence"         # 序列
 
 string MODE_SINGLE_STEP="single_step"   # 单步
 string MODE_ORIGINAL="original"         # 原始
+
+string MODE_PERSONNEL="personnel"       # 人员
+string MODE_FACE="face"                 # 人脸
+string MODE_VOICEPRINT="voiceprint"     # 声纹
 
 string OPERATE_SAVE="save"              # [操作]保存
 string OPERATE_INQUIRY="inquiry"        # [操作]查询
