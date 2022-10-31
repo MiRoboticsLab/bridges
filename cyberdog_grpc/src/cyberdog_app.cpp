@@ -1135,6 +1135,7 @@ void Cyberdog_app::handleNavigationAction(
     CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
     mode_goal.relative_pos = relative_pos;
     CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
+    CyberdogJson::Get(json_resquest, "object_tracking", mode_goal.object_tracking);
   } else {
     ERROR("Unavailable navigation type: %s", type.c_str());
     retrunErrorGrpc(writer);
@@ -1433,7 +1434,7 @@ void Cyberdog_app::publishTrackingPersonCB(const protocol::msg::Person::SharedPt
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   writer.StartObject();
-  writer.Key("tracking_objects");
+  writer.Key("body_info_roi");
   writer.StartArray();
   for (auto & info : msg->body_info.infos) {
     writer.StartObject();
@@ -1453,6 +1454,17 @@ void Cyberdog_app::publishTrackingPersonCB(const protocol::msg::Person::SharedPt
     writer.EndObject();
   }
   writer.EndArray();
+  writer.Key("track_res_roi");
+  writer.StartObject();
+  writer.Key("x_offset");
+  writer.Int(msg->track_res.roi.x_offset);
+  writer.Key("y_offset");
+  writer.Int(msg->track_res.roi.y_offset);
+  writer.Key("height");
+  writer.Int(msg->track_res.roi.height);
+  writer.Key("width");
+  writer.Int(msg->track_res.roi.width);
+  writer.EndObject();
   writer.EndObject();
   std::string param = strBuf.GetString();
   send_grpc_msg(::grpcapi::SendRequest::TRACKING_OBJ, param);
