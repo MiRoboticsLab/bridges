@@ -786,6 +786,7 @@ void Cyberdog_app::retrunErrorGrpc(
   json_writer.StartObject();
   json_writer.Key("error_code");
   json_writer.Int(error_code);
+  json_writer.EndObject();
   std::string response_string = strBuf.GetString();
   grpc_respond.set_data(response_string);
   grpc_writer->Write(grpc_respond);
