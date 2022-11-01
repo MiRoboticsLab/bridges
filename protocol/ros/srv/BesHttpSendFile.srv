@@ -10,3 +10,4 @@ string content_type # 文件类型
 uint16 milsecs      # 超时设置，单位毫秒
 ---
 string data         # 返回数据
+int32 code
