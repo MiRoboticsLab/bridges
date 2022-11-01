@@ -1,10 +1,14 @@
 [controller]
-actuators = ["audio"]
+actuators = ["audio", "motion_manager"]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
 default_time = 100 # milliseconds
 default_state = "Uninitialized"
 
 
 [actuator.audio]
+states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
+times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
+
+[actuator.motion_manager]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
 times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]

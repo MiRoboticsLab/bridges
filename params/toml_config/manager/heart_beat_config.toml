@@ -1,2 +1,3 @@
 [heartbeat]
 node = ["audio"]
+node = ["motion_manager"]
