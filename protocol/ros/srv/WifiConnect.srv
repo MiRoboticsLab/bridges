@@ -11,3 +11,4 @@ uint8 RESULT_OTHER = 6       # 其它情况
 uint8 RESULT_SUCCESS = 7     # 连接成功
 uint8 RESULT_INTERRUPT = 14  # 过程被中断
 uint8 RESULT_TIMEOUT = 15    # 连接超时
+int32 code
