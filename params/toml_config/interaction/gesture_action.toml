@@ -4,4 +4,4 @@ queue_size = 5              # 预测结果队列长度
 frames_number = 4           # 相同预测结果帧数阈值
 refine_output = true        # 是否采用调优策略
 softmax_thres = 0.5         # softmax阈值
-engine_path = "/SDCARD/xiaowei/cyberdog_ws/tsm_trt8/nx_mobilenetv2_tsm.trt" # 引擎路径
+engine_path = "/SDCARD/algo/gesture_action/nx_mobilenetv2_tsm.trt" # 引擎路径
