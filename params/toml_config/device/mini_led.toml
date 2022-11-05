@@ -1,4 +1,4 @@
-# Testing normal usage STD_CAN with std_frame
+# mini led can toml 
 protocol = "can"
 name = "mini_led"
 
@@ -9,36 +9,16 @@ timeout_us = 1234567
 
 
 [[cmd]]
-description = ""
+description = "mini enable on cmd"
 cmd_name = "enable_on"
 can_id = "0x02822200"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+ctrl_len = 0
+ctrl_data = []
 
-[[cmd]]
-description = ""
-cmd_name = "enable_off"
-can_id = "0x02822400"
-ctrl_len = 1
-ctrl_data = ["0x00"]
 
-[[cmd]]
-description = ""
-cmd_name = "PIC_1"
-can_id = "0x02822600"
-ctrl_len = 1
-ctrl_data = ["0x00"]
-
-[[cmd]]
-description = ""
-cmd_name = "PIC_2"
-can_id = "0x02822700"
-ctrl_len = 1
-ctrl_data = ["0x00"]
-
-[[cmd]]
-description = ""
-cmd_name = "PIC_ANIMATION"
-can_id = "0x02822800"
-ctrl_len = 1
-ctrl_data = ["0x00"]
+[[var]]
+description = "mini enable on ack"
+can_id = "0x04892A00"
+var_name = "enable_on_ack"
+var_type = "i8"
+parser_param = [0, 0]
