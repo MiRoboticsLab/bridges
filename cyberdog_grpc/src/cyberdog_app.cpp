@@ -1801,7 +1801,7 @@ void Cyberdog_app::deleteBLEHistoryHandle(
     writer.Bool(success);
     writer.EndObject();
   } else {
-    ERROR("call ble_device_firmware_version timeout.");
+    ERROR("call delete_ble_devices_history timeout.");
     retrunErrorGrpc(grpc_writer);
     return;
   }

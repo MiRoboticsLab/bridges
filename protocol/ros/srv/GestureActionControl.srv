@@ -1,0 +1,13 @@
+uint8 START_ALGO = 0
+uint8 STOP_ALGO = 1
+int32 DEFAUT_TIMEOUT = 60               #算法持续时间默认为60s
+
+uint8 command                           #打开或者停止手势动作识别算法
+int32 timeout                           #算法持续时间有效时间为（1s-300s），请求中忽略此关键字
+                                        #取值范围不在（1s-300s）算法持续时间默认为60s。
+---
+int32 RESULT_SUCCESS = 0
+int32 RESULT_BUSY = 1
+
+
+int32 code

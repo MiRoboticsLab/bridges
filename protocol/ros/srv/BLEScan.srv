@@ -1,3 +1,4 @@
 float64 scan_seconds
 ---
 protocol/BLEInfo[] device_info_list
+int32 code
