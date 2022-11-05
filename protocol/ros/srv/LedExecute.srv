@@ -2,8 +2,8 @@
 # client 
 string UNDEFINED ="undefined"          #调试时可用，优先级最高。       
 string VP ="vp"
-string BMS ="connector"
-string CONNECTOR ="bms"
+string BMS ="bms"
+string CONNECTOR ="connector"
  
 
 # target
