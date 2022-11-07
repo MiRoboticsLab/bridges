@@ -1,2 +1,2 @@
 [heartbeat]
-node = ["audio"]
+node = ["audio", "device", "sensor"]

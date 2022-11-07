@@ -521,6 +521,17 @@ private:
   // test
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
 
+  // stair demo
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr start_stair_align_client_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr stop_stair_align_client_;
+  void startStairAlignHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void stopStairAlignHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };
 }  // namespace bridges
