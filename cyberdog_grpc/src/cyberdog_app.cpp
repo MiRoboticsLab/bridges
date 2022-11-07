@@ -312,6 +312,12 @@ Cyberdog_app::Cyberdog_app()
     this->create_client<std_srvs::srv::Trigger>("ble_device_firmware_version");
   delete_ble_history_client_ =
     this->create_client<nav2_msgs::srv::SaveMap>("delete_ble_devices_history");
+
+  // stair demo
+  start_stair_align_client_ =
+    this->create_client<std_srvs::srv::SetBool>("start_stair_align");
+  stop_stair_align_client_ =
+    this->create_client<std_srvs::srv::Trigger>("stop_stair_align");
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -2644,6 +2650,12 @@ void Cyberdog_app::ProcessMsg(
         writer->Write(grpc_respond);
         app_disconnect_pub_->publish(msg);
       } break;
+    case 1100: {
+        startStairAlignHandle(json_resquest, grpc_respond, writer);
+      } break;
+    case 1101: {
+        stopStairAlignHandle(grpc_respond, writer);
+      } break;
     default:
       break;
   }
@@ -2733,6 +2745,70 @@ void Cyberdog_app::autoSavedFileCB(const std_msgs::msg::String::SharedPtr msg)
 {
   std::set<std::string> autosaved_file {msg->data};
   TransmitFiles::SendFile(nullptr, std::string(), std::string(), 0, &autosaved_file);
+}
+
+void Cyberdog_app::startStairAlignHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!start_stair_align_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("start_stair_align server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  bool data;
+  CyberdogJson::Get(json_resquest, "data", data);
+  auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+  req->data = data;
+  auto future_result = start_stair_align_client_->async_send_request(req);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  std::future_status status = future_result.wait_for(
+    std::chrono::seconds(5));
+  if (status == std::future_status::ready) {
+    bool success = future_result.get()->success;
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(success);
+    writer.EndObject();
+  } else {
+    ERROR("call start_stair_align timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::stopStairAlignHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!stop_stair_align_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("stop_stair_align server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = stop_stair_align_client_->async_send_request(req);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  std::future_status status = future_result.wait_for(
+    std::chrono::seconds(5));
+  if (status == std::future_status::ready) {
+    bool success = future_result.get()->success;
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(success);
+    writer.EndObject();
+  } else {
+    ERROR("call stop_stair_align timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
 }
 }  // namespace bridges
 }  // namespace cyberdog
