@@ -1,2 +1,2 @@
 [heartbeat]
-node = ["audio", "device", "sensor"]
+node = ["audio", "device", "sensor", "motion_manager"]
