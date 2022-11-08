@@ -20,5 +20,5 @@ bool power_finished_charging
 bool power_motor_shutdown
 bool power_soft_shutdown
 bool power_wp_place
-bool poewr_wp_charging
+bool power_wp_charging
 bool power_expower_supply
