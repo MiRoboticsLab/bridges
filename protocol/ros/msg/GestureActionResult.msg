@@ -9,7 +9,7 @@ int32 STOP_SIGN =7                                       #停止手势
 int32 THUMB_UP =8                                        #大拇指朝上
 int32 ZOOMING_IN_WITH_HAND_OR_TWO_FINGERS = 9            #张开手掌或手指
 int32 ZOOMING_OUT_WITH_HAND_OR_TWO_FINGERS =10           #闭合手掌或手指
-int32 THUMB_DOWN =11
+int32 THUMB_DOWN =11                                     #大拇指朝下
 
 
-int32 id                                       #手势识别结果id
+int32 id                                                 #手势识别结果id
