@@ -23,11 +23,11 @@
 template<typename MessageT>
 class LatestMsgDispather
 {
-  using SharedPtrCallback = std::function<void (std::shared_ptr<MessageT>)>;
+  using UniquePtrCallback = std::function<void (const MessageT)>;
 
 public:
-  LatestMsgDispather()
-  : callback_(nullptr), need_run_(true) {}
+  explicit LatestMsgDispather(size_t queue_size = 10)
+  : callback_(nullptr), need_run_(true), queue_size_(queue_size) {}
   ~LatestMsgDispather()
   {
     need_run_ = false;
@@ -36,13 +36,17 @@ public:
       thread_->join();
     }
   }
-  void push(const MessageT & msg)
+  template<typename MsgT>
+  void push(MsgT && msg)
   {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     if (!need_run_) {
       return;
     }
-    queue_.push(std::move(msg));
+    if (queue_.size() == queue_size_) {
+      queue_.pop();
+    }
+    queue_.push(std::forward<MsgT>(msg));
     cond_.notify_one();
   }
   template<typename CallbackT>
@@ -65,20 +69,19 @@ private:
       if (callback_ != nullptr) {
         auto msg = get();
         if (msg) {
-          callback_(msg);
+          callback_(std::move(msg));
         }
       }
     }
   }
-  std::shared_ptr<MessageT> get()
+  MessageT get()
   {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     cond_.wait(lock, [this] {return !need_run_ || !this->queue_.empty();});
     if (!need_run_) {
       return NULL;
     }
-    std::shared_ptr<MessageT> val(
-      std::make_shared<MessageT>(std::move(queue_.front())));
+    MessageT val(std::move(queue_.front()));
     queue_.pop();
     return val;
   }
@@ -87,7 +90,8 @@ private:
   std::queue<MessageT> queue_;
   std::mutex queue_mutex_;
   std::condition_variable cond_;
-  SharedPtrCallback callback_;
+  UniquePtrCallback callback_;
   std::shared_ptr<std::thread> thread_;
+  size_t queue_size_ {10};
 };
 #endif  // MSG_DISPATCHER_HPP_

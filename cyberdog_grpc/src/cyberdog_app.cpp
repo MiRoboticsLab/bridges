@@ -135,6 +135,7 @@ Cyberdog_app::Cyberdog_app()
     this->create_subscription<protocol::msg::MotionServoResponse>(
     "motion_servo_response", 1000,
     std::bind(&Cyberdog_app::motion_servo_rsp_callback, this, _1));
+  namecode_queue_size_[::grpcapi::SendRequest::MOTION_SERVO_RESPONSE] = 2;
 
   motion_servo_request_pub_ =
     this->create_publisher<protocol::msg::MotionServoCmd>(
@@ -191,6 +192,7 @@ Cyberdog_app::Cyberdog_app()
   image_trans_sub_ = this->create_subscription<std_msgs::msg::String>(
     "img_trans_signal_out", 100,
     std::bind(&Cyberdog_app::image_transmission_callback, this, _1));
+  namecode_queue_size_[::grpcapi::SendRequest::IMAGE_TRANSMISSION_REQUEST] = 20;
 
   // photo and video recording
   camera_service_client_ = this->create_client<protocol::srv::CameraService>(
@@ -264,11 +266,13 @@ Cyberdog_app::Cyberdog_app()
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
     "map", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::processMapMsg, this, _1));
+  namecode_queue_size_[::grpcapi::SendRequest::MAP_DATA_REQUEST] = 2;
 
   // dog pose
   dog_pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
     "dog_pose", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::processDogPose, this, _1));
+  namecode_queue_size_[::grpcapi::SendRequest::MAP_DOG_POSE_REQUEST] = 2;
 
   // mapping and navigation
   set_label_client_ = this->create_client<protocol::srv::SetMapLabel>(
@@ -293,6 +297,7 @@ Cyberdog_app::Cyberdog_app()
   tracking_person_sub_ = create_subscription<protocol::msg::Person>(
     "person", tracking_qos,
     std::bind(&Cyberdog_app::publishTrackingPersonCB, this, _1));
+  namecode_queue_size_[::grpcapi::SendRequest::TRACKING_OBJ] = 2;
   select_tracking_human_client_ = this->create_client<protocol::srv::BodyRegion>(
     "tracking_object_srv", rmw_qos_profile_services_default, callback_group_);
 
@@ -330,11 +335,11 @@ Cyberdog_app::~Cyberdog_app()
 }
 
 void Cyberdog_app::send_msgs_(
-  const std::shared_ptr<std::shared_ptr<::grpcapi::SendRequest>> msg)
+  const std::unique_ptr<::grpcapi::SendRequest> msg)
 {
   std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
   if (can_process_messages_ && app_stub_) {
-    app_stub_->sendRequest(**msg);
+    app_stub_->sendRequest(*msg);
   }
 }
 
@@ -751,7 +756,7 @@ bool Cyberdog_app::returnResponse(
 
 //  commcon code
 
-void Cyberdog_app::send_grpc_msg(int code, const Document & doc)
+void Cyberdog_app::send_grpc_msg(uint32_t code, const Document & doc)
 {
   std::string rsp_string;
   if (!CyberdogJson::Document2String(doc, rsp_string)) {
@@ -761,7 +766,7 @@ void Cyberdog_app::send_grpc_msg(int code, const Document & doc)
   send_grpc_msg(code, rsp_string);
 }
 
-void Cyberdog_app::send_grpc_msg(int code, const std::string & msg)
+void Cyberdog_app::send_grpc_msg(uint32_t code, const std::string & msg)
 {
   ::grpcapi::SendRequest * grpc_respons = new ::grpcapi::SendRequest();
   grpc_respons->set_namecode(code);
@@ -769,15 +774,20 @@ void Cyberdog_app::send_grpc_msg(int code, const std::string & msg)
   auto sender = send_thread_map_.find(code);
   if (sender != send_thread_map_.end()) {
     INFO("found sender for %d", code);
-    sender->second->push(std::shared_ptr<::grpcapi::SendRequest>(grpc_respons));
+    sender->second->push(std::move(std::unique_ptr<::grpcapi::SendRequest>(grpc_respons)));
   } else {
     INFO("create sender for %d", code);
-    auto new_sender = std::shared_ptr<
-      LatestMsgDispather<std::shared_ptr<::grpcapi::SendRequest>>>(
-      new LatestMsgDispather<std::shared_ptr<::grpcapi::SendRequest>>());
-    send_thread_map_[code] = new_sender;
-    new_sender->setCallback(std::bind(&Cyberdog_app::send_msgs_, this, _1));
-    new_sender->push(std::shared_ptr<::grpcapi::SendRequest>(grpc_respons));
+    if (namecode_queue_size_.find(code) != namecode_queue_size_.end()) {
+      send_thread_map_[code] =
+        std::make_shared<LatestMsgDispather<std::unique_ptr<::grpcapi::SendRequest>>>(
+        namecode_queue_size_[code]);
+    } else {
+      send_thread_map_[code] =
+        std::make_shared<LatestMsgDispather<std::unique_ptr<::grpcapi::SendRequest>>>();
+    }
+    send_thread_map_[code]->setCallback(std::bind(&Cyberdog_app::send_msgs_, this, _1));
+    send_thread_map_[code]->push(
+      std::move(std::unique_ptr<::grpcapi::SendRequest>(grpc_respons)));
   }
 }
 
