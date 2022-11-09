@@ -1,0 +1,5 @@
+struct low_power_lcmt
+{
+    string cmd;
+    string data;
+}
