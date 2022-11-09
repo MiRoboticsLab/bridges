@@ -15,57 +15,61 @@ uint8 MINI_LED =3
 # mode
 uint8 SYSTEM_PREDEFINED =0x01          #target = HEAD_LED/TAIL_LED有效。mini led无此模式。
                                        #使用系统预定义的模式，此模式下，用户只需从effect字段中
-                                       #（0x08～0x1D）选择所需灯效。r_value、g_value、b_value字段无意义。
-                                       #例如 effect = 0x09代表红常亮。
+                                       #（0xA0 ～0xB5）选择所需灯效。r_value、g_value、b_value字段无意义。
+                                       #例如 effect = 0xA1 代表红常亮。
 uint8 USER_DEFINED =0x02               #使用用户自定义的模式，此模式下，灯效由effect和r_value、g_value、
                                        #b_value字段联合决定。effect字段决定灯亮的方式，r_value、g_value、b_value
                                        #字段决定灯效的颜色。例如 effect = 0x01 r_value =255 g_value =0 b_value=0
                                        #代表红灯亮。
 
 # effect
-#HEAD_LED和TAIL_LED的基础灯效（0x01 ～0x07），在 mode = USER_DEFINED 时配合r_value、g_value、b_value使用。
+#HEAD_LED和TAIL_LED的基础灯效（0x01 ～0x09），在 mode = USER_DEFINED 时配合r_value、g_value、b_value使用。
 uint8 RGB_ON =0x01                     #常亮
 uint8 BLINK =0x02                      #闪烁
 uint8 BLINK_FAST =0x03                 #快速闪烁    
 uint8 BREATH =0x04                     #呼吸
 uint8 BREATH_FAST =0x05                #快速呼吸 
 uint8 ONE_BY_ONE =0x06                 #逐个点亮
-uint8 ONE_BY_ONE_FAST =0x07            #快速逐个点亮 
+uint8 ONE_BY_ONE_FAST =0x07            #快速逐个点亮
+uint8 BACK_AND_FORTH =0x08             #往返逐个点亮
+uint8 TRAILING_RACE =0x09              #拖尾流跑马 
 
-# HEAD_LED和TAIL_LED系统预定义的灯效（0x08 ～0x1D ），在mode = SYSTEM_PREDEFINED 时有效。
-uint8 RGB_OFF =0x08                    #常灭
-uint8 RED_ON =0x09                     #红灯常亮
-uint8 RED_BLINK =0x0A                  #红灯闪烁
-uint8 RED_BLINK_FAST =0x0B             #红灯快速闪烁
-uint8 RED_BREATH =0x0C                 #红灯呼吸
-uint8 RED_BREATH_FAST =0x0D            #红灯快速呼吸
-uint8 RED_ONE_BY_ONE =0x0E             #红灯逐个点亮
-uint8 RED_ONE_BY_ONE_FAST =0x0F        #红灯快速逐个点亮
 
-uint8 BLUE_ON =0x10                    #蓝灯常亮
-uint8 BLUE_BLINK =0x11                 #蓝灯闪烁
-uint8 BLUE_BLINK_FAST =0x12            #蓝灯快速闪烁
-uint8 BLUE_BREATH =0x13                #蓝灯呼吸
-uint8 BLUE_BREATH_FAST =0x14           #蓝灯快速呼吸
-uint8 BLUE_ONE_BY_ONE =0x15            #蓝灯逐个点亮
-uint8 BLUE_ONE_BY_ONE_FAST =0x16       #蓝灯快速逐个点亮
+# HEAD_LED和TAIL_LED系统预定义的灯效（0xA0 ～0xB5），在mode = SYSTEM_PREDEFINED 时有效。
+uint8 RGB_OFF =0xA0                    #常灭
 
-uint8 YELLOW_ON =0x17                  #黄灯常亮
-uint8 YELLOW_BLINK =0x18               #黄灯闪烁
-uint8 YELLOW_BLINK_FAST =0x19          #黄灯快速闪烁
-uint8 YELLOW_BREATH =0x1A              #黄灯呼吸
-uint8 YELLOW_BREATH_FAST =0x1B         #黄灯快速呼吸
-uint8 YELLOW_ONE_BY_ONE =0x1C          #黄灯逐个点亮
-uint8 YELLOW_ONE_BY_ONE_FAST =0x1D     #黄灯快速逐个点亮
+uint8 RED_ON =0xA1                     #红灯常亮
+uint8 RED_BLINK =0xA2                  #红灯闪烁
+uint8 RED_BLINK_FAST =0xA3             #红灯快速闪烁
+uint8 RED_BREATH =0xA4                 #红灯呼吸
+uint8 RED_BREATH_FAST =0xA5            #红灯快速呼吸
+uint8 RED_ONE_BY_ONE =0xA6             #红灯逐个点亮
+uint8 RED_ONE_BY_ONE_FAST =0xA7        #红灯快速逐个点亮
+
+uint8 BLUE_ON =0xA8                    #蓝灯常亮
+uint8 BLUE_BLINK =0xA9                 #蓝灯闪烁
+uint8 BLUE_BLINK_FAST =0xAA            #蓝灯快速闪烁
+uint8 BLUE_BREATH =0xAB                #蓝灯呼吸
+uint8 BLUE_BREATH_FAST =0xAC           #蓝灯快速呼吸
+uint8 BLUE_ONE_BY_ONE =0xAD            #蓝灯逐个点亮
+uint8 BLUE_ONE_BY_ONE_FAST =0xAE       #蓝灯快速逐个点亮
+
+uint8 YELLOW_ON =0xAF                  #黄灯常亮
+uint8 YELLOW_BLINK =0xB0               #黄灯闪烁
+uint8 YELLOW_BLINK_FAST =0xB1          #黄灯快速闪烁
+uint8 YELLOW_BREATH =0xB2              #黄灯呼吸
+uint8 YELLOW_BREATH_FAST =0xB3         #黄灯快速呼吸
+uint8 YELLOW_ONE_BY_ONE =0xB4          #黄灯逐个点亮
+uint8 YELLOW_ONE_BY_ONE_FAST =0xB5     #黄灯快速逐个点亮
 
 # MINI_LED系统预置灯效
-uint8 MINI_OFF = 0x30                  #常灭(无须设定r,g,b取值)
-uint8 CIRCULAR_BREATH = 0x31           #圆形缩放(无须设定r,g,b取值)
-uint8 CIRCULAR_RING = 0x32             #画圆环(无须设定r,g,b取值)
-uint8 RECTANGLE_COLOR = 0x33           #方块变色
-uint8 CENTRE_COLOR = 0x34              #中间彩带
-uint8 THREE_CIRCULAR = 0x35            #三圆呼吸
-uint8 COLOR_ONE_BY_ONE = 0x36          #彩带逐个点亮
+uint8 MINI_OFF = 0x30                  #常灭
+uint8 CIRCULAR_BREATH = 0x31           #圆形缩放
+uint8 CIRCULAR_RING = 0x32             #画圆环
+uint8 RECTANGLE_COLOR = 0x33           #方块变色(无须设定r,g,b取值)
+uint8 CENTRE_COLOR = 0x34              #中间彩带(无须设定r,g,b取值)
+uint8 THREE_CIRCULAR = 0x35            #三圆呼吸(无须设定r,g,b取值)
+uint8 COLOR_ONE_BY_ONE = 0x36          #彩带逐个点亮(无须设定r,g,b取值)
 
 # request
 
