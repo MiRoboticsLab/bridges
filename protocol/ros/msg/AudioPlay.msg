@@ -54,3 +54,5 @@ uint16 PID_AI_SERVICE_EXPIRED = 127     # 语音登录已过期
 uint16 PID_TEST_HARDWARE_AUDIO = 3000          # 当前为语音硬件测试
 uint16 PID_TEST_STAGE_ONE = 3001               # 第一阶段测试结束。请查看测试结果并记录后，进行第二阶段测试
 uint16 PID_TEST_STAGE_THREE = 3003             # 第三阶段测试结束，请查看测试结果并记录
+uint16 PID_SOUND_EFFECT_READY = 9000           # 整机就绪音效
+uint16 PID_STOP_AUDIO_PLAY = 9999              # 打断当前正在播放的语音

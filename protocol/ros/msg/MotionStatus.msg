@@ -13,3 +13,5 @@ int8 ESTOP = 2
 int8 EDAMP = 3
 int8 LIFTED = 4
 int8 BAN_TRANS = 5
+int8 OVER_HEAT = 6
+int8 LOW_BAT = 7

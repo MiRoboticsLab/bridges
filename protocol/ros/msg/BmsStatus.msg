@@ -14,3 +14,11 @@ int8  batt_health
 int16 batt_loop_number
 int8  powerboard_status
 
+bool power_normal
+bool power_wired_charging
+bool power_finished_charging
+bool power_motor_shutdown
+bool power_soft_shutdown
+bool power_wp_place
+bool power_wp_charging
+bool power_expower_supply

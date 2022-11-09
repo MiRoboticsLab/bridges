@@ -1262,6 +1262,7 @@ void Cyberdog_app::handlLableGetRequest(
   }
   auto request = std::make_shared<protocol::srv::GetMapLabel::Request>();
   CyberdogJson::Get(json_resquest, "mapName", request->map_name);
+  CyberdogJson::Get(json_resquest, "map_id", request->map_id);
   std::chrono::seconds timeout(10);
 
   auto future_result = get_label_client_->async_send_request(request);
@@ -1346,9 +1347,9 @@ void Cyberdog_app::handlLableSetRequest(
   bool has_label = false;
   std::string response_string;
   bool only_delete = false;
-  bool is_outdoor = false;
   CyberdogJson::Get(json_resquest, "mapName", map_label.map_name);
   CyberdogJson::Get(json_resquest, "is_outdoor", map_label.is_outdoor);
+  CyberdogJson::Get(json_resquest, "map_id", map_label.map_id);
   CyberdogJson::Get(json_resquest, "only_delete", only_delete);
   INFO("handlLableSetRequest %s, %d", map_label.map_name.c_str(), only_delete);
   if (json_resquest.HasMember("locationLabelInfo") &&
