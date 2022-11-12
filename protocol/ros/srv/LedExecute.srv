@@ -13,14 +13,13 @@ uint8 MINI_LED =3
 
 
 # mode
-uint8 SYSTEM_PREDEFINED =0x01          #target = HEAD_LED/TAIL_LED有效。mini led无此模式。
-                                       #使用系统预定义的模式，此模式下，用户只需从effect字段中
-                                       #（0xA0 ～0xB5）选择所需灯效。r_value、g_value、b_value字段无意义。
-                                       #例如 effect = 0xA1 代表红常亮。
+uint8 SYSTEM_PREDEFINED =0x01          #使用系统预定义的模式，此模式下，用户使用时只需从effect字段中
+                                       #选择所需灯效。r_value、g_value、b_value字段无意义。
+                                       #例如 target = 1 effect = 0xA1 代表头灯红常亮。
 uint8 USER_DEFINED =0x02               #使用用户自定义的模式，此模式下，灯效由effect和r_value、g_value、
                                        #b_value字段联合决定。effect字段决定灯亮的方式，r_value、g_value、b_value
-                                       #字段决定灯效的颜色。例如 effect = 0x01 r_value =255 g_value =0 b_value=0
-                                       #代表红灯亮。
+                                       #字段决定灯效的颜色。例如 target = 1，effect = 0x01， r_value =255 
+                                       #g_value =0 b_value=0 代表头灯红灯亮。
 
 # effect
 #HEAD_LED和TAIL_LED的基础灯效（0x01 ～0x09），在 mode = USER_DEFINED 时配合r_value、g_value、b_value使用。
@@ -62,10 +61,12 @@ uint8 YELLOW_BREATH_FAST =0xB3         #黄灯快速呼吸
 uint8 YELLOW_ONE_BY_ONE =0xB4          #黄灯逐个点亮
 uint8 YELLOW_ONE_BY_ONE_FAST =0xB5     #黄灯快速逐个点亮
 
-# MINI_LED系统预置灯效
-uint8 MINI_OFF = 0x30                  #常灭
-uint8 CIRCULAR_BREATH = 0x31           #圆形缩放
-uint8 CIRCULAR_RING = 0x32             #画圆环
+#MINI LED的基础灯效（0x30 ～0x31），在 mode = USER_DEFINED 时配合r_value、g_value、b_value使用。
+uint8 CIRCULAR_BREATH = 0x30           #圆形缩放
+uint8 CIRCULAR_RING = 0x31             #画圆环
+
+# MINI LED系统预定义的灯效（0x32 ～0x36），在mode = SYSTEM_PREDEFINED 时有效。
+uint8 MINI_OFF = 0x32                  #常灭
 uint8 RECTANGLE_COLOR = 0x33           #方块变色(无须设定r,g,b取值)
 uint8 CENTRE_COLOR = 0x34              #中间彩带(无须设定r,g,b取值)
 uint8 THREE_CIRCULAR = 0x35            #三圆呼吸(无须设定r,g,b取值)
