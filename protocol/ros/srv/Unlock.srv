@@ -1,0 +1,11 @@
+# request
+uint32 unlock_dog     # 111---unlock request
+---
+# response
+uint32 unlock_result   # 0 ---  unlocked successfully
+                       # 1 ---  unlocked failed,parameter verification failes
+                       # 2 ---  unlocked failed,the key information does not match the device information.
+                       # 3 ---  unlocked failed,operation control (MR813) failed to unlock Settings;
+                       # 4 ---  unlocked failed,voice control (R239) unlock Settings failed;
+                       # 5 ---  The device has not been unlocked;
+                       # 100 -- unknow error.
