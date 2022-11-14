@@ -64,8 +64,11 @@ public:
   void BreakVar(const std::string & name)
   {
     for (auto iter = protocol_data_map_.begin(); iter != protocol_data_map_.end(); ++iter) {
-      protocol_data_map_.erase(iter);
-      return;
+      if(iter->first == name)
+      {
+        protocol_data_map_.erase(iter);
+        return;
+      }
     }
     error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
     ERROR(
