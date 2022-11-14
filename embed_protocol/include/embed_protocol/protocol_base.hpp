@@ -64,8 +64,7 @@ public:
   void BreakVar(const std::string & name)
   {
     for (auto iter = protocol_data_map_.begin(); iter != protocol_data_map_.end(); ++iter) {
-      if(iter->first == name)
-      {
+      if (iter->first == name) {
         protocol_data_map_.erase(iter);
         return;
       }
