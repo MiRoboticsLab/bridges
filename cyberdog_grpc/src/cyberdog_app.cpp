@@ -1099,7 +1099,7 @@ void Cyberdog_app::handleNavigationAction(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  int nav_timeout = 600;
+  int nav_timeout = 7200;
   std::string response_string;
   std::string type;
   double goal_x, goal_y;
