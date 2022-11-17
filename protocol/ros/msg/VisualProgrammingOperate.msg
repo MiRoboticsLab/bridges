@@ -21,14 +21,14 @@ string MODE_PERSONNEL="personnel"       # 人员
 string MODE_FACE="face"                 # 人脸
 string MODE_VOICEPRINT="voiceprint"     # 声纹
 
-string OPERATE_SAVE="save"              # [操作]保存
 string OPERATE_INQUIRY="inquiry"        # [操作]查询
+string OPERATE_SAVE="save"              # [操作]保存
 string OPERATE_DELETE="delete"          # [操作]删除
 string OPERATE_DEBUG="debug"            # [操作]调试
 string OPERATE_RUN="run"                # [操作]运行
-string OPERATE_SHUTDOWN="shutdown"      # [操作]终止
 string OPERATE_SUSPEND="suspend"        # [操作]暂停
 string OPERATE_RECOVER="recover"        # [操作]继续
+string OPERATE_SHUTDOWN="shutdown"      # [操作]终止
 string OPERATE_START="start"            # [操作]开始
 string OPERATE_STOP="stop"              # [操作]停止
 
@@ -47,6 +47,17 @@ string STEP_REGISTER="register"         # [步骤]注册
 string STEP_BEGIN="begin"               # [步骤]开始
 string STEP_END="end"                   # [步骤]结束
 
+string FSM_UNINITIALIZED="Uninitialized"# [状态机] Uninitialized
+string FSM_SET_UP="SetUp"               # [状态机] SetUp
+string FSM_TEAR_DOWN="TearDown"         # [状态机] TearDown
+string FSM_SELF_CHECK="SelfCheck"       # [状态机] SelfCheck
+string FSM_ACTIVE="Active"              # [状态机] Active
+string FSM_DE_ACTIVE="DeActive"         # [状态机] DeActive
+string FSM_PROTECTED="Protected"        # [状态机] Protected
+string FSM_LOW_POWER="LowPower"         # [状态机] LowPower
+string FSM_OTA="OTA"                    # [状态机] OTA
+string FSM_ERROR="Error"                # [状态机] Error
+
 string type
 string id
 string[] target_id
@@ -56,3 +67,4 @@ string operate
 string mode
 string condition
 string body
+string fsm
