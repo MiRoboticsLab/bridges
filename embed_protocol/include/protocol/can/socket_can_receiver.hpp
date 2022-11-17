@@ -50,6 +50,7 @@ public:
   {
     // Can't do anything on error; in fact generally shouldn't on close() error
     (void)close(m_file_descriptor);
+    ERROR("SocketCanReceiver::~SocketCanReceiver");
   }
 
   bool receive(

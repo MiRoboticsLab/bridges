@@ -67,6 +67,7 @@ public:
     if (main_T_ != nullptr) {main_T_->join();}
     main_T_ = nullptr;
     receiver_ = nullptr;
+    ERROR("CanRxDev::~CanRxDev");
   }
 
   bool is_ready() {return ready_;}
@@ -137,6 +138,8 @@ private:
         "[CAN_RX][%s] %s receiver creat error! %s",
         name_.c_str(), interface_.c_str(), ex.what());
       return;
+    } catch (...) {
+      ERROR("[CAN_RX] unkown exception error!");
     }
     ready_ = true;
   }
@@ -224,6 +227,7 @@ public:
   {
     ready_ = false;
     sender_ = nullptr;
+    ERROR("CanTxDev::~CanTxDev");
   }
 
   bool send_can_message(struct can_frame & tx_frame)
@@ -347,6 +351,7 @@ public:
   {
     rx_op_ = nullptr;
     tx_op_ = nullptr;
+    ERROR("CanDev::~CanDev");
   }
 
   bool send_can_message(struct can_frame & tx_frame)
