@@ -67,6 +67,7 @@ public:
     if (main_T_ != nullptr) {main_T_->join();}
     main_T_ = nullptr;
     receiver_ = nullptr;
+    ERROR("CanRxDev::~CanRxDev");
   }
 
   bool is_ready() {return ready_;}
@@ -131,14 +132,18 @@ private:
       receiver_ = std::make_unique<cyberdog::embed::SocketCanReceiver>(interface_);
       receiver_->enable_canfd(canfd_);
       isthreadrunning_ = true;
+      ready_ = true;
       main_T_ = std::make_unique<std::thread>(std::bind(&CanRxDev::main_recv_func, this));
     } catch (const std::exception & ex) {
+      ready_ = false;
       ERROR(
         "[CAN_RX][%s] %s receiver creat error! %s",
         name_.c_str(), interface_.c_str(), ex.what());
       return;
+    } catch (...) {
+      ready_ = false;
+      ERROR("[CAN_RX] unkown exception error!");
     }
-    ready_ = true;
   }
   bool wait_for_can_data()
   {
@@ -224,6 +229,7 @@ public:
   {
     ready_ = false;
     sender_ = nullptr;
+    ERROR("CanTxDev::~CanTxDev");
   }
 
   bool send_can_message(struct can_frame & tx_frame)
@@ -347,6 +353,7 @@ public:
   {
     rx_op_ = nullptr;
     tx_op_ = nullptr;
+    ERROR("CanDev::~CanDev");
   }
 
   bool send_can_message(struct can_frame & tx_frame)

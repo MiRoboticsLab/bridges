@@ -18,7 +18,7 @@ ctrl_data = []
 
 [[var]]
 description = "mini enable on ack"
-can_id = "0x04892A00"
+can_id = "0x02832200"
 var_name = "enable_on_ack"
 var_type = "i8"
 parser_param = [0, 0]

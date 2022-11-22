@@ -57,6 +57,15 @@ description = ""
 cmd_name = "cmd_test"
 can_id = "0x0082A100"
 
+[[cmd]]
+description = ""
+cmd_name = "bms_enable_on"
+can_id = "0x00800200"
+
+[[cmd]]
+description = ""
+cmd_name = "bms_enable_off"
+can_id = "0x00800100"
 
 
 

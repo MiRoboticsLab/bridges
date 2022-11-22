@@ -367,8 +367,8 @@ private:
   void voiceprint_result_callback(const protocol::msg::AudioVoiceprintResult::SharedPtr msg);
   void voiceprints_data_callback(const std_msgs::msg::Bool::SharedPtr msg);
   // commcon code
-  void send_grpc_msg(int code, const std::string & msg);
-  void send_grpc_msg(int code, const Document & doc);
+  void send_grpc_msg(uint32_t code, const std::string & msg);
+  void send_grpc_msg(uint32_t code, const Document & doc);
 
   // image_transmission
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr image_trans_pub_;
@@ -442,10 +442,11 @@ private:
 
   // for message queue
   void send_msgs_(
-    const std::shared_ptr<std::shared_ptr<::grpcapi::SendRequest>> msg);
-  std::map<int, std::shared_ptr<LatestMsgDispather<
-      std::shared_ptr<::grpcapi::SendRequest>>>>
+    const std::unique_ptr<::grpcapi::SendRequest> msg);
+  std::map<uint32_t, std::shared_ptr<LatestMsgDispather<
+      std::unique_ptr<::grpcapi::SendRequest>>>>
   send_thread_map_;
+  std::map<uint32_t, size_t> namecode_queue_size_;
 
   // mapping and navigation
   void handlLableSetRequest(
