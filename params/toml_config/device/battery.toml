@@ -62,11 +62,23 @@ description = ""
 cmd_name = "bms_enable_on"
 can_id = "0x00800200"
 
+[[var]]
+description = ""
+var_name = "bms_enable_on_ack"
+can_id = "0x00800201"
+var_type = "i8"
+parser_param = [0, 0]
+
 [[cmd]]
 description = ""
 cmd_name = "bms_enable_off"
 can_id = "0x00800100"
 
-
+[[var]]
+description = ""
+var_name = "bms_enable_off_ack"
+can_id = "0x00800101"
+var_type = "i8"
+parser_param = [0, 0]
 
 
