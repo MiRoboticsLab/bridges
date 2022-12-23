@@ -317,6 +317,12 @@ Cyberdog_app::Cyberdog_app()
     this->create_client<std_srvs::srv::Trigger>("ble_device_firmware_version");
   delete_ble_history_client_ =
     this->create_client<nav2_msgs::srv::SaveMap>("delete_ble_devices_history");
+  ble_firmware_update_notification_sub_ = this->create_subscription<std_msgs::msg::String>(
+    "ble_firmware_update_notification", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::bleFirmwareUpdateNotificationCB, this, _1));
+  ble_dfu_progress_sub_ = this->create_subscription<protocol::msg::BLEDFUProgress>(
+    "ble_dfu_progress", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::bleDFUProgressCB, this, _1));
 
   // stair demo
   start_stair_align_client_ =
@@ -1778,13 +1784,11 @@ void Cyberdog_app::getBLEFirmwareVersionHandle(
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
-    bool success = future_result.get()->success;
-    std::string message = future_result.get()->message;
     writer.StartObject();
     writer.Key("success");
-    writer.Bool(success);
+    writer.Bool(future_result.get()->success);
     writer.Key("message");
-    writer.String(message.c_str());
+    writer.String(future_result.get()->message.c_str());
     writer.EndObject();
   } else {
     ERROR("call ble_device_firmware_version timeout.");
@@ -1824,6 +1828,64 @@ void Cyberdog_app::deleteBLEHistoryHandle(
   }
   grpc_respond.set_data(strBuf.GetString());
   grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::bleFirmwareUpdateNotificationCB(const std_msgs::msg::String::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("data");
+  writer.String(msg->data.c_str());
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::BLE_FIRMWARE_UPDATE_NOTIFICATION, param);
+}
+
+void Cyberdog_app::updateBLEFirmwareHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!update_ble_firmware_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("update_ble_firmware server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = update_ble_firmware_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call update_ble_firmware timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("status");
+  writer.Int(msg->status);
+  writer.Key("progress");
+  writer.Double(msg->progress);
+  writer.Key("message");
+  writer.String(msg->message.c_str());
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::BLE_DFU_PROGRESS, param);
 }
 
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
@@ -2637,6 +2699,9 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::DELETE_BLE_HISTORY: {
         deleteBLEHistoryHandle(json_resquest, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::UPDATE_BLE_FIRMWARE: {
+        updateBLEFirmwareHandle(grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
