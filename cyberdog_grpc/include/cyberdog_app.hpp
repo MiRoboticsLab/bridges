@@ -79,6 +79,7 @@
 #include "protocol/srv/face_rec.hpp"
 #include "protocol/srv/stop_algo_task.hpp"
 #include "protocol/srv/get_ble_battery_level.hpp"
+#include "protocol/msg/bledfu_progress.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -492,6 +493,9 @@ private:
   rclcpp::Client<protocol::srv::GetBLEBatteryLevel>::SharedPtr ble_battery_client_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr ble_device_firmware_version_client_;
   rclcpp::Client<nav2_msgs::srv::SaveMap>::SharedPtr delete_ble_history_client_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ble_firmware_update_notification_sub_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr update_ble_firmware_client_;
+  rclcpp::Subscription<protocol::msg::BLEDFUProgress>::SharedPtr ble_dfu_progress_sub_;
   void scanBluetoothDevices(
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
@@ -515,6 +519,11 @@ private:
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void bleFirmwareUpdateNotificationCB(const std_msgs::msg::String::SharedPtr msg);
+  void updateBLEFirmwareHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedPtr msg);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
