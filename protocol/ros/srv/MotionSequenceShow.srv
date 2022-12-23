@@ -1,0 +1,62 @@
+# request
+int32 motion_id                 # 运动id,固定值:MotionID::SEQUENCE_CUSTOM
+int32 duration                  # 持续时长
+MotionSequenceGait[] gait_list  # 运动序列步态集
+MotionSequencePace[] pace_list  # 运动序列步伐集
+string gait_toml                # 步态 toml 文件内容(格式如下框内约束)
+                                # ┌─────────────────────────────────────────────┐
+                                # │# toml file describe.                        │
+                                # │[[section]]                                  │
+                                # │contact  = [0, 0, 0, 0]                      │
+                                # │duration = 3                                 │
+                                # │                                             │
+                                # │[[section]]                                  │
+                                # │contact  = [0, 0, 0, 0]                      │
+                                # │duration = 3                                 │
+                                # │                                             │
+                                # │[[section]]                                  │
+                                # │...                                          │
+                                # └─────────────────────────────────────────────┘
+string pace_toml                # 步伐 toml 文件内容(格式如下框内约束)
+                                # ┌─────────────────────────────────────────────┐
+                                # │# toml file describe.                        │
+                                # │[[step]]                                     │
+                                # │mode = 11                                    │
+                                # │gait_id = 110                                │
+                                # │contact = 0.0                                │
+                                # │life_count = 0                               │
+                                # │vel_des = [ 0.0, 0.0, 0.0]                   │
+                                # │rpy_des = [ 0.0, 0.0, 0.0]                   │
+                                # │pos_des = [ 0.0, 0.0, 0.0]                   │
+                                # │acc_des = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]    │
+                                # │ctrl_point = [ 0.0, 0.0, 0.0]                │
+                                # │foot_pose = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  │
+                                # │step_height = [ 0.0, 0.0, 0.0, 0.0]          │
+                                # │value = 0                                    │
+                                # │duration = 0                                 │
+                                # │                                             │
+                                # │[[step]]                                     │
+                                # │mode = 11                                    │
+                                # │gait_id = 110                                │
+                                # │contact = 0.0                                │
+                                # │life_count = 0                               │
+                                # │vel_des = [ 0.0, 0.0, 0.0]                   │
+                                # │rpy_des = [ 0.0, 0.0, 0.0]                   │
+                                # │pos_des = [ 0.0, 0.0, 0.0]                   │
+                                # │acc_des = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]    │
+                                # │ctrl_point = [ 0.0, 0.0, 0.0]                │
+                                # │foot_pose = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  │
+                                # │step_height = [ 0.0, 0.0, 0.0, 0.0]          │
+                                # │value = 0                                    │
+                                # │duration = 0                                 │
+                                # │                                             │
+                                # │[[step]]                                     │
+                                # │...                                          │
+                                # └─────────────────────────────────────────────┘
+
+---
+# response
+bool result                     # 执行结果
+int32 code                      # 状态码
+string describe                 # 状态描述
+int32 motion_id                 # 运动id

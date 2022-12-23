@@ -4,6 +4,7 @@
 string TYPE_TASK="task"                 # 任务
 string TYPE_MODULE="module"             # 模块
 string TYPE_AI="AI"                     # 人工智能（Artificial intelligence）
+string TYPE_SLAM="SLAM"                 # 同步定位与地图构建（Simultaneous localization and mapping）
 
 string MODE_FACTORY="factory"           # 厂家
 string MODE_USER="user"                 # 用户
@@ -20,6 +21,9 @@ string MODE_ORIGINAL="original"         # 原始
 string MODE_PERSONNEL="personnel"       # 人员
 string MODE_FACE="face"                 # 人脸
 string MODE_VOICEPRINT="voiceprint"     # 声纹
+
+string MODE_MAP="map"                   # 地图
+string MODE_PRESET="preset"             # 预置点
 
 string OPERATE_INQUIRY="inquiry"        # [操作]查询
 string OPERATE_SAVE="save"              # [操作]保存
