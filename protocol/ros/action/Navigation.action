@@ -20,6 +20,7 @@ uint8 nav_type
 
 geometry_msgs/PoseStamped[] poses # 导航的目标点设置
 
+string label_id
 string map_name
 
 sensor_msgs/RegionOfInterest tracking_roi
