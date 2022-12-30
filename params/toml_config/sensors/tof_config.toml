@@ -1,0 +1,3 @@
+# TOF配置文件列表
+[tof_config]
+config_files = ["tof_left_head.toml", "tof_right_head.toml", "tof_left_rear.toml", "tof_right_rear.toml"]
