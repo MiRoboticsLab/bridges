@@ -1,62 +1,110 @@
 # request
-int32 motion_id                 # 运动id,固定值:MotionID::SEQUENCE_CUSTOM
-int32 duration                  # 持续时长
-MotionSequenceGait[] gait_list  # 运动序列步态集
-MotionSequencePace[] pace_list  # 运动序列步伐集
-string gait_toml                # 步态 toml 文件内容(格式如下框内约束)
-                                # ┌─────────────────────────────────────────────┐
-                                # │# toml file describe.                        │
-                                # │[[section]]                                  │
-                                # │contact  = [0, 0, 0, 0]                      │
-                                # │duration = 3                                 │
-                                # │                                             │
-                                # │[[section]]                                  │
-                                # │contact  = [0, 0, 0, 0]                      │
-                                # │duration = 3                                 │
-                                # │                                             │
-                                # │[[section]]                                  │
-                                # │...                                          │
-                                # └─────────────────────────────────────────────┘
-string pace_toml                # 步伐 toml 文件内容(格式如下框内约束)
-                                # ┌─────────────────────────────────────────────┐
-                                # │# toml file describe.                        │
-                                # │[[step]]                                     │
-                                # │mode = 11                                    │
-                                # │gait_id = 110                                │
-                                # │contact = 0.0                                │
-                                # │life_count = 0                               │
-                                # │vel_des = [ 0.0, 0.0, 0.0]                   │
-                                # │rpy_des = [ 0.0, 0.0, 0.0]                   │
-                                # │pos_des = [ 0.0, 0.0, 0.0]                   │
-                                # │acc_des = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]    │
-                                # │ctrl_point = [ 0.0, 0.0, 0.0]                │
-                                # │foot_pose = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  │
-                                # │step_height = [ 0.0, 0.0, 0.0, 0.0]          │
-                                # │value = 0                                    │
-                                # │duration = 0                                 │
-                                # │                                             │
-                                # │[[step]]                                     │
-                                # │mode = 11                                    │
-                                # │gait_id = 110                                │
-                                # │contact = 0.0                                │
-                                # │life_count = 0                               │
-                                # │vel_des = [ 0.0, 0.0, 0.0]                   │
-                                # │rpy_des = [ 0.0, 0.0, 0.0]                   │
-                                # │pos_des = [ 0.0, 0.0, 0.0]                   │
-                                # │acc_des = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]    │
-                                # │ctrl_point = [ 0.0, 0.0, 0.0]                │
-                                # │foot_pose = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  │
-                                # │step_height = [ 0.0, 0.0, 0.0, 0.0]          │
-                                # │value = 0                                    │
-                                # │duration = 0                                 │
-                                # │                                             │
-                                # │[[step]]                                     │
-                                # │...                                          │
-                                # └─────────────────────────────────────────────┘
-
+int32 motion_id                 # ● 运动id,固定值:MotionID::SEQUENCE_CUSTOM
+int64 duration                  # ● 序列中步伐各元素持续时长总和（毫秒）
+MotionSequenceGait[] gait_list  # ● 运动序列步态集
+MotionSequencePace[] pace_list  # ● 运动序列步伐集
+                                # ● 下述 toml 内容通用约束信息：
+                                #   ◎ 下述 toml 格式中第一行为内容固定；
+                                #   ◎ 下述 toml 格式中最后一行固定为空；
+                                #   ◎ 下述 toml 格式中 m/n 意义为:
+                                #       ○ n: 为当前 toml 文件内帧数总计；
+                                #       ○ m: 为当前帧的序号计数（从1开始）。
+string[] gait_toml_list         # ● 步伐 toml section 集(toml 格式约束如下)
+                                # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+                                # ┃# Gait toml meta.                            │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[section]]                                  │
+                                # ┃contact  = [0, 0, 0, 0]                      │
+                                # ┃duration = 3                                 │
+                                # ┃                                             │
+                                # ┖─────────────────────────────────────────────┘
+string[] pace_toml_list         # ● 步伐 toml step 集(toml 格式约束如下)
+                                # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+                                # ┃# Pace toml meta.                            │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[step]]                                     │
+                                # ┃mode = 11                                    │
+                                # ┃gait_id = 110                                │
+                                # ┃contact = 0.0                                │
+                                # ┃life_count = 0                               │
+                                # ┃vel_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃rpy_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃pos_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃acc_des = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]    │
+                                # ┃ctrl_point = [ 0.0, 0.0, 0.0]                │
+                                # ┃foot_pose = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  │
+                                # ┃step_height = [ 0.0, 0.0]                    │
+                                # ┃value = 0                                    │
+                                # ┃duration = 0                                 │
+                                # ┃                                             │
+                                # ┖─────────────────────────────────────────────┘
+string gait_toml                # ● 步态 toml 文件内容(toml 格式约束如下)
+                                # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+                                # ┃# Gait toml.                                 │
+                                # ┃# Toml file describe.                        │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[section]]                                  │
+                                # ┃contact  = [0, 0, 0, 0]                      │
+                                # ┃duration = 3                                 │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[section]]                                  │
+                                # ┃contact  = [0, 0, 0, 0]                      │
+                                # ┃duration = 3                                 │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[section]]                                  │
+                                # ┃...                                          │
+                                # ┃                                             │
+                                # ┖─────────────────────────────────────────────┘
+string pace_toml                # ● 步伐 toml 文件内容(toml 格式约束如下)
+                                # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┑
+                                # ┃# Pace toml.                                 │
+                                # ┃# Toml file describe.                        │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[step]]                                     │
+                                # ┃mode = 11                                    │
+                                # ┃gait_id = 110                                │
+                                # ┃contact = 0.0                                │
+                                # ┃life_count = 0                               │
+                                # ┃vel_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃rpy_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃pos_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃acc_des = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]    │
+                                # ┃ctrl_point = [ 0.0, 0.0, 0.0]                │
+                                # ┃foot_pose = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  │
+                                # ┃step_height = [ 0.0, 0.0]                    │
+                                # ┃value = 0                                    │
+                                # ┃duration = 0                                 │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[step]]                                     │
+                                # ┃mode = 11                                    │
+                                # ┃gait_id = 110                                │
+                                # ┃contact = 0.0                                │
+                                # ┃life_count = 0                               │
+                                # ┃vel_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃rpy_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃pos_des = [ 0.0, 0.0, 0.0]                   │
+                                # ┃acc_des = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]    │
+                                # ┃ctrl_point = [ 0.0, 0.0, 0.0]                │
+                                # ┃foot_pose = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  │
+                                # ┃step_height = [ 0.0, 0.0]                    │
+                                # ┃value = 0                                    │
+                                # ┃duration = 0                                 │
+                                # ┃                                             │
+                                # ┃# m/n                                        │
+                                # ┃[[step]]                                     │
+                                # ┃...                                          │
+                                # ┃                                             │
+                                # ┖─────────────────────────────────────────────┘
 ---
 # response
-bool result                     # 执行结果
-int32 code                      # 状态码
-string describe                 # 状态描述
-int32 motion_id                 # 运动id
+bool result                     # ● 执行结果
+int32 code                      # ● 状态码
+string describe                 # ● 状态描述
+int32 motion_id                 # ● 运动id
