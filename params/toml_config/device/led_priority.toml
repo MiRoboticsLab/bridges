@@ -2,7 +2,8 @@
 # 为方便未加入优先级的模块进行调试，将undefined优先级最高。用户在调试时，可将
 # "bridge/protocol/ros/srv/LedExecute.srv" request中client字段
 # 设定为"undefined"，调试完毕后，将该模块加入到优先级策略中。
-headled = ["undefined","vp","connector","bms"] #优先级由高到低顺序排列
-tailled = ["undefined","vp","connector","bms"]
-miniled = ["undefined","vp","connector","bms"]
-    
+
+
+# priority 优先级由高到低顺序排列
+
+priority = ["lowpower","bms","connector","vp","tracking","system"]

@@ -8,3 +8,33 @@ orange = [255,30,0]
 pink = [255,100,255]
 red = [255,50,50]
 
+
+[system_headled]
+occupation = true
+client = "system"
+target = 1        # uint8 HEAD_LED =1 uint8 TAIL_LED =2 uint8 MINI_LED =3
+mode =  2         # uint8 SYSTEM_PREDEFINED =0x01 uint8 USER_DEFINED =0x02
+effect =  6       # uint8 ONE_BY_ONE =0x06                 #逐个点亮
+r_value = 255     # red
+g_value = 50
+b_value = 50
+
+[system_tailled]
+occupation = true
+client = "system"
+target = 2        # uint8 HEAD_LED =1 uint8 TAIL_LED =2 uint8 MINI_LED =3
+mode =  2         # uint8 SYSTEM_PREDEFINED =0x01 uint8 USER_DEFINED =0x02
+effect =  6       # uint8 ONE_BY_ONE =0x06                 #逐个点亮
+r_value = 255     # red
+g_value = 50
+b_value = 50
+
+[system_miniled]
+occupation = true
+client = "system"
+target = 3        # uint8 HEAD_LED =1 uint8 TAIL_LED =2 uint8 MINI_LED =3
+mode =  2         # uint8 SYSTEM_PREDEFINED =0x01 uint8 USER_DEFINED =0x02
+effect =  30       # uint8 CIRCULAR_BREATH = 0x30           #圆形缩放
+r_value = 255     # red
+g_value = 50
+b_value = 50
