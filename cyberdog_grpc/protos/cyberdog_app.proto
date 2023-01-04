@@ -27,12 +27,35 @@ service GrpcApp {
     rpc getFile(SendRequest) returns (stream FileChunk) {}
 }
 
+message MotionStatus{
+    int32 motion_id = 1;
+}
+
+message TaskStatus{
+    fixed32 task_status = 1;
+    int32 task_sub_status = 2;
+}
+
+message SelfCheckStatus{
+    int32 code = 1;
+    string description = 2;
+}
+
+message StateSwitchStatus{
+    int32 state = 1;
+    int32 code = 2;
+}
+
 message Ticks{
     string ip = 1;
     fixed32 wifi_strength = 2;
     fixed32 battery_power = 3;
     bool internet = 4;
-    string sn = 5;    
+    string sn = 5;
+    MotionStatus motion_status = 6;
+    TaskStatus task_status = 7;
+    SelfCheckStatus self_check_status = 8;
+    StateSwitchStatus state_switch_status = 9;
 }
 
 message SendRequest {
