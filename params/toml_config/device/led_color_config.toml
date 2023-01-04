@@ -12,9 +12,9 @@ red = [255,50,50]
 [system_headled]
 occupation = true
 client = "system"
-target = 1        # uint8 HEAD_LED =1 uint8 TAIL_LED =2 uint8 MINI_LED =3
-mode =  2         # uint8 SYSTEM_PREDEFINED =0x01 uint8 USER_DEFINED =0x02
-effect =  6       # uint8 ONE_BY_ONE =0x06                 #逐个点亮
+target = 1        # 头灯
+mode =  2         # 用户自定义模式
+effect =  6       # 逐个点亮基础灯效
 r_value = 255     # red
 g_value = 50
 b_value = 50
@@ -22,9 +22,9 @@ b_value = 50
 [system_tailled]
 occupation = true
 client = "system"
-target = 2        # uint8 HEAD_LED =1 uint8 TAIL_LED =2 uint8 MINI_LED =3
-mode =  2         # uint8 SYSTEM_PREDEFINED =0x01 uint8 USER_DEFINED =0x02
-effect =  6       # uint8 ONE_BY_ONE =0x06                 #逐个点亮
+target = 2        # 尾灯
+mode =  2         # 用户自定义模式
+effect =  6       # 逐个点亮基础灯效
 r_value = 255     # red
 g_value = 50
 b_value = 50
@@ -32,9 +32,9 @@ b_value = 50
 [system_miniled]
 occupation = true
 client = "system"
-target = 3        # uint8 HEAD_LED =1 uint8 TAIL_LED =2 uint8 MINI_LED =3
-mode =  2         # uint8 SYSTEM_PREDEFINED =0x01 uint8 USER_DEFINED =0x02
-effect =  48      # uint8 CIRCULAR_BREATH = 0x30           #圆形缩放
+target = 3        # mini led
+mode =  2         # 用户自定义模式
+effect =  48      # 圆形缩放基础灯效
 r_value = 255     # red
 g_value = 50
 b_value = 50

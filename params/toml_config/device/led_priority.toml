@@ -1,6 +1,4 @@
-# 该toml配置文件用于规定各模块使用灯的优先级。
-# 为方便未加入优先级的模块进行调试，将undefined优先级最高。用户在调试时，可将
-# "bridge/protocol/ros/srv/LedExecute.srv" request中client字段
+# 该toml配置文件用于规定各模块使用灯的优先级,头灯、尾灯、mini led遵循一样的优先级配置
 # id越小优先级越高
 
 [[priority]]
