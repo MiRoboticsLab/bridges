@@ -323,6 +323,8 @@ Cyberdog_app::Cyberdog_app()
   ble_dfu_progress_sub_ = this->create_subscription<protocol::msg::BLEDFUProgress>(
     "ble_dfu_progress", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::bleDFUProgressCB, this, _1));
+  update_ble_firmware_client_ =
+    this->create_client<std_srvs::srv::Trigger>("update_ble_firmware");
 
   // stair demo
   start_stair_align_client_ =
