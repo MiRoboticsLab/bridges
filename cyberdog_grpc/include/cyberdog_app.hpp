@@ -84,6 +84,8 @@
 #include "protocol/msg/algo_task_status.hpp"
 #include "protocol/msg/self_check_status.hpp"
 #include "protocol/msg/state_switch_status.hpp"
+#include "protocol/srv/unlock.hpp"
+#include "protocol/srv/reboot_machine.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -124,6 +126,8 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr ready_nodification_subscriber_;
+  std::atomic_bool cyberdog_manager_ready_ {false};
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -136,6 +140,10 @@ private:
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
   void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
+  void managerReadyCB(const std_msgs::msg::Bool::SharedPtr msg)
+  {
+    cyberdog_manager_ready_ = msg->data;
+  }
   void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
@@ -279,6 +287,16 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  bool HandleUnlockDevelopAccess(
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  bool RebootManchine(
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   void motionServoRequestHandle(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
@@ -353,6 +371,12 @@ private:
   rclcpp::Subscription<protocol::msg::FaceRecognitionResult>::SharedPtr ai_face_recognition_sub_;
   void face_entry_result_callback(const protocol::msg::FaceEntryResult::SharedPtr msg);
   void face_rec_result_callback(const protocol::msg::FaceRecognitionResult::SharedPtr msg);
+
+  // unlock develop access
+  rclcpp::Client<protocol::srv::Unlock>::SharedPtr unlock_develop_access_client_;
+
+  // reboot machine
+  rclcpp::Client<protocol::srv::RebootMachine>::SharedPtr reboot_machine_client_;
 
   // audio program
   rclcpp::Client<protocol::srv::AudioAuthId>::SharedPtr audio_auth_request;
