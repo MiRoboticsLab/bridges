@@ -46,8 +46,11 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
   return true;
 }
 bool Cyberdog_App_Client::sendHeartBeat(
-  const std::string & ip, const int32_t & wstrength,
-  const int32_t & battery, const bool & internet, const std::string & sn)
+  const std::string & ip, int32_t wstrength,
+  int32_t battery, bool internet, const std::string & sn,
+  int motion_id, uint8_t task_status, int task_sub_status,
+  int self_check_code, const std::string & description,
+  int state_switch_state, int state_switch_code)
 {
   ClientContext context;
   context.set_deadline(
@@ -67,6 +70,21 @@ bool Cyberdog_App_Client::sendHeartBeat(
   ticks_.set_battery_power(battery);
   ticks_.set_internet(internet);
   ticks_.set_sn(sn);
+  grpcapi::MotionStatus * motion_status = new grpcapi::MotionStatus;
+  motion_status->set_motion_id(motion_id);
+  ticks_.set_allocated_motion_status(motion_status);
+  grpcapi::TaskStatus * alg_task_status = new grpcapi::TaskStatus;
+  alg_task_status->set_task_status(task_status);
+  alg_task_status->set_task_sub_status(task_sub_status);
+  ticks_.set_allocated_task_status(alg_task_status);
+  grpcapi::SelfCheckStatus * self_check_status = new grpcapi::SelfCheckStatus;
+  self_check_status->set_code(self_check_code);
+  self_check_status->set_description(description);
+  ticks_.set_allocated_self_check_status(self_check_status);
+  grpcapi::StateSwitchStatus * state_switch_status = new grpcapi::StateSwitchStatus;
+  state_switch_status->set_state(state_switch_state);
+  state_switch_status->set_code(state_switch_code);
+  ticks_.set_allocated_state_switch_status(state_switch_status);
   Status status = stub_->heartbeat(&context, ticks_, &result);
   if (!status.ok()) {
     INFO("SetHeartBeat error code:%d", status.error_code());

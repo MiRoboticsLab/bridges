@@ -114,10 +114,6 @@ Cyberdog_app::Cyberdog_app()
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
 
-  ready_nodification_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
-    "ready_notify", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::managerReadyCB, this, _1));
-
   timer_interval.init();
 
   INFO("Create server");
@@ -326,6 +322,20 @@ Cyberdog_app::Cyberdog_app()
   update_ble_firmware_client_ =
     this->create_client<std_srvs::srv::Trigger>("update_ble_firmware");
 
+  // status reporting
+  motion_status_sub_ = this->create_subscription<protocol::msg::MotionStatus>(
+    "motion_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::motionStatusCB, this, _1));
+  task_status_sub_ = this->create_subscription<protocol::msg::AlgoTaskStatus>(
+    "algo_task_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::taskStatusCB, this, _1));
+  self_check_status_sub_ = this->create_subscription<protocol::msg::SelfCheckStatus>(
+    "self_check_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::selfCheckStatusCB, this, _1));
+  state_switch_status_sub_ = this->create_subscription<protocol::msg::StateSwitchStatus>(
+    "state_switch_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::stateSwitchStatusCB, this, _1));
+
   // stair demo
   start_stair_align_client_ =
     this->create_client<std_srvs::srv::SetBool>("start_stair_align");
@@ -357,7 +367,7 @@ void Cyberdog_app::HeartBeat()
   std::string ipv4;
   bool connect_mark(false);
   while (rclcpp::ok()) {
-    if (can_process_messages_ && cyberdog_manager_ready_) {
+    if (can_process_messages_) {
       update_time_mutex_.lock();
       bool connector_timeout = std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::system_clock::now() - connector_update_time_point_).count() > 5;
@@ -366,10 +376,25 @@ void Cyberdog_app::HeartBeat()
       {
         std::shared_lock<std::shared_mutex> stub_read_lock(stub_mutex_);
         if (app_stub_ && !connector_timeout) {
+          int motion_id, task_sub_status, self_check_code, state_switch_state, state_switch_code;
+          uint8_t task_status;
+          std::string description;
+          {
+            std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
+            motion_id = motion_status_.motion_id;
+            task_status = task_status_.task_status;
+            task_sub_status = task_status_.task_sub_status;
+            self_check_code = self_check_status_.code;
+            description = self_check_status_.description;
+            state_switch_state = state_switch_status_.state;
+            state_switch_code = state_switch_status_.code;
+          }
           std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
-            local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn);
+            local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn,
+            motion_id, task_status, task_sub_status, self_check_code, description,
+            state_switch_state, state_switch_code);
         } else if (connector_timeout) {
           hearbeat_result = false;
           app_disconnected = true;
@@ -468,10 +493,6 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
-  if (!cyberdog_manager_ready_) {
-    INFO_MILLSECONDS(10000, "cyberdog_manager is not ready");
-    return;
-  }
   update_time_mutex_.lock();
   connector_update_time_point_ = std::chrono::system_clock::now();
   update_time_mutex_.unlock();
@@ -1888,6 +1909,33 @@ void Cyberdog_app::bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedP
   writer.EndObject();
   std::string param = strBuf.GetString();
   send_grpc_msg(::grpcapi::SendRequest::BLE_DFU_PROGRESS, param);
+}
+
+void Cyberdog_app::motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  motion_status_.motion_id = msg->motion_id;
+}
+
+void Cyberdog_app::taskStatusCB(const protocol::msg::AlgoTaskStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  task_status_.task_status = msg->task_status;
+  task_status_.task_sub_status = msg->task_sub_status;
+}
+
+void Cyberdog_app::selfCheckStatusCB(const protocol::msg::SelfCheckStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  self_check_status_.code = msg->code;
+  self_check_status_.description = msg->description;
+}
+
+void Cyberdog_app::stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  state_switch_status_.state = msg->state;
+  state_switch_status_.code = msg->code;
 }
 
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
