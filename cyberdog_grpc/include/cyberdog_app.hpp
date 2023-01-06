@@ -552,6 +552,9 @@ private:
     int code {0};
   } state_switch_status_;
   std::shared_mutex status_mutex_;
+  void statusRequestHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;

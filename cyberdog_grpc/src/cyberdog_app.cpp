@@ -1938,6 +1938,47 @@ void Cyberdog_app::stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::S
   state_switch_status_.code = msg->code;
 }
 
+void Cyberdog_app::statusRequestHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  {
+    std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
+    writer.StartObject();
+    writer.Key("motion_status");
+    writer.StartObject();
+    writer.Key("motion_id");
+    writer.Int(motion_status_.motion_id);
+    writer.EndObject();
+    writer.Key("task_status");
+    writer.StartObject();
+    writer.Key("task_status");
+    writer.Int(task_status_.task_status);
+    writer.Key("task_sub_status");
+    writer.Int(task_status_.task_sub_status);
+    writer.EndObject();
+    writer.Key("self_check_status");
+    writer.StartObject();
+    writer.Key("code");
+    writer.Int(self_check_status_.code);
+    writer.Key("description");
+    writer.String(self_check_status_.description.c_str());
+    writer.EndObject();
+    writer.Key("state_switch_status");
+    writer.StartObject();
+    writer.Key("state");
+    writer.Int(state_switch_status_.state);
+    writer.Key("code");
+    writer.Int(state_switch_status_.code);
+    writer.EndObject();
+    writer.EndObject();
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
   const Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
@@ -2752,6 +2793,9 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::UPDATE_BLE_FIRMWARE: {
         updateBLEFirmwareHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::STATUS_REQUEST: {
+        statusRequestHandle(grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
