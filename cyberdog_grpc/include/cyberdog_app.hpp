@@ -80,6 +80,10 @@
 #include "protocol/srv/stop_algo_task.hpp"
 #include "protocol/srv/get_ble_battery_level.hpp"
 #include "protocol/msg/bledfu_progress.hpp"
+#include "protocol/msg/motion_status.hpp"
+#include "protocol/msg/algo_task_status.hpp"
+#include "protocol/msg/self_check_status.hpp"
+#include "protocol/msg/state_switch_status.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -120,8 +124,6 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr ready_nodification_subscriber_;
-  std::atomic_bool cyberdog_manager_ready_ {false};
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -134,10 +136,6 @@ private:
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
   void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
-  void managerReadyCB(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    cyberdog_manager_ready_ = msg->data;
-  }
   void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
@@ -524,6 +522,39 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedPtr msg);
+
+  // status reporting
+  rclcpp::Subscription<protocol::msg::MotionStatus>::SharedPtr motion_status_sub_;
+  rclcpp::Subscription<protocol::msg::AlgoTaskStatus>::SharedPtr task_status_sub_;
+  rclcpp::Subscription<protocol::msg::SelfCheckStatus>::SharedPtr self_check_status_sub_;
+  rclcpp::Subscription<protocol::msg::StateSwitchStatus>::SharedPtr state_switch_status_sub_;
+  void motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg);
+  void taskStatusCB(const protocol::msg::AlgoTaskStatus::SharedPtr msg);
+  void selfCheckStatusCB(const protocol::msg::SelfCheckStatus::SharedPtr msg);
+  void stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::SharedPtr msg);
+  struct
+  {
+    int motion_id {0};
+  } motion_status_;
+  struct
+  {
+    uint8_t task_status {101};
+    int task_sub_status {0};
+  } task_status_;
+  struct
+  {
+    int code {-1};
+    std::string description;
+  } self_check_status_;
+  struct
+  {
+    int state {-1};
+    int code {0};
+  } state_switch_status_;
+  std::shared_mutex status_mutex_;
+  void statusRequestHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
