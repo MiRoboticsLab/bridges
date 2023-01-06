@@ -114,6 +114,10 @@ Cyberdog_app::Cyberdog_app()
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
 
+  ready_nodification_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
+    "ready_notify", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::managerReadyCB, this, _1));
+
   timer_interval.init();
 
   INFO("Create server");
@@ -341,6 +345,12 @@ Cyberdog_app::Cyberdog_app()
     this->create_client<std_srvs::srv::SetBool>("start_stair_align");
   stop_stair_align_client_ =
     this->create_client<std_srvs::srv::Trigger>("stop_stair_align");
+
+  unlock_develop_access_client_ =
+    this->create_client<protocol::srv::Unlock>("unlock_develop_access");
+
+  reboot_machine_client_ =
+    this->create_client<protocol::srv::RebootMachine>("reboot_machine");
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -2629,6 +2639,83 @@ void Cyberdog_app::audioVoicePrintDataHandle(
   writer->Write(grpc_respond);
 }
 
+bool Cyberdog_app::HandleUnlockDevelopAccess(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(10);
+  if (!unlock_develop_access_client_->wait_for_service(std::chrono::seconds(3))) {
+    INFO("call unlock develop access serve not avaiable");
+    return false;
+  }
+  auto req = std::make_shared<protocol::srv::Unlock::Request>();
+  CyberdogJson::Get(json_resquest, "httplink", req->httplink);
+  INFO("req->httplink is: %s", req->httplink.c_str());
+  // call ros service
+  auto future_result = unlock_develop_access_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO(
+      "success to call unlock develop access request services.");
+  } else {
+    INFO(
+      "Failed to call unlock develop access request  services.");
+    return false;
+  }
+  int unlock_result_ = future_result.get()->unlock_result;
+  CyberdogJson::Add(json_response, "unlock_result", unlock_result_);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set unlock develop access encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  INFO("unlock develop access grpc_respond is: %s", rsp_string.c_str());
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
+bool Cyberdog_app::RebootManchine(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(5);
+  if (!reboot_machine_client_->wait_for_service(std::chrono::seconds(3))) {
+    INFO("call reboot machine server not avaiable");
+    return false;
+  }
+  auto req = std::make_shared<protocol::srv::RebootMachine::Request>();
+  req->rebootmachine = 1997;
+  // CyberdogJson::Get(json_resquest, "httplink", req->httplink);
+  // INFO("req->httplink is: %s", req->httplink.c_str());
+  // call ros service
+  auto future_result = reboot_machine_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO(
+      "success to call reboot machine request services.");
+  } else {
+    INFO(
+      "Failed to call reboot machine request  services.");
+    return false;
+  }
+  int reboot_result_ = future_result.get()->rebootresult;
+  CyberdogJson::Add(json_response, "reboot_result", reboot_result_);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set reboot machine encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  INFO("reboot machine grpc_respond is: %s", rsp_string.c_str());
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -2825,6 +2912,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case 1101: {
         stopStairAlignHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::UNLOCK_DEVELOP_ACCESS: {
+        HandleUnlockDevelopAccess(json_resquest, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::REBOOT_MACHINE: {
+        RebootManchine(json_resquest, grpc_respond, writer);
       } break;
     default:
       break;

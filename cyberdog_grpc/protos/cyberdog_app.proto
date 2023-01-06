@@ -118,6 +118,8 @@ message SendRequest {
         UPDATE_BLE_FIRMWARE = 8009;
         BLE_DFU_PROGRESS = 8010;
         STATUS_REQUEST = 10001;
+        UNLOCK_DEVELOP_ACCESS = 9030;
+        REBOOT_MACHINE = 9031;
     }
 }
 
