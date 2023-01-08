@@ -34,6 +34,8 @@
 #include <vector>
 #include <set>
 #include <atomic>
+#include <condition_variable>
+#include <list>
 
 #include "cyberdog_app_server.hpp"
 #include "transmit_files.hpp"
@@ -371,7 +373,6 @@ void Cyberdog_app::HeartBeat()
 {
   rclcpp::WallRate r(500ms);
   std::string ipv4;
-  bool connect_mark(false);
   while (rclcpp::ok()) {
     if (can_process_messages_) {
       update_time_mutex_.lock();
@@ -410,19 +411,20 @@ void Cyberdog_app::HeartBeat()
         }
       }
       if (!hearbeat_result) {
-        connect_mark = false;
         if (heartbeat_err_cnt_++ >= APP_CONNECTED_FAIL_CNT) {
+          connect_mark_ = false;
           std_msgs::msg::Bool msg;
           msg.data = false;
           app_connection_pub_->publish(msg);
+          disconnectTaskRequest();
           if (!app_disconnected) {
             destroyGrpc();
             createGrpc();
           }
         }
       } else {
-        if (!connect_mark) {
-          connect_mark = true;
+        if (!connect_mark_) {
+          connect_mark_ = true;
           publishNotCompleteSendingFiles();
         }
         heartbeat_err_cnt_ = 0;
@@ -1132,7 +1134,8 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
 
 void Cyberdog_app::handleNavigationAction(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
-  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
+  bool create_new_task)
 {
   int nav_timeout = 7200;
   std::string response_string;
@@ -1147,9 +1150,12 @@ void Cyberdog_app::handleNavigationAction(
     CyberdogJson::Get(json_resquest, "outdoor", outdoor);
     mode_goal.outdoor = outdoor;
   } else if (type == "NAVIGATION_AB") {
-    if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
+    if (create_new_task &&
+      (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")))
+    {
       ERROR("NAVIGATION_AB should have goalX and goalY settings");
       retrunErrorGrpc(writer);
+      return;
     }
     CyberdogJson::Get(json_resquest, "goalX", goal_x);
     CyberdogJson::Get(json_resquest, "goalY", goal_y);
@@ -1188,8 +1194,9 @@ void Cyberdog_app::handleNavigationAction(
     CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
     CyberdogJson::Get(json_resquest, "object_tracking", mode_goal.object_tracking);
   } else {
-    ERROR("Unavailable navigation type: %s", type.c_str());
+    ERROR("Unavailable task type: %s", type.c_str());
     retrunErrorGrpc(writer);
+    return;
   }
 
   auto return_result = [&](int result_code) {
@@ -1234,66 +1241,92 @@ void Cyberdog_app::handleNavigationAction(
   auto feedback_callback =
     [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const Navigation::Feedback> feedback) {
-      std::shared_lock<std::shared_mutex> readlock(nav_map_mutex_);
-      std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
-      size_t goal_hash = goal_id_hash_fun(goal_handel_ptr->get_goal_id());
-      if (hash_handle_map_.find(goal_hash) != hash_handle_map_.end()) {
-        INFO_STREAM(
-          "feedback_code: " << feedback->feedback_code << " feedback_msg: " <<
-            feedback->feedback_msg);
-        writer_mutex.lock();
-        return_feedback(feedback->feedback_code, feedback->feedback_msg);
-        writer_mutex.unlock();
-      }
+      writer_mutex.lock();
+      return_feedback(feedback->feedback_code, feedback->feedback_msg);
+      writer_mutex.unlock();
     };
-  rclcpp_action::Client<Navigation>::SendGoalOptions goal_options;
-  goal_options.feedback_callback = feedback_callback;
-  auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal, goal_options);
-  uint8_t result = 2;
-  bool result_timeout = false;
-  if (mode_goal_handle.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
-    if (!mode_goal_handle.get()) {
+
+  std::shared_ptr<std::condition_variable> result_cv_ptr;
+  std::shared_ptr<std::shared_ptr<Navigation::Result>> result_pp;
+  std::shared_ptr<std::mutex> result_mx;
+  if (create_new_task) {
+    size_t goal_hash = action_task_manager_.StartActionTask<Navigation>(
+      navigation_client_, mode_goal, feedback_callback,
+      result_cv_ptr, result_pp, result_mx);
+    if (goal_hash == 0) {
       WARN("Navigation action request rejected");
       return_accept(false);
       return;
     }
-    return_accept(true);
-    nav_map_mutex_.lock();
-    std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
-    size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
-    hash_handle_map_[goal_hash] = mode_goal_handle.get();
-    nav_map_mutex_.unlock();
-    auto mode_result =
-      navigation_client_->async_get_result(mode_goal_handle.get());
-    if (mode_result.wait_for(std::chrono::seconds(nav_timeout)) == std::future_status::ready) {
-      if (mode_result.get().result->result ==
-        protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
-      {
-        INFO("Navigation action succeeded");
-      } else {
-        WARN("Navigation action failed");
-      }
-      result = mode_result.get().result->result;
-    } else {
-      WARN("Navigation action result timeout");
-      result_timeout = true;
-    }
+    type_hash_mutex_.lock();
+    task_type_hash_map_[mode_goal.nav_type] = goal_hash;
+    type_hash_mutex_.unlock();
   } else {
-    WARN("Navigation action request timeout");
-    return_accept(false);
+    std::shared_lock<std::shared_mutex> read_lock(type_hash_mutex_);
+    if (task_type_hash_map_.find(mode_goal.nav_type) == task_type_hash_map_.end()) {
+      return_accept(false);  // no task of that type recorded
+      return;
+    }
+    bool accepted = action_task_manager_.AccessTask<Navigation>(
+      task_type_hash_map_[mode_goal.nav_type],
+      feedback_callback, result_cv_ptr, result_pp, result_mx);
+    if (!accepted) {
+      return_accept(false);  // the task has already finished
+      return;
+    }
+  }
+  return_accept(true);
+
+  uint8_t result = 2;
+  bool result_timeout = false;
+  auto result_is_ready =
+    [&]() {
+      return result_pp && *result_pp;
+    };
+  std::unique_lock<std::mutex> result_lock(*result_mx);
+  bool is_not_timeout = result_cv_ptr->wait_for(
+    result_lock, std::chrono::seconds(nav_timeout), result_is_ready);
+  if (!is_not_timeout) {
+    WARN("Navigation action result timeout");
+    result_timeout = true;
+    writer_mutex.lock();
+    return_result(99);  // timeout code
+    writer_mutex.unlock();
+  } else {
+    result = (*result_pp)->result;
+    if (result == protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS) {
+      INFO("Navigation action task succeeded");
+    } else {
+      WARN("Navigation action task failed");
+    }
+    writer_mutex.lock();
+    return_result(result);
+    writer_mutex.unlock();
+  }
+  if (connect_mark_) {
+    std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
+    task_type_hash_map_.erase(mode_goal.nav_type);
+  }
+}
+
+void Cyberdog_app::disconnectTaskRequest()
+{
+  std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
+  if (task_type_hash_map_.empty()) {
     return;
   }
-  std::unique_lock<std::shared_mutex> write_lock(nav_map_mutex_);
-  writer_mutex.lock();
-  if (result_timeout) {
-    return_result(10);
-  } else {
-    return_result(result);
+  std::list<size_t> remove_hash_list;
+  for (auto & type_hash : task_type_hash_map_) {
+    if (!action_task_manager_.RemoveRequest(type_hash.second)) {
+      remove_hash_list.push_back(type_hash.first);
+    }
   }
-  writer_mutex.unlock();
-  std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
-  size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
-  hash_handle_map_.erase(goal_hash);
+  if (remove_hash_list.empty()) {
+    return;
+  }
+  for (auto type : remove_hash_list) {
+    task_type_hash_map_.erase(type);
+  }
 }
 
 void Cyberdog_app::handlLableGetRequest(
