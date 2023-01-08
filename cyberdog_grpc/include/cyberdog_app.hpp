@@ -34,6 +34,7 @@
 
 // Interfaces
 #include "cyberdog_app_client.hpp"
+#include "action_task.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -460,14 +461,18 @@ private:
 
   void handleNavigationAction(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
-    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
+    bool create_new_task = true);
+
+  ActionTaskManager action_task_manager_;
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
     navigation_client_;
-  std::map<size_t, rclcpp_action::Client<protocol::action::Navigation>::GoalHandle::SharedPtr>
-  hash_handle_map_;
-  std::shared_mutex nav_map_mutex_;
+  std::map<uint8_t, size_t> task_type_hash_map_;
+  std::shared_mutex type_hash_mutex_;
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
+  bool connect_mark_ {false};
+  void disconnectTaskRequest();
 
   void handleStopAction(
     const Document & json_resquest, Document & json_response,
