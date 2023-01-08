@@ -2798,7 +2798,7 @@ void Cyberdog_app::ProcessMsg(
         handlLableGetRequest(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::NAV_ACTION: {
-        handleNavigationAction(json_resquest, grpc_respond, writer);
+        handleNavigationAction(json_resquest, grpc_respond, writer, true);
       } break;
     case ::grpcapi::SendRequest::SELECTED_TRACKING_OBJ: {
         selectTrackingObject(json_resquest, json_response, grpc_respond, writer);
@@ -2806,6 +2806,9 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::STOP_NAV_ACTION: {
         handleStopAction(json_resquest, json_response, grpc_respond, writer);
       } break;
+    case ::grpcapi::SendRequest::ACCESS_NAV_ACTION: {
+        handleNavigationAction(json_resquest, grpc_respond, writer, false);
+      }
     case ::grpcapi::SendRequest::BLUETOOTH_SCAN: {
         scanBluetoothDevices(json_resquest, grpc_respond, writer);
       } break;
