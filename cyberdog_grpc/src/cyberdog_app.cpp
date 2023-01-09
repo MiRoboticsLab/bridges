@@ -1209,6 +1209,7 @@ void Cyberdog_app::handleNavigationAction(
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
+      INFO_STREAM("transmit result: " << response_string);
     };
 
   auto return_feedback = [&](int feedback_code, const std::string & feedback_msg) {
@@ -1223,6 +1224,7 @@ void Cyberdog_app::handleNavigationAction(
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
+      INFO_STREAM("transmit feedback: " << response_string);
     };
 
   auto return_accept = [&](bool accepted) {
@@ -1235,6 +1237,7 @@ void Cyberdog_app::handleNavigationAction(
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
+      INFO_STREAM("transmit access: " << response_string);
     };
 
   std::mutex writer_mutex;
