@@ -114,10 +114,6 @@ Cyberdog_app::Cyberdog_app()
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
 
-  ready_nodification_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
-    "ready_notify", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::managerReadyCB, this, _1));
-
   timer_interval.init();
 
   INFO("Create server");
