@@ -126,8 +126,6 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr ready_nodification_subscriber_;
-  std::atomic_bool cyberdog_manager_ready_ {false};
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -140,10 +138,6 @@ private:
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
   void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
-  void managerReadyCB(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    cyberdog_manager_ready_ = msg->data;
-  }
   void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
