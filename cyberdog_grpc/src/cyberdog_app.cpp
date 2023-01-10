@@ -1137,67 +1137,40 @@ void Cyberdog_app::handleNavigationAction(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
   bool create_new_task)
 {
+  INFO("handleNavigationAction");
   int nav_timeout = 7200;
   std::string response_string;
-  std::string type;
+  uint32_t type;
+  geometry_msgs::msg::PoseStamped goal;
   double goal_x, goal_y;
+  double yaw;
+  bool outdoor(false);
+  double keep_distance;
+  bool object_tracking(false);
   CyberdogJson::Get(json_resquest, "type", type);
-  INFO("handleNavigationAction");
-  auto mode_goal = Navigation::Goal();
-  if (type == "MAPPING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
-    bool outdoor(false);
-    CyberdogJson::Get(json_resquest, "outdoor", outdoor);
-    mode_goal.outdoor = outdoor;
-  } else if (type == "NAVIGATION_AB") {
-    if (create_new_task &&
-      (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")))
-    {
-      ERROR("NAVIGATION_AB should have goalX and goalY settings");
-      retrunErrorGrpc(writer);
-      return;
-    }
-    CyberdogJson::Get(json_resquest, "goalX", goal_x);
-    CyberdogJson::Get(json_resquest, "goalY", goal_y);
-    geometry_msgs::msg::PoseStamped goal;
-    goal.pose.position.x = goal_x;
-    goal.pose.position.y = goal_y;
-    if (json_resquest.HasMember("theta")) {
-      double yaw;
-      CyberdogJson::Get(json_resquest, "theta", yaw);
-      goal.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw));
-    } else {
-      goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
-    }
-    mode_goal.poses.push_back(goal);
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
-  } else if (type == "RELOCOLIZATION") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
-    bool outdoor(false);
-    CyberdogJson::Get(json_resquest, "outdoor", outdoor);
-    mode_goal.outdoor = outdoor;
-  } else if (type == "AUTO_DOCKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
-  } else if (type == "FOLLOW") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_FOLLOW;
-  } else if (type == "UWB_TRACKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
-    uint32_t relative_pos = 0;
-    CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
-    mode_goal.relative_pos = relative_pos;
-    CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
-  } else if (type == "HUMAN_TRACKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_HUMAN_TRACKING;
-    uint32_t relative_pos = 0;
-    CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
-    mode_goal.relative_pos = relative_pos;
-    CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
-    CyberdogJson::Get(json_resquest, "object_tracking", mode_goal.object_tracking);
+  CyberdogJson::Get(json_resquest, "outdoor", outdoor);
+  CyberdogJson::Get(json_resquest, "goalX", goal_x);
+  CyberdogJson::Get(json_resquest, "goalY", goal_y);
+  if (json_resquest.HasMember("theta")) {
+    CyberdogJson::Get(json_resquest, "theta", yaw);
+    goal.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw));
   } else {
-    ERROR("Unavailable task type: %s", type.c_str());
-    retrunErrorGrpc(writer);
-    return;
+    goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
   }
+  uint32_t relative_pos = 0;
+  CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
+  CyberdogJson::Get(json_resquest, "keep_distance", keep_distance);
+  CyberdogJson::Get(json_resquest, "object_tracking", object_tracking);
+
+  auto mode_goal = Navigation::Goal();
+  mode_goal.nav_type = type;
+  goal.pose.position.x = goal_x;
+  goal.pose.position.y = goal_y;
+  mode_goal.poses.push_back(goal);
+  mode_goal.outdoor = outdoor;
+  mode_goal.relative_pos = relative_pos;
+  mode_goal.keep_distance = keep_distance;
+  mode_goal.object_tracking = object_tracking;
 
   auto return_result = [&](int result_code) {
       rapidjson::StringBuffer strBuf;
@@ -1611,30 +1584,13 @@ void Cyberdog_app::handleStopAction(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  std::string type;
+  uint32_t type(0);
+  std::string map_name;
   CyberdogJson::Get(json_resquest, "type", type);
+  CyberdogJson::Get(json_resquest, "map_name", map_name);
   auto request = std::make_shared<protocol::srv::StopAlgoTask::Request>();
-  if (type == "ALL") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_ALL;
-  } else if (type == "MAPPING") {
-    CyberdogJson::Get(json_resquest, "map_name", request->map_name);
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_MAPPING;
-  } else if (type == "NAVIGATION_AB") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_AB;
-  } else if (type == "RELOCOLIZATION") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_LOCALIZATION;
-  } else if (type == "AUTO_DOCKING") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_AUTO_DOCKING;
-  } else if (type == "FOLLOW") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_FOLLOW;
-  } else if (type == "UWB_TRACKING") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_UWB_TRACKING;
-  } else if (type == "HUMAN_TRACKING") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_HUMAN_TRACKING;
-  } else {
-    ERROR("Unavailable action type: %s", type.c_str());
-    retrunErrorGrpc(writer);
-  }
+  request->task_id = type;
+  request->map_name = map_name;
   auto future_result = stop_nav_action_client_->async_send_request(request);
   std::chrono::seconds timeout(30);
   std::future_status status = future_result.wait_for(timeout);
