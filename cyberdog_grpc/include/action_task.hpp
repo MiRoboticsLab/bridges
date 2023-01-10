@@ -64,6 +64,7 @@ public:
     fire_me_ = fun;
   }
   virtual void RemoveRequest() = 0;
+  virtual void CallFeedbackWithLatestValue() = 0;
 
 protected:
   void fireMe()
@@ -119,11 +120,11 @@ public:
     if (goal_handle_future.wait_for(std::chrono::seconds(3)) != std::future_status::ready) {
       return 0;
     }
-    auto goal_handle_ptr = goal_handle_future.get();
-    if (!goal_handle_ptr) {
+    goal_handle_ptr_ = goal_handle_future.get();
+    if (!goal_handle_ptr_) {
       return 0;
     }
-    goal_hash_ = getHash(goal_handle_ptr);
+    goal_hash_ = getHash(goal_handle_ptr_);
     return goal_hash_;
   }
   void CallFeedback(
@@ -134,6 +135,7 @@ public:
     if (!feedback_cb_) {  // there is no requests receiving feedback
       return;
     }
+    latest_feedback_value_ = feedback_ptr;
     feedback_cb_(goal_handle_ptr, feedback_ptr);
   }
   void RemoveRequest() override
@@ -141,6 +143,13 @@ public:
     removeFeedbackCallback();
     addFakeResult();
     cv_ptr_->notify_all();
+  }
+  void CallFeedbackWithLatestValue() override
+  {
+    if (!latest_feedback_value_) {
+      return;
+    }
+    CallFeedback(goal_handle_ptr_, latest_feedback_value_);
   }
 
 private:
@@ -193,6 +202,9 @@ private:
   FeedbackCallback<ActionType> feedback_cb_ {nullptr};
   std::shared_ptr<std::shared_ptr<typename ActionType::Result>> action_result_ptr_ptr_ {nullptr};
   std::atomic_bool got_result_ {false};
+  typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr
+    goal_handle_ptr_ {nullptr};
+  std::shared_ptr<const typename ActionType::Feedback> latest_feedback_value_;
   LOGGER_MINOR_INSTANCE("ActionTask");
 };
 
@@ -260,6 +272,15 @@ public:
     action_task_ptr->SetResultPtr(result_pp);
     action_task_ptr->SetResultMutex(mx);
     return true;
+  }
+  void CallLatestFeedback(size_t goal_hash)
+  {
+    std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
+    auto action_task_itr = action_tasks_.find(goal_hash);
+    if (action_task_itr == action_tasks_.end()) {  // action has finished
+      return;
+    }
+    action_task_itr->second->CallFeedbackWithLatestValue();
   }
 
 private:

@@ -1279,6 +1279,9 @@ void Cyberdog_app::handleNavigationAction(
     }
   }
   return_accept(true);
+  if (!create_new_task) {
+    action_task_manager_.CallLatestFeedback(task_type_hash_map_[mode_goal.nav_type]);
+  }
 
   uint8_t result = 2;
   bool result_timeout = false;
