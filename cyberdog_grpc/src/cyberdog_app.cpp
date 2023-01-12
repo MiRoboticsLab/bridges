@@ -364,7 +364,7 @@ void Cyberdog_app::send_msgs_(
   const std::unique_ptr<::grpcapi::SendRequest> msg)
 {
   std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
-  if (can_process_messages_ && app_stub_) {
+  if (can_process_messages_ && app_stub_ && connect_mark_) {
     app_stub_->sendRequest(*msg);
   }
 }
@@ -1222,9 +1222,17 @@ void Cyberdog_app::handleNavigationAction(
       writer_mutex.unlock();
     };
 
+  auto fake_feedback_ballback =
+    [&](int feedback_code) {
+      writer_mutex.lock();
+      return_feedback(feedback_code, std::string(""));
+      writer_mutex.unlock();
+    };
+
   std::shared_ptr<std::condition_variable> result_cv_ptr;
   std::shared_ptr<std::shared_ptr<Navigation::Result>> result_pp;
   std::shared_ptr<std::mutex> result_mx;
+  bool uwb_not_from_app = false;  // activated uwb tracking not from app
   if (create_new_task) {
     size_t goal_hash = action_task_manager_.StartActionTask<Navigation>(
       navigation_client_, mode_goal, feedback_callback,
@@ -1240,12 +1248,24 @@ void Cyberdog_app::handleNavigationAction(
   } else {
     std::shared_lock<std::shared_mutex> read_lock(type_hash_mutex_);
     if (task_type_hash_map_.find(mode_goal.nav_type) == task_type_hash_map_.end()) {
-      return_accept(false);  // no task of that type recorded
-      return;
+      if (mode_goal.nav_type != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
+        return_accept(false);  // no task of that type recorded
+        return;
+      }
+      uwb_not_from_app = true;
     }
-    bool accepted = action_task_manager_.AccessTask<Navigation>(
-      task_type_hash_map_[mode_goal.nav_type],
-      feedback_callback, result_cv_ptr, result_pp, result_mx);
+    bool accepted = false;
+    if (!uwb_not_from_app) {
+      accepted = action_task_manager_.AccessTask<Navigation>(
+        task_type_hash_map_[mode_goal.nav_type],
+        feedback_callback, result_cv_ptr, result_pp, result_mx);
+    } else {
+      if (task_status_.task_status == Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
+        accepted = true;
+      } else {
+        accepted = false;
+      }
+    }
     if (!accepted) {
       return_accept(false);  // the task has already finished
       return;
@@ -1253,7 +1273,28 @@ void Cyberdog_app::handleNavigationAction(
   }
   return_accept(true);
   if (!create_new_task) {
-    action_task_manager_.CallLatestFeedback(task_type_hash_map_[mode_goal.nav_type]);
+    if (!uwb_not_from_app) {
+      action_task_manager_.CallLatestFeedback(task_type_hash_map_[mode_goal.nav_type]);
+    } else {
+      fake_feedback_ballback(task_status_.task_sub_status);
+    }
+  }
+
+  if (uwb_not_from_app) {
+    rclcpp::WallRate rate(500ms);
+    int latest_sub_status = -1;
+    while (rclcpp::ok() &&
+      task_status_.task_status != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING &&
+      connect_mark_)
+    {
+      rate.sleep();
+      if (latest_sub_status != task_status_.task_sub_status) {
+        fake_feedback_ballback(task_status_.task_sub_status);
+        latest_sub_status = task_status_.task_sub_status;
+      }
+    }
+    return_result(Navigation::Result::NAVIGATION_RESULT_TYPE_FAILED);
+    return;
   }
 
   uint8_t result = 2;
