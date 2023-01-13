@@ -1234,6 +1234,12 @@ void Cyberdog_app::handleNavigationAction(
   std::shared_ptr<std::mutex> result_mx;
   bool uwb_not_from_app = false;  // activated uwb tracking not from app
   if (create_new_task) {
+    INFO_STREAM(
+      "Sending action goal: type: " << mode_goal.nav_type << " outdoor: " <<
+        mode_goal.outdoor << " relateve_pos: " <<
+        " keep_distance: " << mode_goal.keep_distance << " object_tracking: " <<
+        mode_goal.object_tracking << " goal point: (" <<
+        mode_goal.poses[0].pose.position.x << "," << mode_goal.poses[0].pose.position.y << ")");
     size_t goal_hash = action_task_manager_.StartActionTask<Navigation>(
       navigation_client_, mode_goal, feedback_callback,
       result_cv_ptr, result_pp, result_mx);
