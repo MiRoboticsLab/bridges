@@ -114,10 +114,6 @@ Cyberdog_app::Cyberdog_app()
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
 
-  ready_nodification_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(
-    "ready_notify", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::managerReadyCB, this, _1));
-
   timer_interval.init();
 
   INFO("Create server");
@@ -317,12 +313,40 @@ Cyberdog_app::Cyberdog_app()
     this->create_client<std_srvs::srv::Trigger>("ble_device_firmware_version");
   delete_ble_history_client_ =
     this->create_client<nav2_msgs::srv::SaveMap>("delete_ble_devices_history");
+  ble_firmware_update_notification_sub_ = this->create_subscription<std_msgs::msg::String>(
+    "ble_firmware_update_notification", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::bleFirmwareUpdateNotificationCB, this, _1));
+  ble_dfu_progress_sub_ = this->create_subscription<protocol::msg::BLEDFUProgress>(
+    "ble_dfu_progress", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::bleDFUProgressCB, this, _1));
+  update_ble_firmware_client_ =
+    this->create_client<std_srvs::srv::Trigger>("update_ble_firmware");
+
+  // status reporting
+  motion_status_sub_ = this->create_subscription<protocol::msg::MotionStatus>(
+    "motion_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::motionStatusCB, this, _1));
+  task_status_sub_ = this->create_subscription<protocol::msg::AlgoTaskStatus>(
+    "algo_task_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::taskStatusCB, this, _1));
+  self_check_status_sub_ = this->create_subscription<protocol::msg::SelfCheckStatus>(
+    "self_check_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::selfCheckStatusCB, this, _1));
+  state_switch_status_sub_ = this->create_subscription<protocol::msg::StateSwitchStatus>(
+    "state_switch_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::stateSwitchStatusCB, this, _1));
 
   // stair demo
   start_stair_align_client_ =
     this->create_client<std_srvs::srv::SetBool>("start_stair_align");
   stop_stair_align_client_ =
     this->create_client<std_srvs::srv::Trigger>("stop_stair_align");
+
+  unlock_develop_access_client_ =
+    this->create_client<protocol::srv::Unlock>("unlock_develop_access");
+
+  reboot_machine_client_ =
+    this->create_client<protocol::srv::RebootMachine>("reboot_machine");
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -349,7 +373,7 @@ void Cyberdog_app::HeartBeat()
   std::string ipv4;
   bool connect_mark(false);
   while (rclcpp::ok()) {
-    if (can_process_messages_ && cyberdog_manager_ready_) {
+    if (can_process_messages_) {
       update_time_mutex_.lock();
       bool connector_timeout = std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::system_clock::now() - connector_update_time_point_).count() > 5;
@@ -358,10 +382,25 @@ void Cyberdog_app::HeartBeat()
       {
         std::shared_lock<std::shared_mutex> stub_read_lock(stub_mutex_);
         if (app_stub_ && !connector_timeout) {
+          int motion_id, task_sub_status, self_check_code, state_switch_state, state_switch_code;
+          uint8_t task_status;
+          std::string description;
+          {
+            std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
+            motion_id = motion_status_.motion_id;
+            task_status = task_status_.task_status;
+            task_sub_status = task_status_.task_sub_status;
+            self_check_code = self_check_status_.code;
+            description = self_check_status_.description;
+            state_switch_state = state_switch_status_.state;
+            state_switch_code = state_switch_status_.code;
+          }
           std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
-            local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn);
+            local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn,
+            motion_id, task_status, task_sub_status, self_check_code, description,
+            state_switch_state, state_switch_code);
         } else if (connector_timeout) {
           hearbeat_result = false;
           app_disconnected = true;
@@ -460,10 +499,6 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
-  if (!cyberdog_manager_ready_) {
-    INFO_MILLSECONDS(10000, "cyberdog_manager is not ready");
-    return;
-  }
   update_time_mutex_.lock();
   connector_update_time_point_ = std::chrono::system_clock::now();
   update_time_mutex_.unlock();
@@ -1778,13 +1813,11 @@ void Cyberdog_app::getBLEFirmwareVersionHandle(
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
-    bool success = future_result.get()->success;
-    std::string message = future_result.get()->message;
     writer.StartObject();
     writer.Key("success");
-    writer.Bool(success);
+    writer.Bool(future_result.get()->success);
     writer.Key("message");
-    writer.String(message.c_str());
+    writer.String(future_result.get()->message.c_str());
     writer.EndObject();
   } else {
     ERROR("call ble_device_firmware_version timeout.");
@@ -1821,6 +1854,132 @@ void Cyberdog_app::deleteBLEHistoryHandle(
     ERROR("call delete_ble_devices_history timeout.");
     retrunErrorGrpc(grpc_writer);
     return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::bleFirmwareUpdateNotificationCB(const std_msgs::msg::String::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("data");
+  writer.String(msg->data.c_str());
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::BLE_FIRMWARE_UPDATE_NOTIFICATION, param);
+}
+
+void Cyberdog_app::updateBLEFirmwareHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!update_ble_firmware_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("update_ble_firmware server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = update_ble_firmware_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call update_ble_firmware timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("status");
+  writer.Int(msg->status);
+  writer.Key("progress");
+  writer.Double(msg->progress);
+  writer.Key("message");
+  writer.String(msg->message.c_str());
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::BLE_DFU_PROGRESS, param);
+}
+
+void Cyberdog_app::motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  motion_status_.motion_id = msg->motion_id;
+}
+
+void Cyberdog_app::taskStatusCB(const protocol::msg::AlgoTaskStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  task_status_.task_status = msg->task_status;
+  task_status_.task_sub_status = msg->task_sub_status;
+}
+
+void Cyberdog_app::selfCheckStatusCB(const protocol::msg::SelfCheckStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  self_check_status_.code = msg->code;
+  self_check_status_.description = msg->description;
+}
+
+void Cyberdog_app::stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  state_switch_status_.state = msg->state;
+  state_switch_status_.code = msg->code;
+}
+
+void Cyberdog_app::statusRequestHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  {
+    std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
+    writer.StartObject();
+    writer.Key("motion_status");
+    writer.StartObject();
+    writer.Key("motion_id");
+    writer.Int(motion_status_.motion_id);
+    writer.EndObject();
+    writer.Key("task_status");
+    writer.StartObject();
+    writer.Key("task_status");
+    writer.Int(task_status_.task_status);
+    writer.Key("task_sub_status");
+    writer.Int(task_status_.task_sub_status);
+    writer.EndObject();
+    writer.Key("self_check_status");
+    writer.StartObject();
+    writer.Key("code");
+    writer.Int(self_check_status_.code);
+    writer.Key("description");
+    writer.String(self_check_status_.description.c_str());
+    writer.EndObject();
+    writer.Key("state_switch_status");
+    writer.StartObject();
+    writer.Key("state");
+    writer.Int(state_switch_status_.state);
+    writer.Key("code");
+    writer.Int(state_switch_status_.code);
+    writer.EndObject();
+    writer.EndObject();
   }
   grpc_respond.set_data(strBuf.GetString());
   grpc_writer->Write(grpc_respond);
@@ -2476,6 +2635,83 @@ void Cyberdog_app::audioVoicePrintDataHandle(
   writer->Write(grpc_respond);
 }
 
+bool Cyberdog_app::HandleUnlockDevelopAccess(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(10);
+  if (!unlock_develop_access_client_->wait_for_service(std::chrono::seconds(3))) {
+    INFO("call unlock develop access serve not avaiable");
+    return false;
+  }
+  auto req = std::make_shared<protocol::srv::Unlock::Request>();
+  CyberdogJson::Get(json_resquest, "httplink", req->httplink);
+  INFO("req->httplink is: %s", req->httplink.c_str());
+  // call ros service
+  auto future_result = unlock_develop_access_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO(
+      "success to call unlock develop access request services.");
+  } else {
+    INFO(
+      "Failed to call unlock develop access request  services.");
+    return false;
+  }
+  int unlock_result_ = future_result.get()->unlock_result;
+  CyberdogJson::Add(json_response, "unlock_result", unlock_result_);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set unlock develop access encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  INFO("unlock develop access grpc_respond is: %s", rsp_string.c_str());
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
+bool Cyberdog_app::RebootManchine(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(5);
+  if (!reboot_machine_client_->wait_for_service(std::chrono::seconds(3))) {
+    INFO("call reboot machine server not avaiable");
+    return false;
+  }
+  auto req = std::make_shared<protocol::srv::RebootMachine::Request>();
+  req->rebootmachine = 1997;
+  // CyberdogJson::Get(json_resquest, "httplink", req->httplink);
+  // INFO("req->httplink is: %s", req->httplink.c_str());
+  // call ros service
+  auto future_result = reboot_machine_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO(
+      "success to call reboot machine request services.");
+  } else {
+    INFO(
+      "Failed to call reboot machine request  services.");
+    return false;
+  }
+  int reboot_result_ = future_result.get()->rebootresult;
+  CyberdogJson::Add(json_response, "reboot_result", reboot_result_);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set reboot machine encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  INFO("reboot machine grpc_respond is: %s", rsp_string.c_str());
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -2638,6 +2874,12 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::DELETE_BLE_HISTORY: {
         deleteBLEHistoryHandle(json_resquest, grpc_respond, writer);
       } break;
+    case ::grpcapi::SendRequest::UPDATE_BLE_FIRMWARE: {
+        updateBLEFirmwareHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::STATUS_REQUEST: {
+        statusRequestHandle(grpc_respond, writer);
+      } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
           return;
@@ -2666,6 +2908,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case 1101: {
         stopStairAlignHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::UNLOCK_DEVELOP_ACCESS: {
+        HandleUnlockDevelopAccess(json_resquest, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::REBOOT_MACHINE: {
+        RebootManchine(json_resquest, grpc_respond, writer);
       } break;
     default:
       break;

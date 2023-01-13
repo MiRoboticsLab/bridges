@@ -1,0 +1,6 @@
+# request
+int32 rebootmachine   # 1997 
+---
+# response
+int32 rebootresult   # 0 
+                     # 255

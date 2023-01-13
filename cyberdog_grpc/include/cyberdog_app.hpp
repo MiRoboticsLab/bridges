@@ -79,6 +79,13 @@
 #include "protocol/srv/face_rec.hpp"
 #include "protocol/srv/stop_algo_task.hpp"
 #include "protocol/srv/get_ble_battery_level.hpp"
+#include "protocol/msg/bledfu_progress.hpp"
+#include "protocol/msg/motion_status.hpp"
+#include "protocol/msg/algo_task_status.hpp"
+#include "protocol/msg/self_check_status.hpp"
+#include "protocol/msg/state_switch_status.hpp"
+#include "protocol/srv/unlock.hpp"
+#include "protocol/srv/reboot_machine.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -119,8 +126,6 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr ready_nodification_subscriber_;
-  std::atomic_bool cyberdog_manager_ready_ {false};
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -133,10 +138,6 @@ private:
   std::shared_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
   void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
-  void managerReadyCB(const std_msgs::msg::Bool::SharedPtr msg)
-  {
-    cyberdog_manager_ready_ = msg->data;
-  }
   void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
   void destroyGrpc();
   void createGrpc();
@@ -280,6 +281,16 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  bool HandleUnlockDevelopAccess(
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
+  bool RebootManchine(
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   void motionServoRequestHandle(
     const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
@@ -354,6 +365,12 @@ private:
   rclcpp::Subscription<protocol::msg::FaceRecognitionResult>::SharedPtr ai_face_recognition_sub_;
   void face_entry_result_callback(const protocol::msg::FaceEntryResult::SharedPtr msg);
   void face_rec_result_callback(const protocol::msg::FaceRecognitionResult::SharedPtr msg);
+
+  // unlock develop access
+  rclcpp::Client<protocol::srv::Unlock>::SharedPtr unlock_develop_access_client_;
+
+  // reboot machine
+  rclcpp::Client<protocol::srv::RebootMachine>::SharedPtr reboot_machine_client_;
 
   // audio program
   rclcpp::Client<protocol::srv::AudioAuthId>::SharedPtr audio_auth_request;
@@ -492,6 +509,9 @@ private:
   rclcpp::Client<protocol::srv::GetBLEBatteryLevel>::SharedPtr ble_battery_client_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr ble_device_firmware_version_client_;
   rclcpp::Client<nav2_msgs::srv::SaveMap>::SharedPtr delete_ble_history_client_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ble_firmware_update_notification_sub_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr update_ble_firmware_client_;
+  rclcpp::Subscription<protocol::msg::BLEDFUProgress>::SharedPtr ble_dfu_progress_sub_;
   void scanBluetoothDevices(
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
@@ -513,6 +533,44 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void deleteBLEHistoryHandle(
     Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void bleFirmwareUpdateNotificationCB(const std_msgs::msg::String::SharedPtr msg);
+  void updateBLEFirmwareHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedPtr msg);
+
+  // status reporting
+  rclcpp::Subscription<protocol::msg::MotionStatus>::SharedPtr motion_status_sub_;
+  rclcpp::Subscription<protocol::msg::AlgoTaskStatus>::SharedPtr task_status_sub_;
+  rclcpp::Subscription<protocol::msg::SelfCheckStatus>::SharedPtr self_check_status_sub_;
+  rclcpp::Subscription<protocol::msg::StateSwitchStatus>::SharedPtr state_switch_status_sub_;
+  void motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg);
+  void taskStatusCB(const protocol::msg::AlgoTaskStatus::SharedPtr msg);
+  void selfCheckStatusCB(const protocol::msg::SelfCheckStatus::SharedPtr msg);
+  void stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::SharedPtr msg);
+  struct
+  {
+    int motion_id {0};
+  } motion_status_;
+  struct
+  {
+    uint8_t task_status {101};
+    int task_sub_status {0};
+  } task_status_;
+  struct
+  {
+    int code {-1};
+    std::string description;
+  } self_check_status_;
+  struct
+  {
+    int state {-1};
+    int code {0};
+  } state_switch_status_;
+  std::shared_mutex status_mutex_;
+  void statusRequestHandle(
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 

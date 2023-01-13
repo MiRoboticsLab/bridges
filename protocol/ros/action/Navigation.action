@@ -20,6 +20,7 @@ uint8 nav_type
 
 geometry_msgs/PoseStamped[] poses # 导航的目标点设置
 
+string label_id
 string map_name
 
 sensor_msgs/RegionOfInterest tracking_roi
@@ -92,5 +93,6 @@ int32 NAVIGATION_FEEDBACK_VISION_TRACKING_OBJECT_LOSE =505 # 人体与万物跟�
 int32 NAVIGATION_FEEDBACK_VISION_TRACKING_STARTING_FAILED =506 # 人体与万物跟随启动失败，请重试
 int32 NAVIGATION_FEEDBACK_VISION_TRACKING_OBJECT_SELECTED_FAILED =507 # 人体与万物跟随锁定目标失败，请重试
 int32 NAVIGATION_FEEDBACK_VISION_TRACKING_RESET_FAILED =508 # 人体与万物跟随选择自动重启失败，请重试
+int32 NAVIGATION_FEEDBACK_VISION_TRACKING_TARGET_EMPTY =509 # 人体与万物跟随没有找到跟随目标，请重试
 int32 feedback_code
 string feedback_msg

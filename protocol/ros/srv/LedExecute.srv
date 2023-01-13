@@ -1,10 +1,11 @@
 
 # client 
-string UNDEFINED ="undefined"          #调试时可用，优先级最高。       
-string VP ="vp"
+string LOWPOWER ="lowpower"
 string BMS ="bms"
 string CONNECTOR ="connector"
- 
+string VP ="vp"
+string TRACKING = "tracking"
+string SYSTEM = "system"
 
 # target
 uint8 HEAD_LED =1
@@ -73,7 +74,7 @@ uint8 THREE_CIRCULAR = 0x35            #三圆呼吸(无须设定r,g,b取值)
 uint8 COLOR_ONE_BY_ONE = 0x36          #彩带逐个点亮(无须设定r,g,b取值)
 
 # request
-
+bool occupation                        # client是否占用target led，若为false,用户会释放优先级占用。该led会执行优先级队列中低优先级用户的请求。
 string client                          # 使用模块，例如"bms";"vp";"connector" 具体见协议中常量定义
 uint8 target                           # 用户希望使用的灯，可选择 HEAD_LED , TAIL_LED, MINI_LED
 uint8 mode                             # 用户采用的模式（自定义USER_DEFINED/预置SYSTEM_PREDEFINED），取值见协议中常量定义
