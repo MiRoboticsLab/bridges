@@ -5,4 +5,7 @@ frames_number = 3           # 相同预测结果帧数阈值
 refine_output = true        # 是否采用调优策略
 softmax_thres = 0.5         # softmax阈值
 fps = 30                    # 相机帧率,当前ai相机sdk最高支持30fps
-engine_path = "/SDCARD/algo/gesture_action/nx_mobilenetv2_tsm.trt" # 引擎路径
+engine_path = "/SDCARD/vision/gesture_action/gesture_action.trt" # 引擎路径
+is_specified = false        # 是否指定下载fds中指定版本模型，若为false，下载最新版本模型。
+                            # 若为true，下载最新版本模型
+version = "0.0"             # 模型的指定版本
