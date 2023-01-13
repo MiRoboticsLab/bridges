@@ -14,20 +14,20 @@ occupation = true
 client = "system"
 target = 1        # 头灯
 mode =  2         # 用户自定义模式
-effect =  6       # 逐个点亮基础灯效
-r_value = 255     # red
-g_value = 50
-b_value = 50
+effect =  9       # 逐个点亮基础灯效
+r_value = 6       # 天蓝色
+g_value = 33
+b_value = 226
 
 [system_tailled]
 occupation = true
 client = "system"
 target = 2        # 尾灯
 mode =  2         # 用户自定义模式
-effect =  6       # 逐个点亮基础灯效
-r_value = 255     # red
-g_value = 50
-b_value = 50
+effect =  9       # 逐个点亮基础灯效
+r_value = 6       # 天蓝色
+g_value = 33
+b_value = 226
 
 [system_miniled]
 occupation = true
@@ -35,6 +35,6 @@ client = "system"
 target = 3        # mini led
 mode =  2         # 用户自定义模式
 effect =  48      # 圆形缩放基础灯效
-r_value = 255     # red
-g_value = 50
-b_value = 50
+r_value = 6       # 天蓝色
+g_value = 33
+b_value = 226
