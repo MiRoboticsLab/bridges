@@ -131,11 +131,11 @@ public:
     typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr goal_handle_ptr,
     const std::shared_ptr<const typename ActionType::Feedback> feedback_ptr)
   {
+    latest_feedback_value_ = feedback_ptr;
     std::shared_lock<std::shared_mutex> read_lock(request_mutex_);
     if (!feedback_cb_) {  // there is no requests receiving feedback
       return;
     }
-    latest_feedback_value_ = feedback_ptr;
     feedback_cb_(goal_handle_ptr, feedback_ptr);
   }
   void RemoveRequest() override
@@ -204,7 +204,7 @@ private:
   std::atomic_bool got_result_ {false};
   typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr
     goal_handle_ptr_ {nullptr};
-  std::shared_ptr<const typename ActionType::Feedback> latest_feedback_value_;
+  std::shared_ptr<const typename ActionType::Feedback> latest_feedback_value_ {nullptr};
   LOGGER_MINOR_INSTANCE("ActionTask");
 };
 
