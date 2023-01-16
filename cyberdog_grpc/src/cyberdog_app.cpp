@@ -2685,6 +2685,7 @@ bool Cyberdog_app::HandleUnlockDevelopAccess(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
+  int unlock_result_ = 100;
   Document json_response(kObjectType);
   std::string rsp_string;
   std::chrono::seconds timeout(10);
@@ -2701,12 +2702,12 @@ bool Cyberdog_app::HandleUnlockDevelopAccess(
   if (status == std::future_status::ready) {
     INFO(
       "success to call unlock develop access request services.");
+    unlock_result_ = future_result.get()->unlock_result;
   } else {
     INFO(
       "Failed to call unlock develop access request  services.");
-    return false;
   }
-  int unlock_result_ = future_result.get()->unlock_result;
+  // int unlock_result_ = future_result.get()->unlock_result;
   CyberdogJson::Add(json_response, "unlock_result", unlock_result_);
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while set unlock develop access encoding to json");
@@ -2743,7 +2744,6 @@ bool Cyberdog_app::RebootManchine(
   } else {
     INFO(
       "Failed to call reboot machine request  services.");
-    return false;
   }
   int reboot_result_ = future_result.get()->rebootresult;
   CyberdogJson::Add(json_response, "reboot_result", reboot_result_);
