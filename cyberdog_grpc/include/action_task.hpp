@@ -227,12 +227,14 @@ public:
     action_task_ptr->SetResultMutex(mx);
     action_task_ptr->SetFirefunction(
       std::bind(&ActionTaskManager::KillTask, this, std::placeholders::_1));
+    std::unique_lock<std::shared_mutex> write_lock(action_map_mutex_);
+    INFO("Sending action goal");
     size_t goal_hash = action_task_ptr->SendGoal(
       client, goal, std::bind(
         &ActionTaskManager::feedbackCB<ActionType>, this,
         std::placeholders::_1, std::placeholders::_2));
     if (goal_hash != 0) {
-      std::unique_lock<std::shared_mutex> write_lock(action_map_mutex_);
+      INFO("goalhandle is available, registering...");
       action_tasks_[goal_hash] = action_task_ptr;
     }
     return goal_hash;
@@ -292,14 +294,21 @@ private:
     std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
     auto action_task_itr = action_tasks_.find(getHash(goal_handle));
     if (action_task_itr == action_tasks_.end()) {  // action has finished
+      WARN("No action required exists!");
       return;
     }
     std::shared_ptr<ActionTask<ActionType>> action_task_ptr =
       std::static_pointer_cast<ActionTask<ActionType>>(action_task_itr->second);
-    action_task_ptr->CallFeedback(goal_handle, fb);
+    if (action_task_ptr) {
+      INFO("calling feedback");
+      action_task_ptr->CallFeedback(goal_handle, fb);
+    } else {
+      ERROR("feedback type error");
+    }
   }
   std::map<size_t, std::shared_ptr<ActionTaskBase>> action_tasks_;
   std::shared_mutex action_map_mutex_;
+  LOGGER_MINOR_INSTANCE("ActionTaskManager");
 };
 }  // namespace bridges
 }  // namespace cyberdog

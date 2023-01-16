@@ -1200,6 +1200,7 @@ void Cyberdog_app::handleNavigationAction(
       INFO_STREAM("transmit feedback: " << response_string);
     };
 
+  std::atomic_bool action_accepted = false;
   auto return_accept = [&](bool accepted) {
       rapidjson::StringBuffer strBuf;
       rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
@@ -1211,18 +1212,23 @@ void Cyberdog_app::handleNavigationAction(
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
       INFO_STREAM("transmit access: " << response_string);
+      action_accepted = accepted;
     };
 
   std::mutex writer_mutex;
   auto feedback_callback =
     [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const Navigation::Feedback> feedback) {
+      if (!action_accepted) {
+        WARN("feedback before accepted");
+        return;
+      }
       writer_mutex.lock();
       return_feedback(feedback->feedback_code, feedback->feedback_msg);
       writer_mutex.unlock();
     };
 
-  auto fake_feedback_ballback =
+  auto fake_feedback_callback =
     [&](int feedback_code) {
       writer_mutex.lock();
       return_feedback(feedback_code, std::string(""));
@@ -1234,12 +1240,10 @@ void Cyberdog_app::handleNavigationAction(
   std::shared_ptr<std::mutex> result_mx;
   bool uwb_not_from_app = false;  // activated uwb tracking not from app
   if (create_new_task) {
-    INFO_STREAM(
-      "Sending action goal: type: " << mode_goal.nav_type << " outdoor: " <<
-        mode_goal.outdoor << " relateve_pos: " <<
-        " keep_distance: " << mode_goal.keep_distance << " object_tracking: " <<
-        mode_goal.object_tracking << " goal point: (" <<
-        mode_goal.poses[0].pose.position.x << "," << mode_goal.poses[0].pose.position.y << ")");
+    INFO(
+      "Sending action goal: type:%d, outdoor:%d, reletive_pos:%d, keep_dis:%f, obj_tracking:%d",
+      mode_goal.nav_type, mode_goal.outdoor, mode_goal.relative_pos, mode_goal.keep_distance,
+      mode_goal.object_tracking);
     size_t goal_hash = action_task_manager_.StartActionTask<Navigation>(
       navigation_client_, mode_goal, feedback_callback,
       result_cv_ptr, result_pp, result_mx);
@@ -1278,12 +1282,10 @@ void Cyberdog_app::handleNavigationAction(
     }
   }
   return_accept(true);
-  if (!create_new_task) {
-    if (!uwb_not_from_app) {
-      action_task_manager_.CallLatestFeedback(task_type_hash_map_[mode_goal.nav_type]);
-    } else {
-      fake_feedback_ballback(task_status_.task_sub_status);
-    }
+  if (!create_new_task && uwb_not_from_app) {
+    fake_feedback_callback(task_status_.task_sub_status);
+  } else if (!uwb_not_from_app) {
+    action_task_manager_.CallLatestFeedback(task_type_hash_map_[mode_goal.nav_type]);
   }
 
   if (uwb_not_from_app) {
@@ -1295,7 +1297,7 @@ void Cyberdog_app::handleNavigationAction(
     {
       rate.sleep();
       if (latest_sub_status != task_status_.task_sub_status) {
-        fake_feedback_ballback(task_status_.task_sub_status);
+        fake_feedback_callback(task_status_.task_sub_status);
         latest_sub_status = task_status_.task_sub_status;
       }
     }
