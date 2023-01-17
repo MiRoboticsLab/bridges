@@ -37,7 +37,7 @@ class Backend_Http final
 {
 public:
   Backend_Http()
-  : base_url("http://10.38.204.220:8091")
+  : base_url("https://test-server.cyberdog.xiaomi.com")
   {
     auto local_share_dir = ament_index_cpp::get_package_share_directory("params");
     auto path = local_share_dir + std::string("/toml_config/manager/settings.json");
