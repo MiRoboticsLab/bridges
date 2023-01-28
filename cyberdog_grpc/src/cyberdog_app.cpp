@@ -1284,8 +1284,10 @@ void Cyberdog_app::handleNavigationAction(
   return_accept(true);
   if (!create_new_task && uwb_not_from_app) {
     fake_feedback_callback(task_status_.task_sub_status);
-  } else if (!uwb_not_from_app) {
+  } else if (!create_new_task) {  // access task
     action_task_manager_.CallLatestFeedback(task_type_hash_map_[mode_goal.nav_type]);
+  } else {  // create task
+    action_task_manager_.CallFeedbackBeforeAcception(task_type_hash_map_[mode_goal.nav_type]);
   }
 
   if (uwb_not_from_app) {

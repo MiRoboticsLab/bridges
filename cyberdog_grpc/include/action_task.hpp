@@ -22,6 +22,8 @@
 #include <map>
 #include <mutex>
 #include <atomic>
+#include <list>
+#include <utility>
 
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
@@ -65,6 +67,18 @@ public:
   }
   virtual void RemoveRequest() = 0;
   virtual void CallFeedbackWithLatestValue() = 0;
+  void SetGoalHash(size_t gh)
+  {
+    goal_hash_ = gh;
+  }
+  size_t GetGoalHash() const
+  {
+    return goal_hash_;
+  }
+  virtual void CallFeedbackBeforeAcception()
+  {
+    ready_ = true;
+  }
 
 protected:
   void fireMe()
@@ -78,6 +92,7 @@ protected:
   std::shared_mutex request_mutex_;
   std::shared_ptr<std::condition_variable> cv_ptr_ {std::make_shared<std::condition_variable>()};
   std::shared_ptr<std::mutex> result_mutex_ptr_ {std::make_shared<std::mutex>()};  // for cv_ptr_
+  bool ready_ {false};  // receive goal_handle, accepted
 };
 
 template<typename ActionType>
@@ -110,7 +125,8 @@ public:
   size_t SendGoal(
     typename rclcpp_action::Client<ActionType>::SharedPtr client_ptr,
     const typename ActionType::Goal & goal,
-    FeedbackCallback<ActionType> manager_feedback_cb)
+    FeedbackCallback<ActionType> manager_feedback_cb,
+    bool * not_rec_acc)
   {
     typename rclcpp_action::Client<ActionType>::SendGoalOptions goal_options;
     goal_options.feedback_callback = manager_feedback_cb;
@@ -118,6 +134,8 @@ public:
       &ActionTask<ActionType>::resultCB, this, std::placeholders::_1);
     auto goal_handle_future = client_ptr->async_send_goal(goal, goal_options);
     if (goal_handle_future.wait_for(std::chrono::seconds(3)) != std::future_status::ready) {
+      WARN("Not receive action goal handle response!");
+      *not_rec_acc = true;
       return 0;
     }
     goal_handle_ptr_ = goal_handle_future.get();
@@ -132,6 +150,10 @@ public:
     const std::shared_ptr<const typename ActionType::Feedback> feedback_ptr)
   {
     latest_feedback_value_ = feedback_ptr;
+    if (!ready_) {
+      feedback_buff_.push_back(std::make_pair(goal_handle_ptr, feedback_ptr));
+      return;
+    }
     std::shared_lock<std::shared_mutex> read_lock(request_mutex_);
     if (!feedback_cb_) {  // there is no requests receiving feedback
       return;
@@ -151,6 +173,14 @@ public:
     }
     CallFeedback(goal_handle_ptr_, latest_feedback_value_);
   }
+  void CallFeedbackBeforeAcception() override
+  {
+    ready_ = true;
+    for (auto & fb : feedback_buff_) {
+      CallFeedback(fb.first, fb.second);
+    }
+    feedback_buff_.clear();
+  }
 
 private:
   void resultCB(
@@ -158,6 +188,7 @@ private:
   {
     switch (result_wrapper.code) {
       case rclcpp_action::ResultCode::SUCCEEDED:
+        INFO("Goal was succeeded");
         break;
       case rclcpp_action::ResultCode::ABORTED:
         WARN("Goal was aborted");
@@ -205,6 +236,8 @@ private:
   typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr
     goal_handle_ptr_ {nullptr};
   std::shared_ptr<const typename ActionType::Feedback> latest_feedback_value_ {nullptr};
+  std::list<std::pair<typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr,
+    const std::shared_ptr<const typename ActionType::Feedback>>> feedback_buff_;
   LOGGER_MINOR_INSTANCE("ActionTask");
 };
 
@@ -232,10 +265,20 @@ public:
     size_t goal_hash = action_task_ptr->SendGoal(
       client, goal, std::bind(
         &ActionTaskManager::feedbackCB<ActionType>, this,
-        std::placeholders::_1, std::placeholders::_2));
-    if (goal_hash != 0) {
+        std::placeholders::_1, std::placeholders::_2),
+      &not_rec_acc_);
+    if (goal_hash != 0 || not_rec_acc_) {
       INFO("goalhandle is available, registering...");
       action_tasks_[goal_hash] = action_task_ptr;
+      if (not_rec_acc_ && goal_hash == 0) {
+        auto rec_acc = [&]() {return !not_rec_acc_;};
+        if (goal_handle_absent_cv_.wait_for(write_lock, std::chrono::seconds(3), rec_acc)) {
+          goal_hash = action_tasks_[0]->GetGoalHash();
+          action_tasks_.erase(0);
+        } else {
+          not_rec_acc_ = false;
+        }
+      }
     }
     return goal_hash;
   }
@@ -284,6 +327,15 @@ public:
     }
     action_task_itr->second->CallFeedbackWithLatestValue();
   }
+  void CallFeedbackBeforeAcception(size_t goal_hash)
+  {
+    std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
+    auto action_task_itr = action_tasks_.find(goal_hash);
+    if (action_task_itr == action_tasks_.end()) {  // action has finished
+      return;
+    }
+    action_task_itr->second->CallFeedbackBeforeAcception();
+  }
 
 private:
   template<typename ActionType>
@@ -291,11 +343,21 @@ private:
     typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr goal_handle,
     const std::shared_ptr<const typename ActionType::Feedback> fb)
   {
-    std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
+    std::unique_lock<std::shared_mutex> write_lock(action_map_mutex_);
     auto action_task_itr = action_tasks_.find(getHash(goal_handle));
-    if (action_task_itr == action_tasks_.end()) {  // action has finished
-      WARN("No action required exists!");
-      return;
+    if (action_task_itr == action_tasks_.end()) {
+      if (!not_rec_acc_) {  // action has finished
+        WARN("No action required exists!");
+        return;
+      } else if (action_tasks_.find(0) != action_tasks_.end()) {  // GoalHandle not receive
+        not_rec_acc_ = false;
+        WARN("Receive a feedback to get goal hash!");
+        size_t gh = getHash(goal_handle);
+        action_tasks_[0]->SetGoalHash(gh);
+        action_tasks_[gh] = action_tasks_[0];
+        action_task_itr = action_tasks_.find(gh);
+        goal_handle_absent_cv_.notify_one();
+      }
     }
     std::shared_ptr<ActionTask<ActionType>> action_task_ptr =
       std::static_pointer_cast<ActionTask<ActionType>>(action_task_itr->second);
@@ -308,6 +370,8 @@ private:
   }
   std::map<size_t, std::shared_ptr<ActionTaskBase>> action_tasks_;
   std::shared_mutex action_map_mutex_;
+  bool not_rec_acc_ {false};
+  std::condition_variable_any goal_handle_absent_cv_;
   LOGGER_MINOR_INSTANCE("ActionTaskManager");
 };
 }  // namespace bridges
