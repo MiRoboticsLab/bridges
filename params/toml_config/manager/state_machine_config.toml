@@ -22,7 +22,7 @@ times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
 
 [actuator.algorithm_manager]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
-times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
+times = [240000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
 
 [actuator.vp_engine]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
