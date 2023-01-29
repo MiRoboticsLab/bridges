@@ -11,39 +11,21 @@ timeout_us = 1234567
 #left_rear
 [[array]]
 description = ""
-can_package_num = 8
-can_id = ["0x020F4000", "0x020F4001", "0x020F4002", "0x020F4003", "0x020F4004", "0x020F4005", "0x020F4006", "0x020F4007"]
-array_name = "data_array"
-
-
-[[var]]
-description = ""
-can_id = "0x020F4008"
-var_name = "data_clock"
-var_type = "u64"
-parser_param = [0, 7]
+can_package_num = 17
+can_id = ["0x020F4000", "0x020F4001", "0x020F4002", "0x020F4003", "0x020F4004", "0x020F4005", "0x020F4006", "0x020F4007", "0x020F4008", "0x020F4009", "0x020F400A", "0x020F400B", "0x020F400C", "0x020F400D", "0x020F400E", "0x020F400F", "0x020F4010"]
+array_name = "data"
 
 [[array]]
 description = ""
-can_package_num = 8
-can_id = ["0x020F4009", "0x020F400A", "0x020F400B", "0x020F400C", "0x020F400D", "0x020F400E", "0x020F400F", "0x020F4010"]
-array_name = "intensity_array"
+can_package_num = 1
+can_id = ["0x020F2200"]
+array_name = "enable_on_ack"
 
-
-[[var]]
+[[array]]
 description = ""
-can_id = "0x020F2200"
-var_name = "enable_on_ack"
-var_type = "i8"
-parser_param = [0, 0]
-
-[[var]]
-description = ""
-can_id = "0x020F2400"
-var_name = "enable_off_ack"
-var_type = "i8"
-parser_param = [0, 0]
-
+can_package_num = 1
+can_id = ["0x020F2400"]
+array_name = "enable_off_ack"
 
 [[cmd]]
 description = ""

@@ -23,6 +23,7 @@
 #include <utility>
 #include <iostream>
 #include <algorithm>
+#include <stack>
 
 #include "toml/toml.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
@@ -107,12 +108,14 @@ public:
     loaded = false;
     array_expect = 0;
     size_cursor = 0;
+    array_index_flag_ = 0;
   }
-  uint8_t len;
+  uint16_t len;
   void * addr;
   bool loaded;
   int array_expect;
   uint8_t size_cursor;
+  uint64_t array_index_flag_;
 };  // class ProtocolData
 
 class StateCollector
@@ -342,6 +345,14 @@ bool toml_parse(toml::value & toml, const std::string & path)
   }
   return false;
 }
+typedef struct DataLabel
+{
+  std::string group_name;
+  std::string name;
+  bool is_full;
+  std::stack<int> missed_frame_index;
+  std::stack<int> missed_frame_id;
+} data_label;
 }  // namespace embed
 }  // namespace cyberdog
 

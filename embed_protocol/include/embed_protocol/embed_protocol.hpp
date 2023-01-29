@@ -97,6 +97,10 @@ public:
     if (base_ != nullptr) {base_->SetDataCallback(callback);}
   }
 
+  void SetDataCallback(std::function<void(DataLabel &, std::shared_ptr<TDataClass>)> callback)
+  {
+    if (base_ != nullptr) {base_->SetDataCallback(callback);}
+  }
   bool IsRxTimeout()
   {
     if (base_ != nullptr) {return base_->IsRxTimeout();}
@@ -119,12 +123,16 @@ public:
   {
     return error_clct_;
   }
+  std::string GetName()
+  {
+    if (base_ != nullptr) {return base_->GetName();}
+    return "unknown";
+  }
 
 private:
   std::shared_ptr<ProtocolBase<TDataClass>> base_;
   std::shared_ptr<TDataClass> tmp_data_;
   StateCollector error_clct_ = StateCollector();
-
   void Init(toml::value & toml_config, bool for_send, const std::string & protocol_toml_path = "")
   {
     auto protocol = toml::find_or<std::string>(toml_config, "protocol", "#unknow");

@@ -22,6 +22,7 @@
 #include <utility>
 #include <iostream>
 #include <functional>
+#include <stack>
 
 #include "toml/toml.hpp"
 #include "embed_protocol/common.hpp"
@@ -47,6 +48,16 @@ public:
         "please check the code", name_.c_str());
     }
     if (callback != nullptr) {protocol_data_callback_ = callback;}
+  }
+
+  void SetDataCallback(std::function<void(DataLabel &, std::shared_ptr<TDataClass>)> callback)
+  {
+    if (for_send_) {
+      WARN(
+        "[PROTOCOL][WARN][%s] for_send protocol not need callback function, "
+        "please check the code", name_.c_str());
+    }
+    if (callback != nullptr) {protocol_data_parse_callback_ = callback;}
   }
 
   void LinkVar(const std::string & name, const ProtocolData & var)
@@ -86,6 +97,10 @@ public:
   virtual bool IsRxTimeout() = 0;
   virtual bool IsTxTimeout() = 0;
   bool IsRxError() {return rx_error_;}
+  std::string GetName()
+  {
+    return name_;
+  }
 
 protected:
   ProtocolBase()
@@ -101,7 +116,9 @@ protected:
   CHILD_STATE_CLCT error_clct_;
   PROTOCOL_DATA_MAP protocol_data_map_;
   std::shared_ptr<TDataClass> protocol_data_;
-  std::function<void(std::string &, std::shared_ptr<TDataClass>)> protocol_data_callback_;
+  std::function<void(std::string &, std::shared_ptr<TDataClass>)> protocol_data_callback_ = nullptr;
+  std::function<void(DataLabel &,
+    std::shared_ptr<TDataClass>)> protocol_data_parse_callback_ = nullptr;
 };  // class ProtocolBase
 }  // namespace embed
 }  // namespace cyberdog
