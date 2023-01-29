@@ -109,22 +109,12 @@ Cyberdog_app::Cyberdog_app()
   grpc_server_port_ = get_parameter("grpc_server_port").as_string();
   grpc_client_port_ = get_parameter("grpc_client_port").as_string();
 
-  // ip_subscriber = this->create_subscription<std_msgs::msg::String>(
-  // "ip_notify", rclcpp::SystemDefaultsQoS(),
-  // std::bind(&Cyberdog_app::subscribeIp, this, _1));
+  INFO("Start creating ROS components.");
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
     "connector_state", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
 
   timer_interval.init();
-
-  INFO("Create server");
-  if (server_ == nullptr) {
-    app_server_thread_ =
-      std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
-  }
-  heart_beat_thread_ =
-    std::make_shared<std::thread>(&Cyberdog_app::HeartBeat, this);
 
   callback_group_ =
     this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
@@ -349,6 +339,14 @@ Cyberdog_app::Cyberdog_app()
 
   reboot_machine_client_ =
     this->create_client<protocol::srv::RebootMachine>("reboot_machine");
+
+  INFO("Create server");
+  if (server_ == nullptr) {
+    app_server_thread_ =
+      std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
+  }
+  heart_beat_thread_ =
+    std::make_shared<std::thread>(&Cyberdog_app::HeartBeat, this);
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -1589,7 +1587,7 @@ void Cyberdog_app::selectTrackingObject(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!select_tracking_human_client_->wait_for_service(std::chrono::seconds(3))) {
-    ERROR("tracking_object_srv server not avaiable");
+    ERROR("tracking_object_srv server is not available");
     retrunErrorGrpc(writer);
     return;
   }
@@ -1633,6 +1631,11 @@ void Cyberdog_app::handleStopAction(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
+  if (!stop_nav_action_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("stop_algo_task server is not available");
+    retrunErrorGrpc(writer);
+    return;
+  }
   uint32_t type(0);
   std::string map_name;
   CyberdogJson::Get(json_resquest, "type", type);
