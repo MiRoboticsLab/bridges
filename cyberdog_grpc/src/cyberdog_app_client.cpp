@@ -40,9 +40,18 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
     INFO("sendMsg error code:%d", status.error_code());
     return false;
   }
-  INFO_STREAM(
-    "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
-    (msg.namecode() != 6001u ? msg.params() : std::string("map data ...")));
+  if (msg.namecode() == grpcapi::SendRequest::MAP_DATA_REQUEST) {
+    INFO_STREAM(
+      "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
+        std::string("map data ... json string size: ") << msg.params().size());
+  } else if (msg.namecode() == grpcapi::SendRequest::NAV_PLAN_PATH) {
+    INFO_STREAM(
+      "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
+        std::string("path data ... json string size: ") << msg.params().size());
+  } else {
+    INFO_STREAM(
+      "sendMsg rpc success. namecode: " << msg.namecode() << " params: " << msg.params());
+  }
   return true;
 }
 bool Cyberdog_App_Client::sendHeartBeat(
