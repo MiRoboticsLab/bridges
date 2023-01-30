@@ -1198,7 +1198,6 @@ void Cyberdog_app::handleNavigationAction(
       INFO_STREAM("transmit feedback: " << response_string);
     };
 
-  std::atomic_bool action_accepted = false;
   auto return_accept = [&](bool accepted) {
       rapidjson::StringBuffer strBuf;
       rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
@@ -1209,18 +1208,13 @@ void Cyberdog_app::handleNavigationAction(
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
-      INFO_STREAM("transmit access: " << response_string);
-      action_accepted = accepted;
+      INFO_STREAM("transmit acception: " << response_string);
     };
 
   std::mutex writer_mutex;
   auto feedback_callback =
     [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const Navigation::Feedback> feedback) {
-      if (!action_accepted) {
-        WARN("feedback before accepted");
-        return;
-      }
       writer_mutex.lock();
       return_feedback(feedback->feedback_code, feedback->feedback_msg);
       writer_mutex.unlock();
@@ -1282,8 +1276,10 @@ void Cyberdog_app::handleNavigationAction(
   return_accept(true);
   if (!create_new_task && uwb_not_from_app) {
     fake_feedback_callback(task_status_.task_sub_status);
-  } else if (!uwb_not_from_app) {
+  } else if (!create_new_task) {  // access task
     action_task_manager_.CallLatestFeedback(task_type_hash_map_[mode_goal.nav_type]);
+  } else {  // create task
+    action_task_manager_.CallFeedbackBeforeAcception(task_type_hash_map_[mode_goal.nav_type]);
   }
 
   if (uwb_not_from_app) {
