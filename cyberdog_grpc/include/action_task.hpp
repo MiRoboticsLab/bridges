@@ -81,7 +81,7 @@ public:
 
 protected:
   size_t goal_hash_ {0};
-  std::shared_mutex request_mutex_;
+  std::mutex request_mutex_;
   std::shared_ptr<std::condition_variable> cv_ptr_ {std::make_shared<std::condition_variable>()};
   std::shared_ptr<std::mutex> result_mutex_ptr_ {std::make_shared<std::mutex>()};  // for cv_ptr_
   bool ready_ {false};  // receive goal_handle, accepted
@@ -98,7 +98,7 @@ public:
   void SetFeedbackCallback(
     FeedbackCallback<ActionType> feedback_cb)
   {
-    std::unique_lock<std::shared_mutex> wite_lock(request_mutex_);
+    std::unique_lock<std::mutex> wite_lock(request_mutex_);
     feedback_cb_ = feedback_cb;
   }
   void SetResultPtr(std::shared_ptr<std::shared_ptr<typename ActionType::Result>> & result_pp)
@@ -141,12 +141,13 @@ public:
     typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr goal_handle_ptr,
     const std::shared_ptr<const typename ActionType::Feedback> feedback_ptr)
   {
+    std::unique_lock<std::mutex> write_lock(request_mutex_);
     latest_feedback_value_ = feedback_ptr;
     if (!ready_) {
+      INFO("Receive feedback before acception.");
       feedback_buff_.push_back(std::make_pair(goal_handle_ptr, feedback_ptr));
       return;
     }
-    std::shared_lock<std::shared_mutex> read_lock(request_mutex_);
     if (!feedback_cb_) {  // there is no requests receiving feedback
       return;
     }
@@ -167,10 +168,19 @@ public:
   }
   void CallFeedbackBeforeAcception() override
   {
+    std::unique_lock<std::mutex> write_lock(request_mutex_);
     ready_ = true;
-    for (auto & fb : feedback_buff_) {
-      CallFeedback(fb.first, fb.second);
+    if (feedback_buff_.empty()) {
+      INFO("No feedback comes before acception.");
+      return;
     }
+    for (auto & fb : feedback_buff_) {
+      if (!feedback_cb_) {  // there is no requests receiving feedback
+        return;
+      }
+      feedback_cb_(fb.first, fb.second);
+    }
+    INFO("Sending all feedbacks before acception.");
     feedback_buff_.clear();
   }
   void ResultCB(
@@ -216,7 +226,7 @@ private:
   }
   void removeFeedbackCallback()
   {
-    std::unique_lock<std::shared_mutex> wite_lock(request_mutex_);
+    std::unique_lock<std::mutex> write_lock(request_mutex_);
     feedback_cb_ = nullptr;
   }
   FeedbackCallback<ActionType> feedback_cb_ {nullptr};
