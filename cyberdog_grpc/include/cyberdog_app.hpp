@@ -93,6 +93,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "std_msgs/msg/bool.hpp"
+#include "std_msgs/msg/int8.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_srvs/srv/trigger.hpp"
@@ -517,6 +518,10 @@ private:
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ble_firmware_update_notification_sub_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr update_ble_firmware_client_;
   rclcpp::Subscription<protocol::msg::BLEDFUProgress>::SharedPtr ble_dfu_progress_sub_;
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr set_bt_tread_pub_;
+  rclcpp::Subscription<std_msgs::msg::Int8>::SharedPtr update_bt_tread_sub_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr get_bt_tread_client_;
+
   void scanBluetoothDevices(
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
@@ -545,6 +550,11 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedPtr msg);
+  void setBTTreadHandle(Document & json_resquest);
+  void getBTTreadHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void updateBTTreadCB(const std_msgs::msg::Int8::SharedPtr msg);
 
   // status reporting
   rclcpp::Subscription<protocol::msg::MotionStatus>::SharedPtr motion_status_sub_;

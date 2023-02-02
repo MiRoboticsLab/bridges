@@ -313,6 +313,14 @@ Cyberdog_app::Cyberdog_app()
     std::bind(&Cyberdog_app::bleDFUProgressCB, this, _1));
   update_ble_firmware_client_ =
     this->create_client<std_srvs::srv::Trigger>("update_ble_firmware");
+  set_bt_tread_pub_ =
+    this->create_publisher<std_msgs::msg::Int8>(
+    "set_bluetooth_tread", rclcpp::SystemDefaultsQoS());
+  update_bt_tread_sub_ =
+    this->create_subscription<std_msgs::msg::Int8>(
+    "update_bluetooth_tread", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::updateBTTreadCB, this, _1));
+  get_bt_tread_client_ = this->create_client<std_srvs::srv::Trigger>("get_bluetooth_tread");
 
   // status reporting
   motion_status_sub_ = this->create_subscription<protocol::msg::MotionStatus>(
@@ -1960,6 +1968,55 @@ void Cyberdog_app::bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedP
   send_grpc_msg(::grpcapi::SendRequest::BLE_DFU_PROGRESS, param);
 }
 
+void Cyberdog_app::setBTTreadHandle(Document & json_resquest)
+{
+  int data;
+  CyberdogJson::Get(json_resquest, "data", data);
+  std_msgs::msg::Int8 msg;
+  msg.data = data;
+  set_bt_tread_pub_->publish(msg);
+}
+
+void Cyberdog_app::getBTTreadHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!get_bt_tread_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("get_bluetooth_tread server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = get_bt_tread_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("data");
+    writer.Int(std::stoi(future_result.get()->message));
+    writer.EndObject();
+  } else {
+    ERROR("call get_bluetooth_tread timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::updateBTTreadCB(const std_msgs::msg::Int8::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("data");
+  writer.Int(msg->data);
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::UPDATE_BT_TREAD, param);
+}
+
 void Cyberdog_app::motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg)
 {
   std::unique_lock<std::shared_mutex> lock(status_mutex_);
@@ -2925,6 +2982,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::UPDATE_BLE_FIRMWARE: {
         updateBLEFirmwareHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::SET_BT_TREAD: {
+        setBTTreadHandle(json_resquest);
+      } break;
+    case ::grpcapi::SendRequest::GET_BT_TREAD: {
+        getBTTreadHandle(grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::STATUS_REQUEST: {
         statusRequestHandle(grpc_respond, writer);
