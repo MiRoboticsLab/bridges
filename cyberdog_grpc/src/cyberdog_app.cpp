@@ -2306,6 +2306,7 @@ void Cyberdog_app::motionCMDRequestHandle(
   CyberdogJson::Get(json_resquest, "ctrl_point", req->ctrl_point);
   CyberdogJson::Get(json_resquest, "foot_pose", req->foot_pose);
   CyberdogJson::Get(json_resquest, "step_height", req->step_height);
+  CyberdogJson::Get(json_resquest, "contact", req->contact);
   CyberdogJson::Get(json_resquest, "duration", req->duration);
   // call ros service
   callMotionServoCmd(req, rsp);
