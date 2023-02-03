@@ -1211,7 +1211,7 @@ void Cyberdog_app::handleNavigationAction(
       rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
       json_writer.StartObject();
       json_writer.Key("accepted");
-      json_writer.Bool(accepted);
+      json_writer.Int(accepted ? 1 : 2);
       json_writer.EndObject();
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
@@ -1336,6 +1336,7 @@ void Cyberdog_app::handleNavigationAction(
   if (connect_mark_) {
     std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
     task_type_hash_map_.erase(mode_goal.nav_type);
+    INFO("Erase finished task type %d", mode_goal.nav_type);
   }
 }
 
@@ -1356,6 +1357,7 @@ void Cyberdog_app::disconnectTaskRequest()
   }
   for (auto type : remove_hash_list) {
     task_type_hash_map_.erase(type);
+    INFO("Erase unused task type %d", type);
   }
 }
 
