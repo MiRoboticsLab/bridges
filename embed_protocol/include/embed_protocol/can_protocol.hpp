@@ -152,6 +152,7 @@ private:
   void recv_callback_std(std::shared_ptr<can_frame> recv_frame)
   {
     std::string id_name = name_unkown_;
+    std::unique_lock<std::mutex> lock(this->data_lock_);
     if (this->protocol_data_parse_callback_ != nullptr) {
       DataLabel label;
       label.group_name = this->GetName();
@@ -171,7 +172,7 @@ private:
   void recv_callback_fd(std::shared_ptr<canfd_frame> recv_frame)
   {
     std::string id_name = name_unkown_;
-
+    std::unique_lock<std::mutex> lock(this->data_lock_);
     if (this->protocol_data_parse_callback_ != nullptr) {
       DataLabel label;
       label.group_name = this->GetName();
