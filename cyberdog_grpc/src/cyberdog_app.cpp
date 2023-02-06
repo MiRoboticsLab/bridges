@@ -2284,6 +2284,7 @@ void Cyberdog_app::motionServoRequestHandle(
   CyberdogJson::Get(
     json_resquest, "step_height",
     motion_servo_cmd.step_height);
+  CyberdogJson::Get(json_resquest, "value", motion_servo_cmd.value);
   motion_servo_request_pub_->publish(motion_servo_cmd);
   grpc_respond.set_data("");
   writer->Write(grpc_respond);
