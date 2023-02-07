@@ -7,46 +7,23 @@ extended_frame = true
 canfd_enable = false
 timeout_us = 1234567
 
-
-
-[[var]]
-can_id = "0x01834000"
-var_name = "ultrasonic_data"
-var_type = "u16"
-parser_param = [0, 1]
-description = "this is example named ultrasonic_data"
-
-
-[[var]]
-can_id = "0x01834000"
-var_name = "ultrasonic_data_intensity"
-var_type = "u16"
-parser_param = [2, 3]
-description = "this is example named ultrasonic_data_intensity"
-
-[[var]]
-can_id = "0x01834000"
-var_name = "ultrasonic_data_clock"
-var_type = "u32"
-parser_param = [4, 7]
-description = "this is example named ultrasonic_data_clock"
-
-
-
-
-[[var]]
+[[array]]
 description = ""
-can_id = "0x01832200"
-var_name = "enable_on_ack"
-var_type = "i8"
-parser_param = [0, 0]
+can_package_num = 1
+can_id = ["0x01834000"]
+array_name = "data"
 
-[[var]]
+[[array]]
 description = ""
-can_id = "0x01832400"
-var_name = "enable_off_ack"
-var_type = "i8"
-parser_param = [0, 0]
+can_package_num = 1
+can_id = ["0x01832200"]
+array_name = "enable_on_ack"
+
+[[array]]
+description = ""
+can_package_num = 1
+can_id = ["0x01832400"]
+array_name = "enable_off_ack"
 
 
 [[cmd]]
