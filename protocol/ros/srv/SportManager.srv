@@ -1,0 +1,16 @@
+uint8 SPORT_SQUAT= 0
+uint8 SPORT_HIGHKNEES = 1
+uint8 SPORT_SITUP = 2
+uint8 SPORT_PRESSUP = 3
+uint8 SPORT_PLANK = 4
+uint8 SPORT_JUMPJACK = 5
+
+uint8 sport_type
+int32 counts
+int32 duration
+int32 timeout 
+
+---
+int32 ENABLE_SUCCESS = 0
+int32 ENABLE_FAIL = 1
+int32 result
