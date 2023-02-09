@@ -1755,11 +1755,16 @@ void Cyberdog_app::connectBluetoothDevice(
     CyberdogJson::Get(selected_device, "addr_type", req->selected_device.addr_type);
   }
   auto future_result = connect_bluetooth_device_client_->async_send_request(req);
-  std::future_status status = future_result.wait_for(std::chrono::seconds(20));
+  std::future_status status = future_result.wait_for(std::chrono::seconds(18));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
+    int connection_result = future_result.get()->result;
+    INFO("bluetooth connection response: %d", connection_result);
     CyberdogJson::Add(json_response, "result", future_result.get()->result);
+  } else {
+    ERROR("call connect_bluetooth_device timeout.");
+    retrunErrorGrpc(grpc_writer);
   }
   std::string rsp_string;
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
