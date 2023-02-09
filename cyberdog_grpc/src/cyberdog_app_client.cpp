@@ -27,6 +27,9 @@ Cyberdog_App_Client::~Cyberdog_App_Client() {}
 bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
 {
   grpc::ClientContext context;
+  context.set_deadline(
+    std::chrono::system_clock::now() +
+    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(3)));
   ::grpcapi::RecResponse rsp;
   std::unique_ptr<grpc::ClientReader<::grpcapi::RecResponse>> reader(
     stub_->sendMsg(&context, msg));
@@ -37,7 +40,7 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
   Status status = reader->Finish();
 
   if (!status.ok()) {
-    INFO("sendMsg error code:%d", status.error_code());
+    ERROR("sendMsg error code:%d", status.error_code());
     return false;
   }
   if (msg.namecode() == grpcapi::SendRequest::MAP_DATA_REQUEST) {
@@ -99,6 +102,9 @@ bool Cyberdog_App_Client::sendHeartBeat(
     INFO("SetHeartBeat error code:%d", status.error_code());
     return false;
   }
-  INFO_MILLSECONDS(2000, "SetHeartBeat rpc success.");
+  INFO_MILLSECONDS(
+    2000, "SetHeartBeat rpc success, status: %d, %d, %d, %d, %s, %d, %d",
+    motion_id, task_status, task_sub_status, self_check_code, description.c_str(),
+    state_switch_state, state_switch_code);
   return true;
 }
