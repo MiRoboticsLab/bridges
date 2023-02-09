@@ -371,7 +371,10 @@ void Cyberdog_app::send_msgs_(
 {
   std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
   if (can_process_messages_ && app_stub_ && connect_mark_) {
-    app_stub_->sendRequest(*msg);
+    bool send_result = app_stub_->sendRequest(*msg);
+    if (send_result) {
+      ERROR("gRPC Msg sending error.");
+    }
   }
 }
 
@@ -409,6 +412,7 @@ void Cyberdog_app::HeartBeat()
             motion_id, task_status, task_sub_status, self_check_code, description,
             state_switch_state, state_switch_code);
         } else if (connector_timeout) {
+          WARN_MILLSECONDS(2000, "connector_state topic timeout");
           hearbeat_result = false;
           app_disconnected = true;
         } else {
@@ -438,9 +442,12 @@ void Cyberdog_app::HeartBeat()
         msg.data = true;
         app_connection_pub_->publish(msg);
       }
+    } else {
+      WARN("Not able to send heatbeat while creating gRPC client.");
     }
     r.sleep();
   }
+  INFO("Exiting HeartBeat thread...");
 }
 
 std::string Cyberdog_app::getServiceIp() {return *server_ip;}
@@ -560,8 +567,9 @@ void Cyberdog_app::destroyGrpc()
 {
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   can_process_messages_ = false;
-  if (app_stub_ != nullptr) {
-    app_stub_ = nullptr;
+  INFO("Try to reset app_stub_ if it is NULL");
+  if (app_stub_) {
+    app_stub_.reset();
   }
   net_checker.pause();
 }
@@ -569,7 +577,7 @@ void Cyberdog_app::destroyGrpc()
 void Cyberdog_app::createGrpc()
 {
   INFO("Create server");
-  if (server_ == nullptr) {
+  if (!server_) {
     app_server_thread_ =
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
