@@ -589,6 +589,17 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
+  // low power dissipation
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr low_power_exit_client_;
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr auto_low_power_enable_client_;
+  void lowPowerExitHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void autoLowPowerEnableHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
 
