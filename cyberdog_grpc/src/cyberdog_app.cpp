@@ -336,6 +336,10 @@ Cyberdog_app::Cyberdog_app()
     "state_switch_status", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::stateSwitchStatusCB, this, _1));
 
+  // low power dissipation
+  low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
+  auto_low_power_enable_client_ = this->create_client<std_srvs::srv::SetBool>("low_power_onoff");
+
   // stair demo
   start_stair_align_client_ =
     this->create_client<std_srvs::srv::SetBool>("start_stair_align");
@@ -2095,6 +2099,67 @@ void Cyberdog_app::statusRequestHandle(
     writer.Int(state_switch_status_.code);
     writer.EndObject();
     writer.EndObject();
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::lowPowerExitHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!low_power_exit_client_->wait_for_service(std::chrono::seconds(3))) {
+    INFO("low_power_exit service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  std::chrono::seconds timeout(13);  // wait for completely exiting
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = low_power_exit_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.EndObject();
+  } else {
+    ERROR("call low_power_exit timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::autoLowPowerEnableHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!auto_low_power_enable_client_->wait_for_service(std::chrono::seconds(3))) {
+    INFO("low_power_onoff service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+  bool data;
+  CyberdogJson::Get(json_resquest, "data", data);
+  req->data = data;
+  auto future_result = auto_low_power_enable_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.EndObject();
+  } else {
+    ERROR("call low_power_onoff timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
   }
   grpc_respond.set_data(strBuf.GetString());
   grpc_writer->Write(grpc_respond);
