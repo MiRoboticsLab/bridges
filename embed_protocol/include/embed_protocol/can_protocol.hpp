@@ -160,11 +160,13 @@ private:
 
       if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, label)) {
         this->rx_error_ = false;
+        lock.unlock();
         this->protocol_data_parse_callback_(label, this->protocol_data_);
       }
     } else if (this->protocol_data_callback_ != nullptr) {
       if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, id_name)) {
         this->rx_error_ = false;
+        lock.unlock();
         this->protocol_data_callback_(id_name, this->protocol_data_);
       }
     }
@@ -179,11 +181,13 @@ private:
       label.is_full = false;
       if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, label)) {
         this->rx_error_ = false;
+        lock.unlock();
         this->protocol_data_parse_callback_(label, this->protocol_data_);
       }
     } else if (this->protocol_data_callback_ != nullptr) {
       if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, id_name)) {
         this->rx_error_ = false;
+        lock.unlock();
         this->protocol_data_callback_(id_name, this->protocol_data_);
       }
     }
