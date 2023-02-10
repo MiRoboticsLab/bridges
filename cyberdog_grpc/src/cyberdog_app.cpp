@@ -430,6 +430,9 @@ void Cyberdog_app::HeartBeat()
           std_msgs::msg::Bool msg;
           msg.data = false;
           app_connection_pub_->publish(msg);
+          if (!send_thread_map_.empty()) {
+            send_thread_map_.clear();
+          }
           disconnectTaskRequest();
           if (!app_disconnected) {
             destroyGrpc();
