@@ -3077,6 +3077,12 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::STATUS_REQUEST: {
         statusRequestHandle(grpc_respond, writer);
       } break;
+    case ::grpcapi::SendRequest::LOW_POWER_EXIT: {
+        lowPowerExitHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::AUTO_LOW_POWER_ENABLE: {
+        autoLowPowerEnableHandle(json_resquest, grpc_respond, writer);
+      } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
           return;
