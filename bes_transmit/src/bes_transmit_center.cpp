@@ -162,6 +162,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
 {
   if (request->url.empty() || request->url == "/") {
     respose->data = Backend_Http::GetDefaultResponse("Empty url");
+    respose->code = Backend_Http::ErrorCode::EMPTY_URL;
     ERROR("Empty url");
     return;
   }
@@ -173,14 +174,24 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+  respose->code = Backend_Http::ErrorCode::OK;
   if (getDevInf(sn, uid)) {
+    if (sn.empty()) {
+      respose->data = Backend_Http::GetDefaultResponse("SN is invalid");
+      respose->code = Backend_Http::ErrorCode::INVALID_SN;
+      return;
+    }
+    int error_code = Backend_Http::ErrorCode::OK;
     bhttp_ptr_->SetInfo(sn, uid);
     if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
-      respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds);
+      respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds, error_code);
     } else if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_POST) {
-      respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds);
+      respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds, error_code);
     }
+    respose->code = error_code;
+  } else {
+    respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+    respose->code = Backend_Http::ErrorCode::INFO_SERVICE_ERROR;
   }
 }
 
@@ -190,6 +201,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
 {
   if (request->url.empty() || request->url == "/") {
     respose->data = Backend_Http::GetDefaultResponse("Empty url");
+    respose->code = Backend_Http::ErrorCode::EMPTY_URL;
     ERROR("Empty url");
     return;
   }
@@ -197,11 +209,22 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+  respose->code = Backend_Http::ErrorCode::OK;
   if (getDevInf(sn, uid)) {
+    if (sn.empty()) {
+      respose->data = Backend_Http::GetDefaultResponse("SN is invalid");
+      respose->code = Backend_Http::ErrorCode::INVALID_SN;
+      return;
+    }
     bhttp_ptr_->SetInfo(sn, uid);
+    int error_code = Backend_Http::ErrorCode::OK;
     respose->data = bhttp_ptr_->SendFile(
-      request->method, request->url, request->file_name, request->content_type, request->milsecs);
+      request->method, request->url, request->file_name,
+      request->content_type, request->milsecs, error_code);
+    respose->code = error_code;
+  } else {
+    respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+    respose->code = Backend_Http::ErrorCode::INFO_SERVICE_ERROR;
   }
 }
 

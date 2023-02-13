@@ -55,6 +55,16 @@ public:
   ~Backend_Http()
   {
   }
+  enum ErrorCode
+  {
+    OK = 6000,
+    EMPTY_URL = 6021,
+    INFO_SERVICE_ERROR = 6022,
+    INVALID_SN = 6023,
+    JSON_ERROR = 6024,
+    HTTP_REQUEST_ERROR = 6025,
+    OPEN_FILE_ERROR = 6026
+  };
   static std::string GetDefaultResponse(const std::string & message)
   {
     uuid_t uu;
@@ -69,7 +79,7 @@ public:
 public:
   const std::string get(
     const std::string & url, const std::string & params,
-    const uint16_t & millsecs)
+    const uint16_t & millsecs, int & error_code)
   {
     httplib::Client cli_(base_url);
     cli_.set_read_timeout(std::chrono::milliseconds(millsecs));
@@ -88,6 +98,7 @@ public:
       if (doc.HasParseError()) {
         ERROR("doc should be json::kObjectType.");
         body = GetDefaultResponse("json format error");
+        error_code = ErrorCode::JSON_ERROR;
         return body;
       }
       for (rapidjson::Value::MemberIterator iter = doc.MemberBegin(); iter != doc.MemberEnd();
@@ -113,13 +124,16 @@ public:
     auto res = cli_.Get(request_url);
     if (res) {
       body = res->body;
+    } else {
+      error_code = ErrorCode::HTTP_REQUEST_ERROR;
     }
     INFO("response body: %s", body.c_str());
+    error_code = ErrorCode::OK;
     return body;
   }
   const std::string post(
     const std::string & url, const std::string & params,
-    const uint16_t & millsecs)
+    const uint16_t & millsecs, int & error_code)
   {
     httplib::Client cli_(base_url);
     cli_.set_read_timeout(std::chrono::milliseconds(millsecs));
@@ -140,13 +154,16 @@ public:
     auto res = cli_.Post(request_url, params, "application/json");
     if (res) {
       body = res->body;
+    } else {
+      error_code = ErrorCode::HTTP_REQUEST_ERROR;
     }
     INFO("response body: %s", body.c_str());
+    error_code = ErrorCode::OK;
     return body;
   }
   const std::string SendFile(
     unsigned char method, const std::string & url, const std::string & file_name,
-    const std::string & content_type, const uint16_t & millsecs)
+    const std::string & content_type, const uint16_t & millsecs, int & error_code)
   {
     std::string body(GetDefaultResponse("http method error"));
     std::ifstream infile;
@@ -154,6 +171,7 @@ public:
     if (!infile.is_open()) {
       ERROR_STREAM("file " << file_name << " cannot be opened");
       body = Backend_Http::GetDefaultResponse("file cannot be opened");
+      error_code = ErrorCode::OPEN_FILE_ERROR;
       return body;
     }
     infile.seekg(0, infile.end);
@@ -192,6 +210,8 @@ public:
         content_type);
       if (res) {
         body = res->body;
+      } else {
+        error_code = ErrorCode::HTTP_REQUEST_ERROR;
       }
     } else if (method == 2) {
       auto res = cli_.Put(
@@ -204,10 +224,13 @@ public:
         content_type);
       if (res) {
         body = res->body;
+      } else {
+        error_code = ErrorCode::HTTP_REQUEST_ERROR;
       }
     }
     infile.close();
     INFO("response body: %s", body.c_str());
+    error_code = ErrorCode::OK;
     return body;
   }
   void SetInfo(const std::string & sn, const std::string & uid)
