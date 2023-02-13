@@ -430,6 +430,9 @@ void Cyberdog_app::HeartBeat()
           std_msgs::msg::Bool msg;
           msg.data = false;
           app_connection_pub_->publish(msg);
+          if (!send_thread_map_.empty()) {
+            send_thread_map_.clear();
+          }
           disconnectTaskRequest();
           if (!app_disconnected) {
             destroyGrpc();
@@ -3076,6 +3079,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::STATUS_REQUEST: {
         statusRequestHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::LOW_POWER_EXIT: {
+        lowPowerExitHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::AUTO_LOW_POWER_ENABLE: {
+        autoLowPowerEnableHandle(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {

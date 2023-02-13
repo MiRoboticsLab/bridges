@@ -121,9 +121,11 @@ message SendRequest {
         SET_BT_TREAD = 8011;
         UPDATE_BT_TREAD = 8012;
         GET_BT_TREAD = 8013;
-        STATUS_REQUEST = 10001;
         UNLOCK_DEVELOP_ACCESS = 9030;
         REBOOT_MACHINE = 9031;
+        STATUS_REQUEST = 10001;
+        LOW_POWER_EXIT = 10002;
+        AUTO_LOW_POWER_ENABLE = 10003;
     }
 }
 

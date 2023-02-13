@@ -67,8 +67,8 @@ private:
   {
     while (need_run_) {
       if (callback_ != nullptr) {
-        auto msg = get();
-        if (msg) {
+        MessageT msg = get();
+        if (need_run_ && msg) {
           callback_(std::move(msg));
         }
       }
@@ -79,7 +79,7 @@ private:
     std::unique_lock<std::mutex> lock(queue_mutex_);
     cond_.wait(lock, [this] {return !need_run_ || !this->queue_.empty();});
     if (!need_run_) {
-      return NULL;
+      return nullptr;
     }
     MessageT val(std::move(queue_.front()));
     queue_.pop();
