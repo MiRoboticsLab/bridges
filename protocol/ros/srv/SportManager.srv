@@ -5,6 +5,10 @@ uint8 SPORT_PRESSUP = 4          #俯卧撑
 uint8 SPORT_PLANK = 5            #平板支撑
 uint8 SPORT_JUMPJACK = 6         #开合跳
 
+int32 DEFAULT_TIMEOUT = 100
+int32 MAX_TIMEOUT = 300
+int32 MIN_TIMEOUT = 5
+
 uint8 sport_type
 string id
 bool  command
