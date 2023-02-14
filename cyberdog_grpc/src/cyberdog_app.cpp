@@ -756,6 +756,7 @@ void Cyberdog_app::processMapMsg(
   CyberdogJson::Add(json_response, "qz", msg->info.origin.orientation.z);
   CyberdogJson::Add(json_response, "qw", msg->info.origin.orientation.w);
   CyberdogJson::Add(json_response, "data", msg->data);
+  INFO("prepare to upload map data, size: %ld", msg->data.size());
   send_grpc_msg(::grpcapi::SendRequest::MAP_DATA_REQUEST, json_response);
 }
 
@@ -1557,7 +1558,7 @@ void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
   writer.EndArray();
   writer.EndObject();
   std::string param = strBuf.GetString();
-  INFO("sending navigation global plan");
+  INFO("prepare to send navigation global plan, size: %ld", msg->poses.size());
   send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
 }
 
