@@ -95,8 +95,10 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
     "bes_to_dog",
     rclcpp::SystemDefaultsQoS());
 
-  bhttp_ptr_ = std::make_unique<Backend_Http>();
-  http_node_cb_group_ = http_node_ptr_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+  bhttp_ptr_ = std::make_unique<Backend_Http>(
+    "http://10.38.204.220:8091", "/toml_config/manager/settings.json");
+  http_node_cb_group_ = http_node_ptr_->create_callback_group(
+    rclcpp::CallbackGroupType::Reentrant);
   http_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttp>(
     "bes_http_srv",
