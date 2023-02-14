@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 #include <string>
+#include <array>
+#include <memory>
 
 #include "./file_uploading/file_uploading.h"
 #include "back_end_http.hpp"
@@ -20,10 +22,29 @@
 extern "C" {
 #endif
 
+std::string myCommand(const std::string & cmd)
+{
+  std::array<char, 128> buffer;
+  std::string result;
+  std::unique_ptr<FILE, decltype(& pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
+  if (!pipe) {
+    return result;
+  }
+  while (fgets(buffer.data(), buffer.size(), pipe.get())) {
+    result += buffer.data();
+  }
+  return result;
+}
+
+
 int uploadFile(const char * file_name, int id, int * http_result_code)
 {
-  cyberdog::bridge::Backend_Http http_client(std::string("http://10.38.204.220:8091"));
+  std::string sn = myCommand("factory-tool -f /usr/share/factory_cmd_config/system.xml  -i \"SN\"");
+  sn = sn.substr(0, sn.find('\n'));
+  INFO("sn %s", sn.c_str());
+  cyberdog::bridge::Backend_Http http_client(std::string("http://10.38.204.220:8091"), "");
   std::string url("device/system/log");
+  http_client.SetInfo(sn, "test");
   int error_code = cyberdog::bridge::Backend_Http::ErrorCode::OK;
   std::string body = http_client.SendFile(
     1, url, file_name, "application/x-tar", 60000, error_code);
@@ -33,9 +54,9 @@ int uploadFile(const char * file_name, int id, int * http_result_code)
     if (json_doc.HasParseError()) {
       ERROR("Parse json Error");
     } else {
-      int code;
-      CyberdogJson::Get(json_doc, "code", code);
-      *http_result_code = code;
+      std::string code_string;
+      CyberdogJson::Get(json_doc, "code", code_string);
+      *http_result_code = std::atoi(code_string.c_str());
     }
   }
   return error_code;
