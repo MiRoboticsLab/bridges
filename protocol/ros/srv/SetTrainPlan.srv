@@ -1,0 +1,6 @@
+string trigger
+string exe_type
+string exe_value
+---
+bool success
+int32 skill_id
