@@ -41,10 +41,14 @@ int uploadFile(const char * file_name, int id, int * http_result_code)
 {
   std::string sn = myCommand("factory-tool -f /usr/share/factory_cmd_config/system.xml  -i \"SN\"");
   sn = sn.substr(0, sn.find('\n'));
+  if (sn.find("can not open") != std::string::npos) {
+    ERROR("Please use sudo to get SN.");
+    return cyberdog::bridge::Backend_Http::ErrorCode::INVALID_SN;
+  }
   INFO("sn %s", sn.c_str());
   cyberdog::bridge::Backend_Http http_client(std::string("http://10.38.204.220:8091"), "");
   std::string url("device/system/log");
-  http_client.SetInfo(sn, "test");
+  http_client.SetInfo(sn, "");
   int error_code = cyberdog::bridge::Backend_Http::ErrorCode::OK;
   std::string body = http_client.SendFile(
     1, url, file_name, "application/x-tar", 60000, error_code);
