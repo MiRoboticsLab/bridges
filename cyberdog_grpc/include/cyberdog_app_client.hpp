@@ -47,7 +47,8 @@ public:
     int32_t battery, bool internet, const std::string & sn,
     int motion_id, uint8_t task_status, int task_sub_status,
     int self_check_code, const std::string & description,
-    int state_switch_state, int state_switch_code);
+    int state_switch_state, int state_switch_code,
+    bool wired_charging, bool wireless_charging);
   bool sendRequest(const ::grpcapi::SendRequest & msg);
 
 private:
