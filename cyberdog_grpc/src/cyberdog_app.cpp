@@ -2414,6 +2414,7 @@ void Cyberdog_app::motionCMDRequestHandle(
   CyberdogJson::Get(json_resquest, "step_height", req->step_height);
   CyberdogJson::Get(json_resquest, "contact", req->contact);
   CyberdogJson::Get(json_resquest, "duration", req->duration);
+  CyberdogJson::Get(json_resquest, "value", req->value);
   // call ros service
   callMotionServoCmd(req, rsp);
   // send service response
@@ -2425,6 +2426,10 @@ void Cyberdog_app::motionCMDRequestHandle(
     ERROR("error while encoding to json");
     retrunErrorGrpc(writer);
     return;
+  } else {
+    INFO(
+      "motion_result_cmd response: motion_id: %d, result: %d, code: %d",
+      rsp.motion_id, rsp.result, rsp.code);
   }
   // send grpc result
   grpc_respond.set_data(rsp_string);
