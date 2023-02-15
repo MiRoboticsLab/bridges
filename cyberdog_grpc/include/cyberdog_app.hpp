@@ -561,10 +561,12 @@ private:
   rclcpp::Subscription<protocol::msg::AlgoTaskStatus>::SharedPtr task_status_sub_;
   rclcpp::Subscription<protocol::msg::SelfCheckStatus>::SharedPtr self_check_status_sub_;
   rclcpp::Subscription<protocol::msg::StateSwitchStatus>::SharedPtr state_switch_status_sub_;
+  rclcpp::Subscription<protocol::msg::BmsStatus>::SharedPtr bmd_status_sub_;
   void motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg);
   void taskStatusCB(const protocol::msg::AlgoTaskStatus::SharedPtr msg);
   void selfCheckStatusCB(const protocol::msg::SelfCheckStatus::SharedPtr msg);
   void stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::SharedPtr msg);
+  void bmsStatusCB(const protocol::msg::BmsStatus::SharedPtr msg);
   struct
   {
     int motion_id {0};
@@ -584,6 +586,12 @@ private:
     int state {-1};
     int code {0};
   } state_switch_status_;
+  struct
+  {
+    bool wired_charging {false};
+    bool wireless_charging {false};
+  } charging_status_;
+
   std::shared_mutex status_mutex_;
   void statusRequestHandle(
     ::grpcapi::RecResponse & grpc_respond,

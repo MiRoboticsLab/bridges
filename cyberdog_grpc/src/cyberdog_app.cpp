@@ -335,6 +335,9 @@ Cyberdog_app::Cyberdog_app()
   state_switch_status_sub_ = this->create_subscription<protocol::msg::StateSwitchStatus>(
     "state_switch_status", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::stateSwitchStatusCB, this, _1));
+  bmd_status_sub_ = this->create_subscription<protocol::msg::BmsStatus>(
+    "bms_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::bmsStatusCB, this, _1));
 
   // low power dissipation
   low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
@@ -399,6 +402,7 @@ void Cyberdog_app::HeartBeat()
           int motion_id, task_sub_status, self_check_code, state_switch_state, state_switch_code;
           uint8_t task_status;
           std::string description;
+          bool wired_charging, wireless_charging;
           {
             std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
             motion_id = motion_status_.motion_id;
@@ -408,13 +412,15 @@ void Cyberdog_app::HeartBeat()
             description = self_check_status_.description;
             state_switch_state = state_switch_status_.state;
             state_switch_code = state_switch_status_.code;
+            wired_charging = charging_status_.wired_charging;
+            wireless_charging = charging_status_.wireless_charging;
           }
           std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
             local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn,
             motion_id, task_status, task_sub_status, self_check_code, description,
-            state_switch_state, state_switch_code);
+            state_switch_state, state_switch_code, wired_charging, wireless_charging);
         } else if (connector_timeout) {
           WARN_MILLSECONDS(2000, "connector_state topic timeout");
           hearbeat_result = false;
@@ -2067,6 +2073,13 @@ void Cyberdog_app::stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::S
   state_switch_status_.code = msg->code;
 }
 
+void Cyberdog_app::bmsStatusCB(const protocol::msg::BmsStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  charging_status_.wired_charging = msg->power_wired_charging;
+  charging_status_.wireless_charging = msg->power_wp_charging;
+}
+
 void Cyberdog_app::statusRequestHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
@@ -2101,6 +2114,13 @@ void Cyberdog_app::statusRequestHandle(
     writer.Int(state_switch_status_.state);
     writer.Key("code");
     writer.Int(state_switch_status_.code);
+    writer.EndObject();
+    writer.Key("charging_status");
+    writer.StartObject();
+    writer.Key("wired_charging");
+    writer.Bool(charging_status_.wired_charging);
+    writer.Key("wireless_charging");
+    writer.Bool(charging_status_.wireless_charging);
     writer.EndObject();
     writer.EndObject();
   }
