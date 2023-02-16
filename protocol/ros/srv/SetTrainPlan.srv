@@ -1,6 +1,6 @@
 string trigger
-string exe_type
-string exe_value
+string type
+string value
 ---
 bool success
 int32 skill_id
