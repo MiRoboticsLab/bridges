@@ -7,8 +7,8 @@ int16 batt_temp
 int16 power_adapter_temp       # 2023.02.15新增
 int16 wireless_charging_temp   # 2023.02.15新增
 uint8 batt_st
-uint8 bms_state_one;           # 2023.02.16新增
-uint8 bms_state_two;           # 2023.02.16新增
+uint8 bms_state_one            # 2023.02.16新增
+uint8 bms_state_two            # 2023.02.16新增
 uint8 key_val                  # 2023.02.17删除
 uint8 disable_charge           # 2023.02.17删除
 uint8 power_supply             # 2023.02.17删除
