@@ -5,6 +5,8 @@ uint8 MACHINE_STATE_LOWPOWER = 2   # 低功耗模式
 uint8 MACHINE_STATE_OTA = 3        # OTA模式
 uint8 MACHINE_STATE_SHUTDOWN = 4   # 关机模式
 uint8 MACHINE_STATE_SELFCHECK = 5  # 自检模式
+uint8 MACHINE_STATE_DEACTIVE = 6   # 待机模式
+uint8 MACHINE_STATE_ERROR = 7      # 错误模式
 
 uint8 state
 uint16 ticks    # 单位秒
