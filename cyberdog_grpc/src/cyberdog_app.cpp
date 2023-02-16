@@ -275,6 +275,7 @@ Cyberdog_app::Cyberdog_app()
   nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
     "plan", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::uploadNavPath, this, _1));
+  namecode_queue_size_[::grpcapi::SendRequest::NAV_PLAN_PATH] = 2;
 
   stop_nav_action_client_ = this->create_client<protocol::srv::StopAlgoTask>(
     "stop_algo_task", rmw_qos_profile_services_default, callback_group_);
