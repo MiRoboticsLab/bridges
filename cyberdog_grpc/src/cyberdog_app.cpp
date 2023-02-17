@@ -380,7 +380,7 @@ void Cyberdog_app::send_msgs_(
   std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
   if (can_process_messages_ && app_stub_ && connect_mark_) {
     bool send_result = app_stub_->sendRequest(*msg);
-    if (send_result) {
+    if (!send_result) {
       ERROR("gRPC Msg sending error.");
     }
   }
