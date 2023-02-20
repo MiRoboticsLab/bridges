@@ -5,3 +5,4 @@ string member
 
 # response
 bool status
+int32 code

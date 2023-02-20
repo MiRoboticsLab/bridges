@@ -3,3 +3,4 @@ string wifi_password
 string provider_ip
 ---
 bool connected
+int32 code

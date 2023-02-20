@@ -2,3 +2,4 @@
 sensor_msgs/RegionOfInterest roi
 ---
 bool success
+int32 code
