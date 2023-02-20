@@ -1,8 +1,27 @@
+# uwb config
 enable = true
+simulate = false
 use_static_mac = false
 
 front_back_threshold = 7.0
 left_right_threshold = 7.0
+
+AoA_F_NMAX = -48.0
+AoA_F_PMAX = 60.0
+AoA_B_NMAX = -60.0
+AoA_B_PMAX = 60.0
+
+AoA_L_NMAX = -40.0
+AoA_L_PMAX = 60.0
+AoA_R_NMAX = -48.0
+AoA_R_PMAX = 48.0
+
+#ID
+session_id = 0x00000100
+
+#ctrl mac
+controller_mac = 0x0001
+
 
 [HeadUWB]
 AoA_F_NMAX = -48.0
@@ -16,6 +35,7 @@ AoA_L_PMAX = 60.0
 AoA_R_NMAX = -48.0
 AoA_R_PMAX = 48.0
 
+
 [UWBConnectionInfo]
 session_id = 0x00000100
 controller_mac = 0x0001
@@ -24,3 +44,32 @@ head_uwb_mac = 0x0003
 rear_tof_mac = 0x0004
 rear_uwb_mac = 0x0005
 
+#uwb list
+
+[[UWB]]
+name = "uwb_head_uwb"
+description = ""
+index = 0
+com_file = "uwb_head_uwb.toml"
+mac = 0x0002
+
+[[UWB]]
+name = "uwb_rear_uwb"
+description = ""
+index = 1
+com_file = "uwb_rear_uwb.toml"
+mac = 0x0003
+
+[[UWB]]
+name = "uwb_rear_tof"
+description = ""
+index = 2
+com_file = "uwb_rear_tof.toml"
+mac = 0x0004
+
+[[UWB]]
+name = "uwb_head_tof"
+description = ""
+index = 3
+com_file = "uwb_head_tof.toml"
+mac = 0x0005
