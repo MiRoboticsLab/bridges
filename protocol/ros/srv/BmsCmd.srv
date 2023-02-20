@@ -7,3 +7,4 @@ uint8  electric_machine_command		# 1: power up
 ---
 bool success # true: run success
              # false: run failed
+int32 code

@@ -3,3 +3,4 @@ uint8 command
 string username
 ---
 bool success
+int32 code

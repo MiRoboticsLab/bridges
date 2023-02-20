@@ -4,3 +4,4 @@
 string message        # 拍照结果描述
 bool result           # 是否成功
 sensor_msgs/Image img # 图片消息
+int32 code

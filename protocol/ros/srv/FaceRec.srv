@@ -15,3 +15,4 @@ int32 timeout #有效时间30s～300s，default = 60;如果不添加该字段，
 int32 ENABLE_SUCCESS = 0
 int32 ENABLE_FAIL = 5901
 int32 result
+int32 code
