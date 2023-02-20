@@ -62,7 +62,8 @@ bool Cyberdog_App_Client::sendHeartBeat(
   int32_t battery, bool internet, const std::string & sn,
   int motion_id, uint8_t task_status, int task_sub_status,
   int self_check_code, const std::string & description,
-  int state_switch_state, int state_switch_code)
+  int state_switch_state, int state_switch_code,
+  bool wired_charging, bool wireless_charging)
 {
   ClientContext context;
   context.set_deadline(
@@ -97,14 +98,18 @@ bool Cyberdog_App_Client::sendHeartBeat(
   state_switch_status->set_state(state_switch_state);
   state_switch_status->set_code(state_switch_code);
   ticks_.set_allocated_state_switch_status(state_switch_status);
+  grpcapi::ChargingStatus * charging_status = new grpcapi::ChargingStatus;
+  charging_status->set_wired_charging(wired_charging);
+  charging_status->set_wireless_charging(wireless_charging);
+  ticks_.set_allocated_charging_status(charging_status);
   Status status = stub_->heartbeat(&context, ticks_, &result);
   if (!status.ok()) {
     INFO("SetHeartBeat error code:%d", status.error_code());
     return false;
   }
   INFO_MILLSECONDS(
-    2000, "SetHeartBeat rpc success, status: %d, %d, %d, %d, %s, %d, %d",
+    2000, "SetHeartBeat rpc success, status: %d, %d, %d, %d, %s, %d, %d, %d, %d",
     motion_id, task_status, task_sub_status, self_check_code, description.c_str(),
-    state_switch_state, state_switch_code);
+    state_switch_state, state_switch_code, wired_charging, wireless_charging);
   return true;
 }

@@ -83,20 +83,30 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   executor_.add_node(tsub_node_ptr_);
   executor_.add_node(http_node_ptr_);
 
+  http_node_cb_group_ = http_node_ptr_->create_callback_group(
+    rclcpp::CallbackGroupType::Reentrant);
+  device_info_client_ =
+    http_node_ptr_->create_client<protocol::srv::DeviceInfo>(
+    "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
+
   bpub_ptr_ = std::make_unique<Backend_Publisher>(std::string("cyberdog/base_info/submit"));
+  if (bpub_ptr_->Init()) {
+    INFO("mqtt publisher is ready");
+  }
   be_sub_ =
     tsub_node_ptr_->create_subscription<std_msgs::msg::String>(
     "cyberdog/base_info/submit", rclcpp::SystemDefaultsQoS(),
     std::bind(&Transmit_Waiter::MqttPubCallback, this, std::placeholders::_1));
-
-  bsub_ptr_ = std::make_unique<Backend_Subscriber>();
   be_pub_ =
     tpub_node_ptr_->create_publisher<std_msgs::msg::String>(
     "bes_to_dog",
     rclcpp::SystemDefaultsQoS());
+  bsub_ptr_ = std::make_unique<Backend_Subscriber>();
 
-  bhttp_ptr_ = std::make_unique<Backend_Http>();
-  http_node_cb_group_ = http_node_ptr_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+  bhttp_ptr_ = std::make_unique<Backend_Http>(
+    "http://10.38.204.220:8091", "/toml_config/manager/settings.json");
+  INFO("http client is ready");
+  
   http_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttp>(
     "bes_http_srv",
@@ -109,14 +119,6 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
     std::bind(
       &Transmit_Waiter::BesHttpSendFileCallback, this, std::placeholders::_1,
       std::placeholders::_2), rmw_qos_profile_services_default, http_node_cb_group_);
-  device_info_client_ =
-    http_node_ptr_->create_client<protocol::srv::DeviceInfo>(
-    "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
-  INFO("http client is ready");
-
-  if (bpub_ptr_->Init()) {
-    INFO("mqtt publisher is ready");
-  }
 }
 
 cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
@@ -125,6 +127,7 @@ cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
 
 void cyberdog::bridge::Transmit_Waiter::Run()
 {
+  INFO("start spin");
   executor_.spin();
 }
 
@@ -230,12 +233,17 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
 
 bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string & uid)
 {
+  static std::string sn_;
   if (!device_info_client_->wait_for_service(std::chrono::seconds(3))) {
     WARN("query_divice_info server not avalible!");
     return false;
   }
   auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
   std::vector<bool> req_v {true, false, true};
+  bool sn_acquired = !sn_.empty();
+  if (sn_acquired) {
+    req_v[0] = false;
+  }
   req->enables = req_v;
   auto future_result = device_info_client_->async_send_request(req);
   rapidjson::Document json_dev_inf_doc(kObjectType);
@@ -243,8 +251,13 @@ bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string 
   if (status == std::future_status::ready) {
     std::string info = future_result.get()->info;
     if (!json_dev_inf_doc.Parse<0>(info.c_str()).HasParseError()) {
-      return common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
-             common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+      if (sn_acquired) {
+        sn = sn_;
+        return common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+      } else {
+        return common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
+          common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+      }
     } else {
       WARN("Parse json error!");
     }

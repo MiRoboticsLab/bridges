@@ -36,21 +36,25 @@ namespace bridge
 class Backend_Http final
 {
 public:
-  Backend_Http()
-  : base_url("http://10.38.204.220:8091")
+  Backend_Http(
+    const std::string & b_url = "http://10.38.204.220:8091",
+    const std::string & config_file = "/toml_config/manager/settings.json")
+  : base_url(b_url)
   {
-    auto local_share_dir = ament_index_cpp::get_package_share_directory("params");
-    auto path = local_share_dir + std::string("/toml_config/manager/settings.json");
-    Document json_document(kObjectType);
-    auto result = CyberdogJson::ReadJsonFromFile(path, json_document);
-    if (result) {
-      std::string url;
-      bool result = CyberdogJson::Get(json_document, "bes_url", url);
+    if (!config_file.empty()) {
+      auto local_share_dir = ament_index_cpp::get_package_share_directory("params");
+      auto path = local_share_dir + std::string(config_file);
+      Document json_document(kObjectType);
+      auto result = CyberdogJson::ReadJsonFromFile(path, json_document);
       if (result) {
-        base_url = url;
-        INFO("bes url:%s", base_url.c_str());
+        std::string url;
+        bool result = CyberdogJson::Get(json_document, "bes_url", url);
+        if (result) {
+          base_url = url;
+        }
       }
     }
+    INFO("bes url:%s", base_url.c_str());
   }
   ~Backend_Http()
   {

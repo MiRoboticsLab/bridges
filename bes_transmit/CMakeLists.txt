@@ -48,8 +48,30 @@ target_link_libraries(${executable_name}
   ${UUID_LIBRARIES}
 )
 
+add_library(file_uploading SHARED
+  src/file_uploading.cpp
+)
+target_include_directories(file_uploading PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(file_uploading PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+ament_target_dependencies(file_uploading
+  cyberdog_common
+)
+ament_export_targets(file_uploading HAS_LIBRARY_TARGET)
+
 install(TARGETS ${executable_name}
   DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS file_uploading
+  EXPORT file_uploading
+  LIBRARY DESTINATION lib
+  INCLUDES DESTINATION include)
+
+install(
+  DIRECTORY include/file_uploading/
+  DESTINATION include/file_uploading/
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

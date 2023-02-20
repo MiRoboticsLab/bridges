@@ -275,6 +275,7 @@ Cyberdog_app::Cyberdog_app()
   nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
     "plan", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::uploadNavPath, this, _1));
+  namecode_queue_size_[::grpcapi::SendRequest::NAV_PLAN_PATH] = 2;
 
   stop_nav_action_client_ = this->create_client<protocol::srv::StopAlgoTask>(
     "stop_algo_task", rmw_qos_profile_services_default, callback_group_);
@@ -335,6 +336,9 @@ Cyberdog_app::Cyberdog_app()
   state_switch_status_sub_ = this->create_subscription<protocol::msg::StateSwitchStatus>(
     "state_switch_status", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::stateSwitchStatusCB, this, _1));
+  bmd_status_sub_ = this->create_subscription<protocol::msg::BmsStatus>(
+    "bms_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::bmsStatusCB, this, _1));
 
   // low power dissipation
   low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
@@ -376,7 +380,7 @@ void Cyberdog_app::send_msgs_(
   std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
   if (can_process_messages_ && app_stub_ && connect_mark_) {
     bool send_result = app_stub_->sendRequest(*msg);
-    if (send_result) {
+    if (!send_result) {
       ERROR("gRPC Msg sending error.");
     }
   }
@@ -399,6 +403,7 @@ void Cyberdog_app::HeartBeat()
           int motion_id, task_sub_status, self_check_code, state_switch_state, state_switch_code;
           uint8_t task_status;
           std::string description;
+          bool wired_charging, wireless_charging;
           {
             std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
             motion_id = motion_status_.motion_id;
@@ -408,13 +413,15 @@ void Cyberdog_app::HeartBeat()
             description = self_check_status_.description;
             state_switch_state = state_switch_status_.state;
             state_switch_code = state_switch_status_.code;
+            wired_charging = charging_status_.wired_charging;
+            wireless_charging = charging_status_.wireless_charging;
           }
           std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
             local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn,
             motion_id, task_status, task_sub_status, self_check_code, description,
-            state_switch_state, state_switch_code);
+            state_switch_state, state_switch_code, wired_charging, wireless_charging);
         } else if (connector_timeout) {
           WARN_MILLSECONDS(2000, "connector_state topic timeout");
           hearbeat_result = false;
@@ -756,6 +763,7 @@ void Cyberdog_app::processMapMsg(
   CyberdogJson::Add(json_response, "qz", msg->info.origin.orientation.z);
   CyberdogJson::Add(json_response, "qw", msg->info.origin.orientation.w);
   CyberdogJson::Add(json_response, "data", msg->data);
+  INFO("prepare to upload map data, size: %ld", msg->data.size());
   send_grpc_msg(::grpcapi::SendRequest::MAP_DATA_REQUEST, json_response);
 }
 
@@ -1557,7 +1565,7 @@ void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
   writer.EndArray();
   writer.EndObject();
   std::string param = strBuf.GetString();
-  INFO("sending navigation global plan");
+  INFO("prepare to send navigation global plan, size: %ld", msg->poses.size());
   send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
 }
 
@@ -2066,6 +2074,13 @@ void Cyberdog_app::stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::S
   state_switch_status_.code = msg->code;
 }
 
+void Cyberdog_app::bmsStatusCB(const protocol::msg::BmsStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  charging_status_.wired_charging = msg->power_wired_charging;
+  charging_status_.wireless_charging = msg->power_wp_charging;
+}
+
 void Cyberdog_app::statusRequestHandle(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
@@ -2100,6 +2115,13 @@ void Cyberdog_app::statusRequestHandle(
     writer.Int(state_switch_status_.state);
     writer.Key("code");
     writer.Int(state_switch_status_.code);
+    writer.EndObject();
+    writer.Key("charging_status");
+    writer.StartObject();
+    writer.Key("wired_charging");
+    writer.Bool(charging_status_.wired_charging);
+    writer.Key("wireless_charging");
+    writer.Bool(charging_status_.wireless_charging);
     writer.EndObject();
     writer.EndObject();
   }
@@ -2393,6 +2415,7 @@ void Cyberdog_app::motionCMDRequestHandle(
   CyberdogJson::Get(json_resquest, "step_height", req->step_height);
   CyberdogJson::Get(json_resquest, "contact", req->contact);
   CyberdogJson::Get(json_resquest, "duration", req->duration);
+  CyberdogJson::Get(json_resquest, "value", req->value);
   // call ros service
   callMotionServoCmd(req, rsp);
   // send service response
@@ -2404,6 +2427,10 @@ void Cyberdog_app::motionCMDRequestHandle(
     ERROR("error while encoding to json");
     retrunErrorGrpc(writer);
     return;
+  } else {
+    INFO(
+      "motion_result_cmd response: motion_id: %d, result: %d, code: %d",
+      rsp.motion_id, rsp.result, rsp.code);
   }
   // send grpc result
   grpc_respond.set_data(rsp_string);

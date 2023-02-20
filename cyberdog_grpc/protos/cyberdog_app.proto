@@ -46,6 +46,11 @@ message StateSwitchStatus{
     int32 code = 2;
 }
 
+message ChargingStatus{
+    bool wired_charging = 1;
+    bool wireless_charging = 2;
+}
+
 message Ticks{
     string ip = 1;
     fixed32 wifi_strength = 2;
@@ -56,6 +61,7 @@ message Ticks{
     TaskStatus task_status = 7;
     SelfCheckStatus self_check_status = 8;
     StateSwitchStatus state_switch_status = 9;
+    ChargingStatus charging_status = 10;
 }
 
 message SendRequest {
