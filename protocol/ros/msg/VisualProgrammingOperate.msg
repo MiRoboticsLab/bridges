@@ -63,6 +63,11 @@ string FSM_LOW_POWER="LowPower"             # [状态机] LowPower
 string FSM_OTA="OTA"                        # [状态机] OTA
 string FSM_ERROR="Error"                    # [状态机] Error
 
+string ASR_OPERATE_TASK="vp_task"           # [自动语音识别]类型/任务ID
+uint8 ASR_OPERATE_SHUTDOWN=1                # [自动语音识别]值：终止
+uint8 ASR_OPERATE_SUSPEND=2                 # [自动语音识别]值：暂停
+uint8 ASR_OPERATE_RECOVER=3                 # [自动语音识别]值：继续
+
 string type
 string id
 string[] target_id
