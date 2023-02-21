@@ -20,6 +20,8 @@ extern "C" {
 
 int uploadFile(const char * file_name, int id, int * http_result_code);
 
+int sendWarningInfo(const char * info, int id, int * http_result_code);
+
 #ifdef __cplusplus
 }
 #endif

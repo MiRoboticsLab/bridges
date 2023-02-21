@@ -36,16 +36,39 @@ std::string myCommand(const std::string & cmd)
   return result;
 }
 
-
-int uploadFile(const char * file_name, int id, int * http_result_code)
+bool getSN(std::string & sn)
 {
-  std::string sn = myCommand("factory-tool -f /usr/share/factory_cmd_config/system.xml  -i \"SN\"");
+  sn = myCommand("factory-tool -f /usr/share/factory_cmd_config/system.xml  -i \"SN\"");
   sn = sn.substr(0, sn.find('\n'));
   if (sn.find("can not open") != std::string::npos) {
     ERROR("Please use sudo to get SN.");
-    return cyberdog::bridge::Backend_Http::ErrorCode::INVALID_SN;
+    return false;
   }
   INFO("sn %s", sn.c_str());
+  return true;
+}
+
+bool getHttpCode(const std::string & body, int * code)
+{
+  Document json_doc(kObjectType);
+  json_doc.Parse<0>(body.c_str());
+  if (json_doc.HasParseError()) {
+    ERROR("Parse json Error");
+    return false;
+  } else {
+    std::string code_string;
+    CyberdogJson::Get(json_doc, "code", code_string);
+    *code = std::atoi(code_string.c_str());
+  }
+  return true;
+}
+
+int uploadFile(const char * file_name, int id, int * http_result_code)
+{
+  std::string sn;
+  if (!getSN(sn)) {
+    return cyberdog::bridge::Backend_Http::ErrorCode::INVALID_SN;
+  }
   cyberdog::bridge::Backend_Http http_client(std::string("http://10.38.204.220:8091"), "");
   std::string url("device/system/log");
   http_client.SetInfo(sn, "");
@@ -53,15 +76,31 @@ int uploadFile(const char * file_name, int id, int * http_result_code)
   std::string body = http_client.SendFile(
     1, url, file_name, "application/x-tar", 60000, error_code);
   if (http_result_code) {
-    Document json_doc(kObjectType);
-    json_doc.Parse<0>(body.c_str());
-    if (json_doc.HasParseError()) {
-      ERROR("Parse json Error");
-    } else {
-      std::string code_string;
-      CyberdogJson::Get(json_doc, "code", code_string);
-      *http_result_code = std::atoi(code_string.c_str());
-    }
+    getHttpCode(body, http_result_code);
+  }
+  return error_code;
+}
+
+int sendWarningInfo(const char * info, int id, int * http_result_code)
+{
+  std::string sn;
+  if (!getSN(sn)) {
+    return cyberdog::bridge::Backend_Http::ErrorCode::INVALID_SN;
+  }
+  cyberdog::bridge::Backend_Http http_client(std::string("http://10.38.204.220:8091"), "");
+  std::string url("device/system/log");
+  http_client.SetInfo(sn, "");
+  int error_code = cyberdog::bridge::Backend_Http::ErrorCode::OK;
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("info");
+  writer.String(info);
+  writer.EndObject();
+  const std::string param(strBuf.GetString());
+  std::string body = http_client.post(url, param, 3000, error_code);
+  if (http_result_code) {
+    getHttpCode(body, http_result_code);
   }
   return error_code;
 }

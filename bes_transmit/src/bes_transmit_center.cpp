@@ -106,7 +106,7 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   bhttp_ptr_ = std::make_unique<Backend_Http>(
     "http://10.38.204.220:8091", "/toml_config/manager/settings.json");
   INFO("http client is ready");
-  
+
   http_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttp>(
     "bes_http_srv",
@@ -256,7 +256,7 @@ bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string 
         return common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
       } else {
         return common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
-          common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+               common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
       }
     } else {
       WARN("Parse json error!");

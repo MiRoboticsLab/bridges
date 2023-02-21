@@ -131,7 +131,7 @@ public:
     } else {
       error_code = ErrorCode::HTTP_REQUEST_ERROR;
     }
-    INFO("response body: %s", body.c_str());
+    INFO("response body: %s\n", body.c_str());
     error_code = ErrorCode::OK;
     return body;
   }
@@ -161,7 +161,7 @@ public:
     } else {
       error_code = ErrorCode::HTTP_REQUEST_ERROR;
     }
-    INFO("response body: %s", body.c_str());
+    INFO("response body: %s\n", body.c_str());
     error_code = ErrorCode::OK;
     return body;
   }
@@ -233,7 +233,7 @@ public:
       }
     }
     infile.close();
-    INFO("response body: %s", body.c_str());
+    INFO("response body: %s\n", body.c_str());
     error_code = ErrorCode::OK;
     return body;
   }
