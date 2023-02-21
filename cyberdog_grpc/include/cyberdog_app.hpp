@@ -87,6 +87,7 @@
 #include "protocol/msg/state_switch_status.hpp"
 #include "protocol/srv/unlock.hpp"
 #include "protocol/srv/reboot_machine.hpp"
+#include "protocol/srv/trigger.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -604,6 +605,13 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void autoLowPowerEnableHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
+  // work environment
+  rclcpp::Client<protocol::srv::Trigger>::SharedPtr set_work_environment_client_;
+  void setWorkEnvironmentHandle(
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);

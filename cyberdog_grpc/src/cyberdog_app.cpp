@@ -247,6 +247,9 @@ Cyberdog_app::Cyberdog_app()
   query_account_delete_client_ =
     this->create_client<protocol::srv::AccountDelete>("account_delete");
 
+  set_work_environment_client_ =
+    this->create_client<protocol::srv::Trigger>("set_work_environment");
+
   // test
   app_disconnect_pub_ = this->create_publisher<std_msgs::msg::Bool>("disconnect_app", 2);
 
@@ -2134,7 +2137,7 @@ void Cyberdog_app::lowPowerExitHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
   if (!low_power_exit_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("low_power_exit service is not avaiable");
+    ERROR("low_power_exit service is not avaiable");
     retrunErrorGrpc(grpc_writer);
     return;
   }
@@ -2164,7 +2167,7 @@ void Cyberdog_app::autoLowPowerEnableHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
   if (!auto_low_power_enable_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("low_power_onoff service is not avaiable");
+    ERROR("low_power_onoff service is not avaiable");
     retrunErrorGrpc(grpc_writer);
     return;
   }
@@ -2190,13 +2193,51 @@ void Cyberdog_app::autoLowPowerEnableHandle(
   grpc_writer->Write(grpc_respond);
 }
 
+void Cyberdog_app::setWorkEnvironmentHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!set_work_environment_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("set_work_environment service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::Trigger::Request>();
+  string data;
+  if (!CyberdogJson::Get(json_resquest, "data", data)) {
+    ERROR("Please set data");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  req->data = data;
+  auto future_result = set_work_environment_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call set_work_environment timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
 bool Cyberdog_app::HandleGetDeviceInfoRequest(
   const Document & json_resquest,
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!query_dev_info_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call querydevinfo server not avaiable"
     );
     return false;
@@ -2270,7 +2311,7 @@ bool Cyberdog_app::HandleAccountAdd(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!query_account_add_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call queryaccountadd server not avaiable"
     );
     return false;
@@ -2306,7 +2347,7 @@ bool Cyberdog_app::HandleAccountSearch(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!query_account_search_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call queryaccountsearch server not avaiable"
     );
     return false;
@@ -2341,7 +2382,7 @@ bool Cyberdog_app::HandleAccountDelete(
   std::string rsp_string;
   std::chrono::seconds timeout(3);
   if (!query_account_delete_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call account delete serve not avaiable"
     );
     return false;
@@ -2515,7 +2556,7 @@ void Cyberdog_app::deviceNameSwitchHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!dev_name_enable_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call set nickname switch server not avaiable"
     );
     retrunErrorGrpc(writer);
@@ -2550,7 +2591,7 @@ void Cyberdog_app::deviceNameSetHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!dev_name_set_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call setnickname server not avaiable"
     );
     retrunErrorGrpc(writer);
@@ -2862,7 +2903,7 @@ bool Cyberdog_app::HandleUnlockDevelopAccess(
   std::string rsp_string;
   std::chrono::seconds timeout(10);
   if (!unlock_develop_access_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("call unlock develop access serve not avaiable");
+    ERROR("call unlock develop access serve not avaiable");
     return false;
   }
   auto req = std::make_shared<protocol::srv::Unlock::Request>();
@@ -2900,7 +2941,7 @@ bool Cyberdog_app::RebootManchine(
   std::string rsp_string;
   std::chrono::seconds timeout(5);
   if (!reboot_machine_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("call reboot machine server not avaiable");
+    ERROR("call reboot machine server not avaiable");
     return false;
   }
   auto req = std::make_shared<protocol::srv::RebootMachine::Request>();
@@ -3113,6 +3154,9 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::AUTO_LOW_POWER_ENABLE: {
         autoLowPowerEnableHandle(json_resquest, grpc_respond, writer);
       } break;
+    case ::grpcapi::SendRequest::SET_WORK_ENVIRONMENT: {
+        setWorkEnvironmentHandle(json_resquest, grpc_respond, writer);
+      } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
           return;
@@ -3131,9 +3175,6 @@ void Cyberdog_app::ProcessMsg(
     case 55001: {  // for testing
         std_msgs::msg::Bool msg;
         msg.data = true;
-        grpc_respond.set_namecode(55001);
-        grpc_respond.set_data("");
-        writer->Write(grpc_respond);
         app_disconnect_pub_->publish(msg);
       } break;
     case 1100: {
