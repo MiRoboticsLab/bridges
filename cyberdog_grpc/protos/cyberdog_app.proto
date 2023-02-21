@@ -132,6 +132,7 @@ message SendRequest {
         STATUS_REQUEST = 10001;
         LOW_POWER_EXIT = 10002;
         AUTO_LOW_POWER_ENABLE = 10003;
+        SET_WORK_ENVIRONMENT = 10004;
     }
 }
 
