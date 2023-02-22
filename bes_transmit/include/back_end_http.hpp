@@ -249,6 +249,7 @@ public:
     sn = sn_;
     uid = uid_;
   }
+  LOGGER_MINOR_INSTANCE("Backend_Http");
 
 private:
   std::string base_url;

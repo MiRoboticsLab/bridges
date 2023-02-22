@@ -62,6 +62,8 @@ private:
   std::unique_ptr<Backend_Subscriber> bsub_ptr_ {nullptr};
   std::unique_ptr<Backend_Http> bhttp_ptr_ {nullptr};
   rclcpp::Client<protocol::srv::DeviceInfo>::SharedPtr device_info_client_ {nullptr};
+  bool bpub_is_ready_ {false};
+  LOGGER_MINOR_INSTANCE("Transmit_Waiter");
 };  // Transmit_Waiter
 }  // namespace bridge
 }  // namespace cyberdog
