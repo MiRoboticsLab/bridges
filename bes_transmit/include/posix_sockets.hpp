@@ -26,6 +26,8 @@
 #endif
 #include <fcntl.h>
 
+#include "cyberdog_common/cyberdog_log.hpp"
+
 namespace cyberdog
 {
 namespace bridge
@@ -46,7 +48,7 @@ public:
     /* get address information */
     rv = getaddrinfo(addr, port, &hints, &servinfo);
     if (rv != 0) {
-      fprintf(stderr, "Failed to open socket (getaddrinfo): %s\n", gai_strerror(rv));
+      ERROR("Failed to open socket (getaddrinfo): %s\n", gai_strerror(rv));
       return -1;
     }
     /* open the first possible socket */
@@ -85,6 +87,9 @@ public:
     if (sockfd != -1) {ioctl(sockfd, FIONBIO, &on);}
 #endif
     /* return the new socket fd */
+    if (!p && sockfd == -1) {
+      ERROR("Failed to open the first possible socket!");
+    }
     return sockfd;
   }
 };

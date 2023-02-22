@@ -90,7 +90,8 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
     "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
 
   bpub_ptr_ = std::make_unique<Backend_Publisher>(std::string("cyberdog/base_info/submit"));
-  if (bpub_ptr_->Init()) {
+  bpub_is_ready_ = bpub_ptr_->Init();
+  if (bpub_is_ready_) {
     INFO("mqtt publisher is ready");
   }
   be_sub_ =
@@ -133,6 +134,14 @@ void cyberdog::bridge::Transmit_Waiter::Run()
 
 void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)
 {
+  if (!bpub_is_ready_) {
+    INFO("mqtt publisher is not ready");
+    bpub_is_ready_ = bpub_ptr_->Init();
+    if (!bpub_is_ready_) {
+      ERROR("Failed to init mqtt publisher.");
+      return;
+    }
+  }
   rapidjson::Document json_msg(kObjectType);
   std::string sn, uid, str_to_be_sent;
   if (!getDevInf(sn, uid)) {
