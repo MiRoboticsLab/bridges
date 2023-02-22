@@ -11,7 +11,7 @@ timeout_us = 1234567
 description = ""
 can_package_num = 2
 can_id = ["0x050B4000", "0x050B4001"]
-array_name = "data_array"
+array_name = "data"
 
 [[array]]
 description = ""
