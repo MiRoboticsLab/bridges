@@ -132,9 +132,15 @@ public:
     }
     goal_handle_ptr_ = goal_handle_future.get();
     if (!goal_handle_ptr_) {
+      WARN("Task was rejected!");
       return 0;
     }
     goal_hash_ = getHash(goal_handle_ptr_);
+    if (goal_hash_ == 0) {
+      ERROR("Hash of GoalHandle is zero!");
+    } else {
+      INFO("Hash of GoalHandle is %lu", goal_hash_);
+    }
     return goal_hash_;
   }
   void CallFeedback(
