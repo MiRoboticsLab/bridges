@@ -128,11 +128,11 @@ public:
     auto res = cli_.Get(request_url);
     if (res) {
       body = res->body;
+      error_code = ErrorCode::OK;
     } else {
       error_code = ErrorCode::HTTP_REQUEST_ERROR;
     }
     INFO("response body: %s\n", body.c_str());
-    error_code = ErrorCode::OK;
     return body;
   }
   const std::string post(
@@ -158,11 +158,11 @@ public:
     auto res = cli_.Post(request_url, params, "application/json");
     if (res) {
       body = res->body;
+      error_code = ErrorCode::OK;
     } else {
       error_code = ErrorCode::HTTP_REQUEST_ERROR;
     }
     INFO("response body: %s\n", body.c_str());
-    error_code = ErrorCode::OK;
     return body;
   }
   const std::string SendFile(
@@ -228,13 +228,13 @@ public:
         content_type);
       if (res) {
         body = res->body;
+        error_code = ErrorCode::OK;
       } else {
         error_code = ErrorCode::HTTP_REQUEST_ERROR;
       }
     }
     infile.close();
     INFO("response body: %s\n", body.c_str());
-    error_code = ErrorCode::OK;
     return body;
   }
   void SetInfo(const std::string & sn, const std::string & uid)
