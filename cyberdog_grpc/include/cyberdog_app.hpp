@@ -100,6 +100,7 @@
 #include "std_srvs/srv/trigger.hpp"
 #include "threadsafe_queue.hpp"
 #include "time_interval.hpp"
+#include "ready_sn.hpp"
 using string = std::string;
 using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
@@ -633,6 +634,8 @@ private:
   void stopStairAlignHandle(
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
+  std::unique_ptr<ReadySnNode> ready_sn_ptr {nullptr};
 
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };

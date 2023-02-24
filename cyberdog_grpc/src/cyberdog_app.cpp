@@ -80,25 +80,28 @@ Cyberdog_app::Cyberdog_app()
   wifi_strength(0),
   sn("")
 {
-  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
-  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
-  sn_ger_srv_ =
-    node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
-  if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
-    ERROR("call sn server not available");
-    sn = "unaviable";
-  } else {
-    auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
-    auto future_result = sn_ger_srv_->async_send_request(req);
-    if (!(rclcpp::spin_until_future_complete(node, future_result, std::chrono::seconds(3)) ==
-      rclcpp::FutureReturnCode::SUCCESS))
-    {
-      ERROR("call get sn service failed!");
-      sn = "unkown";
-    } else {
-      sn = future_result.get()->message;
-    }
-  }
+  ready_sn_ptr =
+    std::make_unique<cyberdog::bridges::ReadySnNode>();
+  sn = ready_sn_ptr->WaitSn();
+  // std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
+  // rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
+  // sn_ger_srv_ =
+  //   node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
+  // if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
+  //   ERROR("call sn server not available");
+  //   sn = "unaviable";
+  // } else {
+  //   auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  //   auto future_result = sn_ger_srv_->async_send_request(req);
+  //   if (!(rclcpp::spin_until_future_complete(node, future_result, std::chrono::seconds(3)) ==
+  //     rclcpp::FutureReturnCode::SUCCESS))
+  //   {
+  //     ERROR("call get sn service failed!");
+  //     sn = "unkown";
+  //   } else {
+  //     sn = future_result.get()->message;
+  //   }
+  // }
   INFO("sn:%s", sn.c_str());
   INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
