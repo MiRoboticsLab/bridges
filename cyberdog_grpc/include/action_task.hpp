@@ -19,11 +19,12 @@
 #include <functional>
 #include <memory>
 #include <condition_variable>
-#include <map>
+#include <unordered_map>
 #include <mutex>
 #include <atomic>
 #include <list>
 #include <utility>
+#include <queue>
 
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
@@ -98,7 +99,7 @@ public:
   void SetFeedbackCallback(
     FeedbackCallback<ActionType> feedback_cb)
   {
-    std::unique_lock<std::mutex> wite_lock(request_mutex_);
+    std::unique_lock<std::mutex> write_lock(request_mutex_);
     feedback_cb_ = feedback_cb;
   }
   void SetResultPtr(std::shared_ptr<std::shared_ptr<typename ActionType::Result>> & result_pp)
@@ -114,12 +115,12 @@ public:
     }
     result_pp = action_result_ptr_ptr_;
   }
-  size_t SendGoal(
+  bool SendGoal(
     typename rclcpp_action::Client<ActionType>::SharedPtr client_ptr,
     const typename ActionType::Goal & goal,
     FeedbackCallback<ActionType> manager_feedback_cb,
     ResultCallback<ActionType> manager_result_cb,
-    bool * not_rec_acc)
+    bool & not_rec_acc, size_t & goal_hash)
   {
     typename rclcpp_action::Client<ActionType>::SendGoalOptions goal_options;
     goal_options.feedback_callback = manager_feedback_cb;
@@ -127,21 +128,22 @@ public:
     auto goal_handle_future = client_ptr->async_send_goal(goal, goal_options);
     if (goal_handle_future.wait_for(std::chrono::seconds(3)) != std::future_status::ready) {
       WARN("Not receive action goal handle response!");
-      *not_rec_acc = true;
-      return 0;
+      not_rec_acc = true;
+      return false;
     }
     goal_handle_ptr_ = goal_handle_future.get();
     if (!goal_handle_ptr_) {
       WARN("Task was rejected!");
-      return 0;
+      return false;
     }
     goal_hash_ = getHash(goal_handle_ptr_);
     if (goal_hash_ == 0) {
-      ERROR("Hash of GoalHandle is zero!");
+      WARN("Hash of GoalHandle is zero!");
     } else {
       INFO("Hash of GoalHandle is %lu", goal_hash_);
     }
-    return goal_hash_;
+    goal_hash = goal_hash_;
+    return true;
   }
   void CallFeedback(
     typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr goal_handle_ptr,
@@ -250,13 +252,13 @@ class ActionTaskManager
 {
 public:
   template<typename ActionType>
-  size_t StartActionTask(
+  bool StartActionTask(
     typename rclcpp_action::Client<ActionType>::SharedPtr client,
     const typename ActionType::Goal & goal,
     FeedbackCallback<ActionType> feedback_cb,
     std::shared_ptr<std::condition_variable> & cv_ptr,
     std::shared_ptr<std::shared_ptr<typename ActionType::Result>> & result_pp,
-    std::shared_ptr<std::mutex> & mx)
+    std::shared_ptr<std::mutex> & mx, size_t & goal_hash)
   {
     auto action_task_ptr = std::make_shared<ActionTask<ActionType>>();
     action_task_ptr->SetFeedbackCallback(feedback_cb);
@@ -265,27 +267,36 @@ public:
     action_task_ptr->SetResultMutex(mx);
     std::unique_lock<std::shared_mutex> write_lock(action_map_mutex_);
     INFO("Sending action goal");
-    size_t goal_hash = action_task_ptr->SendGoal(
+    bool not_rec_acc = false;
+    bool acception = action_task_ptr->SendGoal(
       client, goal, std::bind(
         &ActionTaskManager::feedbackCB<ActionType>, this,
         std::placeholders::_1, std::placeholders::_2),
       std::bind(
         &ActionTaskManager::resultCB<ActionType>, this, std::placeholders::_1),
-      &not_rec_acc_);
-    if (goal_hash != 0 || not_rec_acc_) {
-      INFO("goalhandle is available, registering...");
+      not_rec_acc, goal_hash);
+    if (acception) {
+      INFO("goalhandle is available, registering hash: %zu", goal_hash);
       action_tasks_[goal_hash] = action_task_ptr;
-      if (not_rec_acc_ && goal_hash == 0) {
-        auto rec_acc = [&]() {return !not_rec_acc_;};
-        if (goal_handle_absent_cv_.wait_for(write_lock, std::chrono::seconds(3), rec_acc)) {
-          goal_hash = action_tasks_[0]->GetGoalHash();
-        } else {
-          not_rec_acc_ = false;
-        }
-        action_tasks_.erase(0);
+    } else if (not_rec_acc) {
+      auto rec_acc = [&]() {
+          return !absent_tasks_.empty() &&
+                 absent_tasks_.front().second.get() == action_task_ptr.get() &&
+                 absent_tasks_.front().first;
+        };
+      absent_tasks_.emplace(false, action_task_ptr);
+      bool wait_result = goal_handle_absent_cv_.wait_for(
+        write_lock, std::chrono::seconds(3), rec_acc);
+      absent_tasks_.pop();
+      if (wait_result) {
+        goal_hash = action_task_ptr->GetGoalHash();
+        action_tasks_[goal_hash] = action_task_ptr;
+        INFO("registering task from feedback, hash: %zu", goal_hash);
+      } else {
+        return false;
       }
     }
-    return goal_hash;
+    return true;
   }
   void KillTask(size_t goal_hash)
   {
@@ -351,22 +362,24 @@ private:
     std::unique_lock<std::shared_mutex> write_lock(action_map_mutex_);
     auto action_task_itr = action_tasks_.find(getHash(goal_handle));
     if (action_task_itr == action_tasks_.end()) {
-      if (!not_rec_acc_) {  // action has finished
+      if (absent_tasks_.empty()) {  // action has finished
         WARN("No action required exists!");
-        return;
-      } else if (action_tasks_.find(0) != action_tasks_.end()) {  // GoalHandle not receive
-        not_rec_acc_ = false;
+      } else {  // GoalHandle not receive
         WARN("Receive a feedback to get goal hash!");
-        size_t gh = getHash(goal_handle);
-        action_tasks_[0]->SetGoalHash(gh);
-        action_tasks_[gh] = action_tasks_[0];
-        action_task_itr = action_tasks_.find(gh);
-        goal_handle_absent_cv_.notify_one();
+        size_t goal_hash = getHash(goal_handle);
+        absent_tasks_.front().second->SetGoalHash(goal_hash);
+        absent_tasks_.front().first = true;
+        std::shared_ptr<ActionTask<ActionType>> action_task_ptr =
+          std::static_pointer_cast<ActionTask<ActionType>>(absent_tasks_.front().second);
+        INFO("calling feedback without acception, hash: %zu", goal_hash);
+        action_task_ptr->CallFeedback(goal_handle, fb);
+        goal_handle_absent_cv_.notify_all();
       }
+      return;
     }
     std::shared_ptr<ActionTask<ActionType>> action_task_ptr =
       std::static_pointer_cast<ActionTask<ActionType>>(action_task_itr->second);
-    INFO("calling feedback");
+    INFO("calling feedback, hash: %zu", action_task_itr->first);
     action_task_ptr->CallFeedback(goal_handle, fb);
   }
   size_t getHashFromGoalID(rclcpp_action::GoalUUID goal_id)
@@ -378,7 +391,7 @@ private:
   void resultCB(
     const typename rclcpp_action::ClientGoalHandle<ActionType>::WrappedResult & result_wrapper)
   {
-    std::unique_lock<std::shared_mutex> write_lock(action_map_mutex_);
+    std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
     size_t gh = getHashFromGoalID(result_wrapper.goal_id);
     auto action_task_itr = action_tasks_.find(gh);
     if (action_task_itr == action_tasks_.end()) {
@@ -387,14 +400,14 @@ private:
     }
     std::shared_ptr<ActionTask<ActionType>> action_task_ptr =
       std::static_pointer_cast<ActionTask<ActionType>>(action_task_itr->second);
-    INFO("calling result callback");
+    INFO("calling result callback, hash: %zu", gh);
     action_task_ptr->ResultCB(result_wrapper);
     action_tasks_.erase(gh);
   }
-  std::map<size_t, std::shared_ptr<ActionTaskBase>> action_tasks_;
+  std::unordered_map<size_t, std::shared_ptr<ActionTaskBase>> action_tasks_;
   std::shared_mutex action_map_mutex_;
-  bool not_rec_acc_ {false};
   std::condition_variable_any goal_handle_absent_cv_;
+  std::queue<std::pair<bool, std::shared_ptr<ActionTaskBase>>> absent_tasks_;
   LOGGER_MINOR_INSTANCE("ActionTaskManager");
 };
 }  // namespace bridges
