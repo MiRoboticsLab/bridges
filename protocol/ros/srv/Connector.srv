@@ -2,5 +2,11 @@ string wifi_name
 string wifi_password
 string provider_ip
 ---
+int32 CODE_SUCCESS = 0
+int32 CODE_WIFI_NAME_FAIL = 8121
+int32 CODE_WIFI_PASSWORD_FAIL = 8122
+int32 CODE_WIFI_PROVIDER_IP_FAIL = 8123
+int32 CODE_CONNECTION_TIMEOUT_FAIL = 8124
+
 bool connected
 int32 code
