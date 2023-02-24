@@ -487,6 +487,7 @@ private:
   ActionTaskManager action_task_manager_;
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
     navigation_client_;
+  rclcpp::CallbackGroup::SharedPtr navigation_callback_group_;
   std::map<uint8_t, size_t> task_type_hash_map_;
   std::shared_mutex type_hash_mutex_;
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
