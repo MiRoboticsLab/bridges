@@ -70,3 +70,4 @@ uint16 PID_BONE_POINT_RIGHT = 31032             # 请向右移一点
 uint16 PID_MODEL_LOADING_START = 31033          # 开始加载模型，请稍后
 uint16 PID_MODEL_LOADING_COMPLETE = 31034       # 模型加载完成
 uint16 PID_WIFI_CONNECTED_UNKNOWN_NET = 31035   # 已连接无密码的网络
+uint16 PID_WIFI_FAILED_PLEASE_RETRY = 31036     # 启动失败，请重试
