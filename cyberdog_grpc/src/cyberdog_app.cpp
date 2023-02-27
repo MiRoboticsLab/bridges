@@ -275,7 +275,8 @@ Cyberdog_app::Cyberdog_app()
   get_label_client_ = this->create_client<protocol::srv::GetMapLabel>(
     "get_label", rmw_qos_profile_services_default, callback_group_);
 
-  navigation_callback_group_ = this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+  navigation_callback_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
   navigation_client_ =
     rclcpp_action::create_client<Navigation>(this, "start_algo_task", navigation_callback_group_);
 
