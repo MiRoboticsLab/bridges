@@ -278,6 +278,7 @@ public:
     if (acception) {
       INFO("goalhandle is available, registering hash: %zu", goal_hash);
       action_tasks_[goal_hash] = action_task_ptr;
+      return true;
     } else if (not_rec_acc) {
       auto rec_acc = [&]() {
           return !absent_tasks_.empty() &&
@@ -292,11 +293,12 @@ public:
         goal_hash = action_task_ptr->GetGoalHash();
         action_tasks_[goal_hash] = action_task_ptr;
         INFO("registering task from feedback, hash: %zu", goal_hash);
+        return true;
       } else {
         return false;
       }
     }
-    return true;
+    return false;
   }
   void KillTask(size_t goal_hash)
   {
