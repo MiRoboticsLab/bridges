@@ -1,7 +1,11 @@
 # request
+int32 FSM = -2
+int32 DEBUG = -1
 int32 APP = 0
 int32 AUDIO = 1
 int32 VIS = 2
+int32 BluTele = 3
+int32 Algo = 4
 
 int32        motion_id    # 机器人运控姿态
 int32        cmd_source   # 命令来源
