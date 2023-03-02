@@ -18,6 +18,8 @@ string MODE_SEQUENCE="sequence"             # 序列
 string MODE_SINGLE_STEP="single_step"       # 单步
 string MODE_ORIGINAL="original"             # 原始
 
+string MODE_ALL="all"                       # 所有
+
 string MODE_PERSONNEL="personnel"           # 人员
 string MODE_FACE="face"                     # 人脸
 string MODE_VOICEPRINT="voiceprint"         # 声纹
@@ -75,3 +77,4 @@ string body                                 # 消息主体
 string fsm                                  # 状态机状态
 string[] dependent                          # 依赖项
 string[] be_depended                        # 被依赖项
+
