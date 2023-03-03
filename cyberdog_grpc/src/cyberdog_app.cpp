@@ -109,8 +109,8 @@ Cyberdog_app::Cyberdog_app()
   this->declare_parameter("grpc_server_port", "50052");
   this->declare_parameter("grpc_client_port", "8981");
 
-  grpc_server_port_ = get_parameter("grpc_server_port").as_string();
-  grpc_client_port_ = get_parameter("grpc_client_port").as_string();
+  grpc_server_port_ = "50052";
+  grpc_client_port_ = "8981";
 
   INFO("Start creating ROS components.");
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
@@ -608,6 +608,7 @@ void Cyberdog_app::createGrpc()
   {
     std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
     ip_port = *server_ip + std::string(":") + grpc_client_port_;
+    INFO("Client ip port: %s", ip_port.c_str());
     net_checker.set_ip(*server_ip);
   }
   heartbeat_err_cnt_ = 0;
