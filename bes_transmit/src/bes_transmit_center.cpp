@@ -105,7 +105,7 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   bsub_ptr_ = std::make_unique<Backend_Subscriber>();
 
   bhttp_ptr_ = std::make_unique<Backend_Http>(
-    "http://10.38.204.220:8091", "/toml_config/manager/settings.json");
+    "https://test-server.cyberdog.xiaomi.com", "/toml_config/manager/settings.json");
   INFO("http client is ready");
 
   http_srv_ =

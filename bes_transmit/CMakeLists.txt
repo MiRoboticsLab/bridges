@@ -24,6 +24,7 @@ find_package(cyberdog_common REQUIRED)
 find_package(mqttc REQUIRED)
 find_package(cpp_httplib REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(OpenSSL REQUIRED)
 pkg_search_module(UUID REQUIRED uuid)
 
 set(dependencies
@@ -37,7 +38,10 @@ set(dependencies
 )
 set(executable_name bes_transmit_waiter)
 
-include_directories(include)
+include_directories(
+  include
+  ${OPENSSL_INCLUDE_DIR}
+)
 
 add_executable(${executable_name} src/main.cpp src/bes_transmit_center.cpp)
 target_include_directories(${executable_name} PUBLIC ${UUID_INCLUDE_DIRS})
@@ -46,6 +50,7 @@ ament_target_dependencies(${executable_name}
 )
 target_link_libraries(${executable_name}
   ${UUID_LIBRARIES}
+  ${OPENSSL_LIBRARIES}
 )
 
 add_library(file_uploading SHARED
