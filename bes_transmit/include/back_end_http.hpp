@@ -18,6 +18,7 @@
 
 #include <uuid/uuid.h>
 #include <shared_mutex>
+#include <cstdlib>
 #include <string>
 #include <sstream>
 #include "cpp_httplib/httplib.h"
@@ -69,7 +70,8 @@ public:
     INVALID_SN = 6023,
     JSON_ERROR = 6024,
     HTTP_REQUEST_ERROR = 6025,
-    OPEN_FILE_ERROR = 6026
+    OPEN_FILE_ERROR = 6026,
+    CONNECTION_ERROR = 6027
   };
   static std::string GetDefaultResponse(const std::string & message)
   {
@@ -87,6 +89,10 @@ public:
     const std::string & url, const std::string & params,
     const uint16_t & millsecs, int & error_code)
   {
+    if (checkConnection() != 0) {
+      error_code = ErrorCode::CONNECTION_ERROR;
+      return GetDefaultResponse("connection error");
+    }
     httplib::Client cli_(base_url);
     cli_.set_read_timeout(std::chrono::milliseconds(millsecs));
     std::string request_url = "/v1";
@@ -141,6 +147,10 @@ public:
     const std::string & url, const std::string & params,
     const uint16_t & millsecs, int & error_code)
   {
+    if (checkConnection() != 0) {
+      error_code = ErrorCode::CONNECTION_ERROR;
+      return GetDefaultResponse("connection error");
+    }
     httplib::Client cli_(base_url);
     cli_.set_read_timeout(std::chrono::milliseconds(millsecs));
     cli_.set_write_timeout(std::chrono::milliseconds(millsecs));
@@ -171,6 +181,10 @@ public:
     unsigned char method, const std::string & url, const std::string & file_name,
     const std::string & content_type, const uint16_t & millsecs, int & error_code)
   {
+    if (checkConnection() != 0) {
+      error_code = ErrorCode::CONNECTION_ERROR;
+      return GetDefaultResponse("connection error");
+    }
     std::string body(GetDefaultResponse("http method error"));
     std::ifstream infile;
     infile.open(file_name, std::ifstream::in | std::ifstream::binary);
@@ -254,6 +268,12 @@ public:
   LOGGER_MINOR_INSTANCE("Backend_Http");
 
 private:
+  int checkConnection()
+  {
+    std::string cmd("ping -c 1 -W 2 ");
+    cmd += base_url.substr(base_url.find("://") + 3);
+    return system(cmd.c_str());
+  }
   std::string base_url;
   std::string sn_, uid_;
   mutable std::shared_mutex info_mutex_;
