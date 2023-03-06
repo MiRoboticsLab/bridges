@@ -14,6 +14,8 @@
 #ifndef BACK_END_HTTP_HPP_
 #define BACK_END_HTTP_HPP_
 
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+
 #include <uuid/uuid.h>
 #include <shared_mutex>
 #include <string>

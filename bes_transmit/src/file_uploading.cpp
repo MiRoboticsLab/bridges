@@ -87,7 +87,8 @@ int sendWarningInfo(const char * info, int id, int * http_result_code)
   if (!getSN(sn)) {
     return cyberdog::bridge::Backend_Http::ErrorCode::INVALID_SN;
   }
-  cyberdog::bridge::Backend_Http http_client(std::string("http://10.38.204.220:8091"), "");
+  cyberdog::bridge::Backend_Http http_client(
+    std::string("https://test-server.cyberdog.xiaomi.com"), "");
   std::string url("device/system/log");
   http_client.SetInfo(sn, "");
   int error_code = cyberdog::bridge::Backend_Http::ErrorCode::OK;
