@@ -109,8 +109,8 @@ Cyberdog_app::Cyberdog_app()
   this->declare_parameter("grpc_server_port", "50052");
   this->declare_parameter("grpc_client_port", "8981");
 
-  grpc_server_port_ = get_parameter("grpc_server_port").as_string();
-  grpc_client_port_ = get_parameter("grpc_client_port").as_string();
+  grpc_server_port_ = "50052";
+  grpc_client_port_ = "8981";
 
   INFO("Start creating ROS components.");
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
@@ -608,6 +608,7 @@ void Cyberdog_app::createGrpc()
   {
     std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
     ip_port = *server_ip + std::string(":") + grpc_client_port_;
+    INFO("Client ip port: %s", ip_port.c_str());
     net_checker.set_ip(*server_ip);
   }
   heartbeat_err_cnt_ = 0;
@@ -1649,8 +1650,9 @@ void Cyberdog_app::selectTrackingObject(
   auto future_result = select_tracking_human_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(timeout);
   if (status == std::future_status::ready) {
-    INFO("Got tracking_object_srv result.");
-    CyberdogJson::Add(json_response, "success", future_result.get()->success);
+    bool suc = future_result.get()->success;
+    INFO("Got tracking_object_srv result: %d.", suc);
+    CyberdogJson::Add(json_response, "success", suc);
   } else {
     ERROR("call tracking_object_srv timeout.");
     retrunErrorGrpc(writer);
@@ -1719,8 +1721,8 @@ void Cyberdog_app::scanBluetoothDevices(
   req->scan_seconds = scan_seconds;
   auto future_result = scan_bluetooth_devices_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(
-    scan_seconds < 5.0 ? std::chrono::seconds(
-      5) : std::chrono::seconds(int64_t(scan_seconds * 1.5)));
+    scan_seconds < 6.0 ? std::chrono::seconds(
+      6) : std::chrono::seconds(int64_t(scan_seconds * 1.5)));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {

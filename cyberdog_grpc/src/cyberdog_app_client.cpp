@@ -34,6 +34,10 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
   std::unique_ptr<grpc::ClientReader<::grpcapi::RecResponse>> reader(
     stub_->sendMsg(&context, msg));
 
+  if (!reader) {
+    ERROR("sendMsg returns empty pointer!");
+    return false;
+  }
   while (reader->Read(&rsp)) {
   }
 
