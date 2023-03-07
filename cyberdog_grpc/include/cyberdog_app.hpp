@@ -175,7 +175,7 @@ private:
     const protocol::msg::MotionServoResponse::SharedPtr msg);
   rclcpp::Client<protocol::srv::MotionResultCmd>::SharedPtr
     motion_ressult_client_;
-  void callMotionServoCmd(
+  bool callMotionServoCmd(
     const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
     protocol::srv::MotionResultCmd::Response & rep);
   void retrunErrorGrpc(

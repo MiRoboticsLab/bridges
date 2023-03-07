@@ -518,21 +518,6 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
   }
   return result;
 }
-// void Cyberdog_app::subscribeIp(const std_msgs::msg::String::SharedPtr msg)
-// {
-// INFO("get ip :%s", msg->data.c_str());
-// INFO("old phoneip is:%s", (*server_ip).c_str());
-// app_disconnected = false;
-// local_ip = getDogIp(msg->data, ":");
-// INFO("local_ip ip :%s", local_ip.c_str());
-// std::string phoneIp = getPhoneIp(msg->data, ":");
-// INFO("phoneIp ip :%s", phoneIp.c_str());
-// if (*server_ip != phoneIp) {
-// server_ip = std::make_shared<std::string>(phoneIp);
-// destroyGrpc();
-// createGrpc();
-// }
-// }
 
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
@@ -654,16 +639,16 @@ void Cyberdog_app::motion_servo_rsp_callback(
   send_grpc_msg(::grpcapi::SendRequest::MOTION_SERVO_RESPONSE, json_response);
 }
 
-void Cyberdog_app::callMotionServoCmd(
+bool Cyberdog_app::callMotionServoCmd(
   const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
   protocol::srv::MotionResultCmd::Response & rsp)
 {
   INFO("callMotionServoCmd.");
-  std::chrono::seconds timeout(5);
+  std::chrono::seconds timeout(20);
 
   if (!motion_ressult_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("callMotionServoCmd server not available");
-    return;
+    return false;
   }
 
   INFO("motion_id: %d.", req->motion_id);
@@ -673,12 +658,14 @@ void Cyberdog_app::callMotionServoCmd(
   if (status == std::future_status::ready) {
     INFO("success to call callMotionServoCmd services.");
   } else {
-    INFO("Failed to call callMotionServoCmd services.");
+    ERROR("Failed to call callMotionServoCmd services.");
+    return false;
   }
 
   rsp.motion_id = future_result.get()->motion_id;
   rsp.result = future_result.get()->result;
   rsp.code = future_result.get()->code;
+  return true;
 }
 
 //  for visual
@@ -2468,7 +2455,10 @@ void Cyberdog_app::motionCMDRequestHandle(
   CyberdogJson::Get(json_resquest, "duration", req->duration);
   CyberdogJson::Get(json_resquest, "value", req->value);
   // call ros service
-  callMotionServoCmd(req, rsp);
+  if (!callMotionServoCmd(req, rsp)) {
+    retrunErrorGrpc(writer);
+    return;
+  }
   // send service response
   CyberdogJson::Add(json_response, "motion_id", rsp.motion_id);
   CyberdogJson::Add(json_response, "result", rsp.result);
