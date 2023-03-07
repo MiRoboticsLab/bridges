@@ -258,7 +258,7 @@ Cyberdog_app::Cyberdog_app()
 
   // map subscribe
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
-    "map", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().durability_volatile(),
+    "map", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local(),
     std::bind(&Cyberdog_app::processMapMsg, this, _1));
   namecode_queue_size_[::grpcapi::SendRequest::MAP_DATA_REQUEST] = 2;
 
