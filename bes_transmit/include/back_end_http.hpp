@@ -271,7 +271,12 @@ private:
   int checkConnection()
   {
     std::string cmd("ping -c 1 -W 2 ");
-    cmd += base_url.substr(base_url.find("://") + 3);
+    std::string ip = base_url.substr(base_url.find("://") + 3);
+    size_t port_position = ip.find(":");
+    if (port_position != std::string::npos) {
+      ip = ip.substr(0, port_position);
+    }
+    cmd += ip;
     return system(cmd.c_str());
   }
   std::string base_url;
