@@ -156,10 +156,9 @@ public:
       feedback_buff_.push_back(std::make_pair(goal_handle_ptr, feedback_ptr));
       return;
     }
-    if (!feedback_cb_) {  // there is no requests receiving feedback
-      return;
+    if (feedback_cb_) {
+      feedback_cb_(goal_handle_ptr, feedback_ptr);
     }
-    feedback_cb_(goal_handle_ptr, feedback_ptr);
   }
   void RemoveRequest() override
   {

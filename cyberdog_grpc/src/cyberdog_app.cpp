@@ -46,7 +46,6 @@
 
 using namespace std::chrono_literals;
 using grpc::ServerWriter;
-#define APP_CONNECTED_FAIL_CNT 3
 #define CYBER_CLIENT_LED 1
 using std::placeholders::_1;
 #pragma GCC diagnostic push
@@ -70,7 +69,6 @@ Cyberdog_app::Cyberdog_app()
 : Node("app_server"),
   ticks_(0),
   can_process_messages_(false),
-  heartbeat_err_cnt_(0),
   heart_beat_thread_(nullptr),
   app_server_thread_(nullptr),
   server_(nullptr),
@@ -396,13 +394,15 @@ void Cyberdog_app::send_msgs_(
 
 void Cyberdog_app::HeartBeat()
 {
+  static std::chrono::system_clock::time_point heart_beat_time_point(
+    std::chrono::system_clock::now());
   rclcpp::WallRate r(500ms);
   std::string ipv4;
   while (rclcpp::ok()) {
     if (can_process_messages_) {
       update_time_mutex_.lock();
       bool connector_timeout = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::system_clock::now() - connector_update_time_point_).count() > 5;
+        std::chrono::system_clock::now() - connector_update_time_point_).count() >= 5;
       update_time_mutex_.unlock();
       bool hearbeat_result(false);
       {
@@ -440,7 +440,10 @@ void Cyberdog_app::HeartBeat()
         }
       }
       if (!hearbeat_result) {
-        if (heartbeat_err_cnt_++ >= APP_CONNECTED_FAIL_CNT) {
+        bool hear_beat_timeout = std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::system_clock::now() - heart_beat_time_point).count() >= 5;
+        if (hear_beat_timeout) {
+          heart_beat_time_point = std::chrono::system_clock::now();
           connect_mark_ = false;
           std_msgs::msg::Bool msg;
           msg.data = false;
@@ -459,13 +462,13 @@ void Cyberdog_app::HeartBeat()
           connect_mark_ = true;
           publishNotCompleteSendingFiles();
         }
-        heartbeat_err_cnt_ = 0;
+        heart_beat_time_point = std::chrono::system_clock::now();
         std_msgs::msg::Bool msg;
         msg.data = true;
         app_connection_pub_->publish(msg);
       }
     } else {
-      WARN("Not able to send heatbeat while creating gRPC client.");
+      WARN_MILLSECONDS(2000, "Not able to send heatbeat while creating gRPC client.");
     }
     r.sleep();
   }
@@ -596,7 +599,6 @@ void Cyberdog_app::createGrpc()
     INFO("Client ip port: %s", ip_port.c_str());
     net_checker.set_ip(*server_ip);
   }
-  heartbeat_err_cnt_ = 0;
   auto channel_ = grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials());
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   app_stub_ = std::make_shared<Cyberdog_App_Client>(channel_);

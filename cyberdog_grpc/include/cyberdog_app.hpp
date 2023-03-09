@@ -147,7 +147,6 @@ private:
   void createGrpc();
   string GetFileConecxt(string path);
   NetChecker net_checker;
-  std::atomic<uint32_t> heartbeat_err_cnt_;
   std::atomic_bool app_disconnected;
   std::string local_ip;
   bool is_internet;

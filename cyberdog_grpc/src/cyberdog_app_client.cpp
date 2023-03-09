@@ -72,14 +72,7 @@ bool Cyberdog_App_Client::sendHeartBeat(
   ClientContext context;
   context.set_deadline(
     std::chrono::system_clock::now() +
-    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(3)));
-  /*
-  gpr_timespec timespec;
-  timespec.tv_sec = 2;
-  timespec.tv_nsec = 0;
-  timespec.clock_type = GPR_TIMESPAN;
-  context.set_deadline(timespec);
-  */
+    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(1)));
   Result result;
   Ticks ticks_;
   ticks_.set_ip(ip);
@@ -112,8 +105,8 @@ bool Cyberdog_App_Client::sendHeartBeat(
     return false;
   }
   INFO_MILLSECONDS(
-    2000, "SetHeartBeat rpc success, status: %d, %d, %d, %d, %s, %d, %d, %d, %d",
-    motion_id, task_status, task_sub_status, self_check_code, description.c_str(),
+    2000, "SetHeartBeat rpc success, status: %d, %d, %d, %d, %d, %d, %d, %d",
+    motion_id, task_status, task_sub_status, self_check_code,
     state_switch_state, state_switch_code, wired_charging, wireless_charging);
   return true;
 }
