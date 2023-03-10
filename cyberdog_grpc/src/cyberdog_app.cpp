@@ -1261,55 +1261,58 @@ void Cyberdog_app::handleNavigationAction(
   std::shared_ptr<std::mutex> result_mx;
   bool uwb_not_from_app = false;  // activated uwb tracking not from app
   size_t goal_hash;
-  if (create_new_task) {
-    INFO(
-      "Sending action goal: type:%d, outdoor:%d, reletive_pos:%d, keep_dis:%f, obj_tracking:%d",
-      mode_goal.nav_type, mode_goal.outdoor, mode_goal.relative_pos, mode_goal.keep_distance,
-      mode_goal.object_tracking);
-    bool acception = action_task_manager_.StartActionTask<Navigation>(
-      navigation_client_, mode_goal, feedback_callback,
-      result_cv_ptr, result_pp, result_mx, goal_hash);
-    if (!acception) {
-      WARN("Navigation action request rejected");
-      return_accept(2);
-      return;
-    }
-    type_hash_mutex_.lock();
-    task_type_hash_map_[mode_goal.nav_type] = goal_hash;
-    type_hash_mutex_.unlock();
-  } else {  // access a task
-    std::shared_lock<std::shared_mutex> read_lock(type_hash_mutex_);
-    if (task_type_hash_map_.find(mode_goal.nav_type) == task_type_hash_map_.end()) {
-      if (mode_goal.nav_type != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
-        return_accept(3);  // no task of that type recorded
+  {
+    std::unique_lock<std::mutex> init_lock(task_init_mutex_);
+    if (create_new_task) {
+      INFO(
+        "Sending action goal: type:%d, outdoor:%d, reletive_pos:%d, keep_dis:%f, obj_tracking:%d",
+        mode_goal.nav_type, mode_goal.outdoor, mode_goal.relative_pos, mode_goal.keep_distance,
+        mode_goal.object_tracking);
+      bool acception = action_task_manager_.StartActionTask<Navigation>(
+        navigation_client_, mode_goal, feedback_callback,
+        result_cv_ptr, result_pp, result_mx, goal_hash);
+      if (!acception) {
+        WARN("Navigation action request rejected");
+        return_accept(2);
         return;
       }
-      uwb_not_from_app = true;
-    }
-    bool accepted = false;
-    if (!uwb_not_from_app) {
-      goal_hash = task_type_hash_map_[mode_goal.nav_type];
-      accepted = action_task_manager_.AccessTask<Navigation>(
-        goal_hash, feedback_callback, result_cv_ptr, result_pp, result_mx);
-    } else {
-      if (task_status_.task_status == Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
-        accepted = true;
+      type_hash_mutex_.lock();
+      task_type_hash_map_[mode_goal.nav_type] = goal_hash;
+      type_hash_mutex_.unlock();
+    } else {  // access a task
+      std::shared_lock<std::shared_mutex> read_lock(type_hash_mutex_);
+      if (task_type_hash_map_.find(mode_goal.nav_type) == task_type_hash_map_.end()) {
+        if (mode_goal.nav_type != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
+          return_accept(3);  // no task of that type recorded
+          return;
+        }
+        uwb_not_from_app = true;
+      }
+      bool accepted = false;
+      if (!uwb_not_from_app) {
+        goal_hash = task_type_hash_map_[mode_goal.nav_type];
+        accepted = action_task_manager_.AccessTask<Navigation>(
+          goal_hash, feedback_callback, result_cv_ptr, result_pp, result_mx);
       } else {
-        accepted = false;
+        if (task_status_.task_status == Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
+          accepted = true;
+        } else {
+          accepted = false;
+        }
+      }
+      if (!accepted) {
+        return_accept(3);  // the task has already finished
+        return;
       }
     }
-    if (!accepted) {
-      return_accept(3);  // the task has already finished
-      return;
+    return_accept(1);
+    if (!create_new_task && uwb_not_from_app) {
+      fake_feedback_callback(task_status_.task_sub_status);
+    } else if (!create_new_task) {  // access task
+      action_task_manager_.CallLatestFeedback(goal_hash);
+    } else {  // create task
+      action_task_manager_.CallFeedbackBeforeAcception(goal_hash);
     }
-  }
-  return_accept(1);
-  if (!create_new_task && uwb_not_from_app) {
-    fake_feedback_callback(task_status_.task_sub_status);
-  } else if (!create_new_task) {  // access task
-    action_task_manager_.CallLatestFeedback(goal_hash);
-  } else {  // create task
-    action_task_manager_.CallFeedbackBeforeAcception(goal_hash);
   }
 
   if (uwb_not_from_app) {
@@ -1357,7 +1360,10 @@ void Cyberdog_app::handleNavigationAction(
   }
   if (connect_mark_) {
     std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
-    if (goal_hash == task_type_hash_map_[mode_goal.nav_type]) {
+    task_type_hash_map_.find(mode_goal.nav_type) != task_type_hash_map_.end();
+    if (task_type_hash_map_.find(mode_goal.nav_type) != task_type_hash_map_.end() &&
+      goal_hash == task_type_hash_map_[mode_goal.nav_type])
+    {
       task_type_hash_map_.erase(mode_goal.nav_type);
       INFO("Erase finished task type %d", mode_goal.nav_type);
     }
