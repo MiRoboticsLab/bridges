@@ -3119,7 +3119,7 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::ACCESS_NAV_ACTION: {
         handleNavigationAction(json_resquest, grpc_respond, writer, false);
-      }
+      } break;
     case ::grpcapi::SendRequest::BLUETOOTH_SCAN: {
         scanBluetoothDevices(json_resquest, grpc_respond, writer);
       } break;
