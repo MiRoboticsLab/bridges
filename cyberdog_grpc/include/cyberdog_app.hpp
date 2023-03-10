@@ -490,6 +490,7 @@ private:
   rclcpp::CallbackGroup::SharedPtr navigation_callback_group_;
   std::map<uint8_t, size_t> task_type_hash_map_;
   std::shared_mutex type_hash_mutex_;
+  std::mutex task_init_mutex_;
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
   bool connect_mark_ {false};
