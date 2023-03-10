@@ -4,6 +4,7 @@ AlgoList[] algo_disable
 # param of face
 bool open_age
 bool open_emotion
+string user_id
 
 ---
 
