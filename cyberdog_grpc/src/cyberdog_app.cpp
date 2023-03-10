@@ -1227,12 +1227,12 @@ void Cyberdog_app::handleNavigationAction(
       INFO_STREAM("transmit feedback: " << response_string);
     };
 
-  auto return_accept = [&](bool accepted) {
+  auto return_accept = [&](int accepted) {
       rapidjson::StringBuffer strBuf;
       rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
       json_writer.StartObject();
       json_writer.Key("accepted");
-      json_writer.Int(accepted ? 1 : 2);
+      json_writer.Int(accepted);
       json_writer.EndObject();
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
@@ -1271,7 +1271,7 @@ void Cyberdog_app::handleNavigationAction(
       result_cv_ptr, result_pp, result_mx, goal_hash);
     if (!acception) {
       WARN("Navigation action request rejected");
-      return_accept(false);
+      return_accept(2);
       return;
     }
     type_hash_mutex_.lock();
@@ -1281,7 +1281,7 @@ void Cyberdog_app::handleNavigationAction(
     std::shared_lock<std::shared_mutex> read_lock(type_hash_mutex_);
     if (task_type_hash_map_.find(mode_goal.nav_type) == task_type_hash_map_.end()) {
       if (mode_goal.nav_type != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
-        return_accept(false);  // no task of that type recorded
+        return_accept(3);  // no task of that type recorded
         return;
       }
       uwb_not_from_app = true;
@@ -1299,11 +1299,11 @@ void Cyberdog_app::handleNavigationAction(
       }
     }
     if (!accepted) {
-      return_accept(false);  // the task has already finished
+      return_accept(3);  // the task has already finished
       return;
     }
   }
-  return_accept(true);
+  return_accept(1);
   if (!create_new_task && uwb_not_from_app) {
     fake_feedback_callback(task_status_.task_sub_status);
   } else if (!create_new_task) {  // access task
