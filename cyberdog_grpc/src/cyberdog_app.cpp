@@ -111,19 +111,29 @@ Cyberdog_app::Cyberdog_app()
   grpc_client_port_ = "8981";
 
   INFO("Start creating ROS components.");
+  connector_callback_group_ =
+    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions connector_sub_option;
+  connector_sub_option.callback_group = connector_callback_group_;
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
     "connector_state", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
+    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1),
+    connector_sub_option);
 
   timer_interval.init();
 
   callback_group_ =
     this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
   // ros interaction codes
+  motion_callback_group_ =
+    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions motion_sub_option;
+  motion_sub_option.callback_group = motion_callback_group_;
   motion_servo_response_sub_ =
     this->create_subscription<protocol::msg::MotionServoResponse>(
     "motion_servo_response", 1000,
-    std::bind(&Cyberdog_app::motion_servo_rsp_callback, this, _1));
+    std::bind(&Cyberdog_app::motion_servo_rsp_callback, this, _1),
+    motion_sub_option);
   namecode_queue_size_[::grpcapi::SendRequest::MOTION_SERVO_RESPONSE] = 2;
 
   motion_servo_request_pub_ =
@@ -255,9 +265,14 @@ Cyberdog_app::Cyberdog_app()
   app_disconnect_pub_ = this->create_publisher<std_msgs::msg::Bool>("disconnect_app", 2);
 
   // map subscribe
+  path_map_callback_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions map_path_sub_option;
+  map_path_sub_option.callback_group = path_map_callback_group_;
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
     "map", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local(),
-    std::bind(&Cyberdog_app::processMapMsg, this, _1));
+    std::bind(&Cyberdog_app::processMapMsg, this, _1),
+    map_path_sub_option);
   namecode_queue_size_[::grpcapi::SendRequest::MAP_DATA_REQUEST] = 2;
 
   // dog pose
@@ -280,7 +295,8 @@ Cyberdog_app::Cyberdog_app()
 
   nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
     "plan", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::uploadNavPath, this, _1));
+    std::bind(&Cyberdog_app::uploadNavPath, this, _1),
+    map_path_sub_option);
   namecode_queue_size_[::grpcapi::SendRequest::NAV_PLAN_PATH] = 2;
 
   stop_nav_action_client_ = this->create_client<protocol::srv::StopAlgoTask>(
@@ -448,9 +464,6 @@ void Cyberdog_app::HeartBeat()
           std_msgs::msg::Bool msg;
           msg.data = false;
           app_connection_pub_->publish(msg);
-          if (!send_thread_map_.empty()) {
-            send_thread_map_.clear();
-          }
           disconnectTaskRequest();
           if (!app_disconnected) {
             destroyGrpc();
@@ -835,6 +848,16 @@ void Cyberdog_app::send_grpc_msg(uint32_t code, const std::string & msg)
   ::grpcapi::SendRequest * grpc_respons = new ::grpcapi::SendRequest();
   grpc_respons->set_namecode(code);
   grpc_respons->set_params(msg);
+  {
+    std::shared_lock<std::shared_mutex> read_lock(send_thread_map_mx_);
+    auto sender = send_thread_map_.find(code);
+    if (sender != send_thread_map_.end()) {
+      INFO("found sender for %d", code);
+      sender->second->push(std::move(std::unique_ptr<::grpcapi::SendRequest>(grpc_respons)));
+      return;
+    }
+  }
+  std::unique_lock<std::shared_mutex> write_lock(send_thread_map_mx_);
   auto sender = send_thread_map_.find(code);
   if (sender != send_thread_map_.end()) {
     INFO("found sender for %d", code);
