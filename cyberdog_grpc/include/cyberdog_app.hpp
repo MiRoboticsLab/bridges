@@ -130,6 +130,7 @@ private:
   std::shared_ptr<std::thread> heart_beat_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
+  rclcpp::CallbackGroup::SharedPtr connector_callback_group_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -168,6 +169,7 @@ private:
   rclcpp::CallbackGroup::SharedPtr callback_group_;
   rclcpp::Subscription<protocol::msg::MotionServoResponse>::SharedPtr
     motion_servo_response_sub_;
+  rclcpp::CallbackGroup::SharedPtr motion_callback_group_;
   rclcpp::Publisher<protocol::msg::MotionServoCmd>::SharedPtr
     motion_servo_request_pub_;
   void motion_servo_rsp_callback(
@@ -467,6 +469,7 @@ private:
       std::unique_ptr<::grpcapi::SendRequest>>>>
   send_thread_map_;
   std::map<uint32_t, size_t> namecode_queue_size_;
+  std::shared_mutex send_thread_map_mx_;
 
   // mapping and navigation
   void handlLableSetRequest(
@@ -493,6 +496,7 @@ private:
   std::mutex task_init_mutex_;
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
+  rclcpp::CallbackGroup::SharedPtr path_map_callback_group_;
   bool connect_mark_ {false};
   void disconnectTaskRequest();
 
