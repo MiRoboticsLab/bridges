@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+// Copyright (c) 2023 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,22 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Upload a file to backend server
+ * @param file_name File name with full path
+ * @param id User ID
+ * @param http_result_code Response from HTTP
+ * @return Error code from enum cyberdog::bridge::Backend_Http::ErrorCode
+ */
 int uploadFile(const char * file_name, int id, int * http_result_code);
 
+/**
+ * @brief Upload a string message to backend server
+ * @param info String message
+ * @param id User ID
+ * @param http_result_code Response from HTTP
+ * @return Error code from enum cyberdog::bridge::Backend_Http::ErrorCode
+ */
 int sendWarningInfo(const char * info, int id, int * http_result_code);
 
 #ifdef __cplusplus

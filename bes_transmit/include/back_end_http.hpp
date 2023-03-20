@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+// Copyright (c) 2023 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,9 +36,17 @@ namespace cyberdog
 {
 namespace bridge
 {
+/**
+ * @brief Class for calling HTTP methods
+ */
 class Backend_Http final
 {
 public:
+  /**
+   * @brief Construct a new Backend_Http object
+   * @param b_url Server IP or region name
+   * @param config_file Config file that can get url
+   */
   Backend_Http(
     const std::string & b_url = "http://10.38.204.220:8091",
     const std::string & config_file = "/toml_config/manager/settings.json")
@@ -59,9 +67,6 @@ public:
     }
     INFO("bes url:%s", base_url.c_str());
   }
-  ~Backend_Http()
-  {
-  }
   enum ErrorCode
   {
     OK = 6000,
@@ -73,6 +78,11 @@ public:
     OPEN_FILE_ERROR = 6026,
     CONNECTION_ERROR = 6027
   };
+  /**
+   * @brief Get the Default Response body
+   * @param message Error message
+   * @return Response string
+   */
   static std::string GetDefaultResponse(const std::string & message)
   {
     uuid_t uu;
@@ -85,6 +95,14 @@ public:
   }
 
 public:
+  /**
+   * @brief HTTP GET method
+   * @param url URL without server ip and port
+   * @param params Request params
+   * @param millsecs Timeout
+   * @param error_code Error code from enum ErrorCode
+   * @return Response body
+   */
   const std::string get(
     const std::string & url, const std::string & params,
     const uint16_t & millsecs, int & error_code)
@@ -143,6 +161,14 @@ public:
     INFO("response body: %s\n", body.c_str());
     return body;
   }
+  /**
+   * @brief HTTP POST method
+   * @param url URL without server ip and port or region name
+   * @param params Request params
+   * @param millsecs Timeout
+   * @param error_code Error code from enum ErrorCode
+   * @return Response body
+   */
   const std::string post(
     const std::string & url, const std::string & params,
     const uint16_t & millsecs, int & error_code)
@@ -177,6 +203,16 @@ public:
     INFO("response body: %s\n", body.c_str());
     return body;
   }
+  /**
+   * @brief Call HTTP methods to upload files
+   * @param method 0 for GET, 1 for POST
+   * @param url URL without server ip and port or region name
+   * @param file_name File name with full path
+   * @param content_type Type of the file
+   * @param millsecs Timeout
+   * @param error_code Error code from enum ErrorCode
+   * @return Response body
+   */
   const std::string SendFile(
     unsigned char method, const std::string & url, const std::string & file_name,
     const std::string & content_type, const uint16_t & millsecs, int & error_code)
@@ -253,12 +289,22 @@ public:
     INFO("response body: %s\n", body.c_str());
     return body;
   }
+  /**
+   * @brief Set SN of the device and user ID
+   * @param sn SN of the device
+   * @param uid User ID
+   */
   void SetInfo(const std::string & sn, const std::string & uid)
   {
     std::unique_lock<std::shared_mutex> lock(info_mutex_);
     sn_ = sn;
     uid_ = uid;
   }
+  /**
+   * @brief Get SN of the device and user ID
+   * @param sn SN of the device
+   * @param uid User ID
+   */
   void GetInfo(std::string & sn, std::string & uid) const
   {
     std::shared_lock<std::shared_mutex> lock(info_mutex_);
@@ -268,6 +314,10 @@ public:
   LOGGER_MINOR_INSTANCE("Backend_Http");
 
 private:
+  /**
+   * @brief Activate ping command to check connection
+   * @return Result of ping command
+   */
   int checkConnection()
   {
     std::string cmd("ping -c 1 -W 2 ");

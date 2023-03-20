@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+// Copyright (c) 2023 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ void publish_callback(void **, struct mqtt_response_publish *)
 }  // namespace bridge
 }  // namespace cyberdog
 
-cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
+cyberdog::bridge::TransmitCenter::TransmitCenter()
 {
   tpub_node_ptr_ = rclcpp::Node::make_shared(BTW_PUB_NODE_NAME);
   tsub_node_ptr_ = rclcpp::Node::make_shared(BTW_SUB_NODE_NAME);
@@ -97,7 +97,7 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   be_sub_ =
     tsub_node_ptr_->create_subscription<std_msgs::msg::String>(
     "cyberdog/base_info/submit", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Transmit_Waiter::MqttPubCallback, this, std::placeholders::_1));
+    std::bind(&TransmitCenter::MqttPubCallback, this, std::placeholders::_1));
   be_pub_ =
     tpub_node_ptr_->create_publisher<std_msgs::msg::String>(
     "bes_to_dog",
@@ -112,27 +112,27 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
     http_node_ptr_->create_service<protocol::srv::BesHttp>(
     "bes_http_srv",
     std::bind(
-      &Transmit_Waiter::BesHttpCallback, this, std::placeholders::_1,
+      &TransmitCenter::BesHttpCallback, this, std::placeholders::_1,
       std::placeholders::_2), rmw_qos_profile_services_default, http_node_cb_group_);
   http_send_file_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttpSendFile>(
     "bes_http_send_file_srv",
     std::bind(
-      &Transmit_Waiter::BesHttpSendFileCallback, this, std::placeholders::_1,
+      &TransmitCenter::BesHttpSendFileCallback, this, std::placeholders::_1,
       std::placeholders::_2), rmw_qos_profile_services_default, http_node_cb_group_);
 }
 
-cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
+cyberdog::bridge::TransmitCenter::~TransmitCenter()
 {
 }
 
-void cyberdog::bridge::Transmit_Waiter::Run()
+void cyberdog::bridge::TransmitCenter::Run()
 {
   INFO("start spin");
   executor_.spin();
 }
 
-void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)
+void cyberdog::bridge::TransmitCenter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)
 {
   if (!bpub_is_ready_) {
     INFO("mqtt publisher is not ready");
@@ -161,14 +161,14 @@ void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::Str
   bpub_ptr_->Publish(str_to_be_sent.c_str());
 }
 
-void cyberdog::bridge::Transmit_Waiter::MqttSubCallback(const std::string & msg)
+void cyberdog::bridge::TransmitCenter::MqttSubCallback(const std::string & msg)
 {
   std_msgs::msg::String msg_data;
   msg_data.data = msg;
   be_pub_->publish(msg_data);
 }
 
-void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
+void cyberdog::bridge::TransmitCenter::BesHttpCallback(
   const protocol::srv::BesHttp::Request::SharedPtr request,
   protocol::srv::BesHttp::Response::SharedPtr respose)
 {
@@ -207,7 +207,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   }
 }
 
-void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
+void cyberdog::bridge::TransmitCenter::BesHttpSendFileCallback(
   const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
   protocol::srv::BesHttpSendFile::Response::SharedPtr respose)
 {
@@ -240,7 +240,7 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
   }
 }
 
-bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string & uid)
+bool cyberdog::bridge::TransmitCenter::getDevInf(std::string & sn, std::string & uid)
 {
   static std::string sn_;
   if (!device_info_client_->wait_for_service(std::chrono::seconds(3))) {
