@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,12 @@ namespace cyberdog
 {
 namespace bridges
 {
+/**
+ * @brief Get the Hash of goal handle
+ * @tparam GHP Type of GoalHandle
+ * @param goal_handle_ptr Goal handle
+ * @return size_t Hash
+ */
 template<typename GHP>
 size_t getHash(GHP goal_handle_ptr)
 {
@@ -53,28 +59,59 @@ using ResultCallback =
   void (
     const typename rclcpp_action::ClientGoalHandle<ActionType>::WrappedResult &)>;
 
+/**
+ * @brief Base of ActionTask
+ */
 class ActionTaskBase
 {
 public:
+  /**
+   * @brief Destroy the Action Task Base
+   */
   virtual ~ActionTaskBase()
   {
     cv_ptr_->notify_all();
   }
+  /**
+   * @brief Set the condition variable for the result
+   * @param cv_ptr Condition variable pointer for the result
+   */
   void SetConditionVariable(std::shared_ptr<std::condition_variable> & cv_ptr)
   {
     cv_ptr = cv_ptr_;
   }
+  /**
+   * @brief Set the mutex for the result
+   * @param mux Mutex pointer for the result
+   */
   void SetResultMutex(std::shared_ptr<std::mutex> & mux)
   {
     mux = result_mutex_ptr_;
   }
+  /**
+   * @brief Unbind the request (from grpc) with the task
+   */
   virtual void RemoveRequest() = 0;
+  /**
+   * @brief Call feedback with latest received value
+   */
   virtual void CallFeedbackWithLatestValue() = 0;
+  /**
+   * @brief Call all feedback values that came before acception received
+   */
   virtual void CallFeedbackBeforeAcception() = 0;
+  /**
+   * @brief Set the goal handle hash
+   * @param gh Hash of goal handle
+   */
   void SetGoalHash(size_t gh)
   {
     goal_hash_ = gh;
   }
+  /**
+   * @brief Get the goal handle hash
+   * @return Hash of goal handle
+   */
   size_t GetGoalHash() const
   {
     return goal_hash_;
@@ -88,20 +125,35 @@ protected:
   bool ready_ {false};  // receive goal_handle, accepted
 };
 
+/**
+ * @brief Action task for any type of action
+ * @tparam ActionType Type ot action
+ */
 template<typename ActionType>
 class ActionTask : public ActionTaskBase
 {
 public:
+  /**
+   * @brief Destroy the ActionTask
+   */
   ~ActionTask() override
   {
     addFakeResult();  // force quit
   }
+  /**
+   * @brief Set callback function for feedback
+   * @param feedback_cb Callback function
+   */
   void SetFeedbackCallback(
     FeedbackCallback<ActionType> feedback_cb)
   {
     std::unique_lock<std::mutex> write_lock(request_mutex_);
     feedback_cb_ = feedback_cb;
   }
+  /**
+   * @brief Set result pointer
+   * @param result_pp Pointer of pointer of result
+   */
   void SetResultPtr(std::shared_ptr<std::shared_ptr<typename ActionType::Result>> & result_pp)
   {
     std::unique_lock<std::mutex> lock(*result_mutex_ptr_);
@@ -115,6 +167,17 @@ public:
     }
     result_pp = action_result_ptr_ptr_;
   }
+  /**
+   * @brief Send an action goal
+   * @param client_ptr Action client pointer
+   * @param goal Aciion goal
+   * @param manager_feedback_cb Feedback callback from ActionTaskManager
+   * @param manager_result_cb Result callback from ActionTaskManager
+   * @param not_rec_acc If action call receives response
+   * @param goal_hash Goal handle hash
+   * @return true Action call is accepted
+   * @return false Action call is rejected or not receives response
+   */
   bool SendGoal(
     typename rclcpp_action::Client<ActionType>::SharedPtr client_ptr,
     const typename ActionType::Goal & goal,
@@ -145,6 +208,11 @@ public:
     goal_hash = goal_hash_;
     return true;
   }
+  /**
+   * @brief Call feedback
+   * @param goal_handle_ptr Goal handel pointer
+   * @param feedback_ptr Feedback function pointer
+   */
   void CallFeedback(
     typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr goal_handle_ptr,
     const std::shared_ptr<const typename ActionType::Feedback> feedback_ptr)
@@ -190,6 +258,10 @@ public:
     INFO("Sending all feedbacks before acception.");
     feedback_buff_.clear();
   }
+  /**
+   * @brief Result callback
+   * @param result_wrapper Action result wrapper
+   */
   void ResultCB(
     const typename rclcpp_action::ClientGoalHandle<ActionType>::WrappedResult & result_wrapper)
   {
@@ -220,6 +292,9 @@ public:
   }
 
 private:
+  /**
+   * @brief Add a fake result when need to unbind the request (from grpc)
+   */
   void addFakeResult()
   {
     std::unique_lock<std::mutex> lock(*result_mutex_ptr_);
@@ -231,6 +306,9 @@ private:
       action_result_ptr_ptr_->reset(new typename ActionType::Result());  // fake result
     }
   }
+  /**
+   * @brief Clear feedback funtion pointer
+   */
   void removeFeedbackCallback()
   {
     std::unique_lock<std::mutex> write_lock(request_mutex_);
@@ -247,9 +325,25 @@ private:
   LOGGER_MINOR_INSTANCE("ActionTask");
 };
 
+/**
+ * @brief Manager to arrange ActionTasks to response the task requests from grpc
+ */
 class ActionTaskManager
 {
 public:
+  /**
+   * @brief Activate an action task
+   * @tparam ActionType Type of action
+   * @param client Action client pointer
+   * @param goal Action goal
+   * @param feedback_cb Feedback function from grpc
+   * @param cv_ptr Condition variable pointer for action result
+   * @param result_pp Pointer of pointer of action result
+   * @param mx Mutex for action result
+   * @param goal_hash Goal handle hash
+   * @return true The task is accepted by the action server
+   * @return false The task is rejected by the action server
+   */
   template<typename ActionType>
   bool StartActionTask(
     typename rclcpp_action::Client<ActionType>::SharedPtr client,
@@ -299,11 +393,21 @@ public:
     }
     return false;
   }
+  /**
+   * @brief Delete task connection to action server
+   * @param goal_hash Goal handle hash
+   */
   void KillTask(size_t goal_hash)
   {
     std::unique_lock<std::shared_mutex> write_lock(action_map_mutex_);
     action_tasks_.erase(goal_hash);
   }
+  /**
+   * @brief Unbind the request with the task
+   * @param goal_hash Goal handle hash
+   * @return true Found and unbinded the task
+   * @return false Not found the task
+   */
   bool RemoveRequest(size_t goal_hash)
   {
     std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
@@ -314,6 +418,17 @@ public:
     action_task_itr->second->RemoveRequest();
     return true;
   }
+  /**
+   * @brief Access an existed task
+   * @tparam ActionType Type of action
+   * @param goal_hash Goal handle hash
+   * @param feedback_cb Feedback callback function
+   * @param cv_ptr Condition variable pointer for action result
+   * @param result_pp Pointer of pointer of action result
+   * @param mx Mutex for action result
+   * @return true Found and accessed
+   * @return false Not found
+   */
   template<typename ActionType>
   bool AccessTask(
     size_t goal_hash,
@@ -335,6 +450,10 @@ public:
     action_task_ptr->SetResultMutex(mx);
     return true;
   }
+  /**
+   * @brief Call feedback with latest received value
+   * @param goal_hash Goal handle hash
+   */
   void CallLatestFeedback(size_t goal_hash)
   {
     std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
@@ -344,6 +463,10 @@ public:
     }
     action_task_itr->second->CallFeedbackWithLatestValue();
   }
+  /**
+   * @brief Call all feedback values that came before acception received
+   * @param goal_hash Goal handle hash
+   */
   void CallFeedbackBeforeAcception(size_t goal_hash)
   {
     std::shared_lock<std::shared_mutex> read_lock(action_map_mutex_);
@@ -355,6 +478,12 @@ public:
   }
 
 private:
+  /**
+   * @brief Feedback callback of action
+   * @tparam ActionType Type of action
+   * @param goal_handle Goal handle hash
+   * @param fb Action beedback pointer
+   */
   template<typename ActionType>
   void feedbackCB(
     typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr goal_handle,
@@ -383,11 +512,21 @@ private:
     INFO("calling feedback, hash: %zu", action_task_itr->first);
     action_task_ptr->CallFeedback(goal_handle, fb);
   }
+  /**
+   * @brief Get goal handle hash from goal UUID
+   * @param goal_id Goal UUID
+   * @return Goal handle hash
+   */
   size_t getHashFromGoalID(rclcpp_action::GoalUUID goal_id)
   {
     std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
     return goal_id_hash_fun(goal_id);
   }
+  /**
+   * @brief Result callback of action
+   * @tparam ActionType ActionType Type of action
+   * @param result_wrapper Action result wrapper
+   */
   template<typename ActionType>
   void resultCB(
     const typename rclcpp_action::ClientGoalHandle<ActionType>::WrappedResult & result_wrapper)
