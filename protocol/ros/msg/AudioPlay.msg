@@ -101,3 +101,6 @@ uint16 PID_WIFI_CONNECTED_UNKNOWN_NET = 31035   # 已连接无密码的网络
 uint16 PID_WIFI_FAILED_PLEASE_RETRY = 31036     # 启动失败，请重试
 uint16 PID_FOLLOW_TAGS_LOST = 31037             # 找不到要跟随的标签
 uint16 PID_SELF_CHECK_START = 31038             # 开始自检，请等待
+uint16 PID_MODEL_VERSION_OLD = 31050            # AI模型版本较老，请联网更新
+uint16 PID_MODEL_VERSION_UPDATE_SUCCESS = 31051 # AI模型更新成功
+uint16 PID_MODEL_VERSION_UPDATE_FAIL = 31052    # AI模型更新失败，请重启后重试
