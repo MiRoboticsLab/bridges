@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,15 +109,28 @@ namespace cyberdog
 {
 namespace bridges
 {
+/**
+ * @brief ROS node for connection between APP and cyberdog
+ */
 class Cyberdog_app : public rclcpp::Node
 {
 public:
   Cyberdog_app();
   ~Cyberdog_app();
   std::string getServiceIp();
+  /**
+   * @brief Distribute gRPC request
+   * @param grpc_request Request from APP
+   * @param writer Stream response writer
+   */
   void ProcessMsg(
     const ::grpcapi::SendRequest * grpc_request,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  /**
+   * @brief Process getFile request
+   * @param grpc_request getFile request
+   * @param writer Stream response writer
+   */
   void ProcessGetFile(
     const ::grpcapi::SendRequest * grpc_request,
     ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
@@ -125,6 +138,9 @@ public:
 private:
   uint32_t ticks_;
   std::atomic_bool can_process_messages_;
+  /**
+   * @brief Running gRPC server
+   */
   void RunServer();
   std::shared_ptr<std::thread> app_server_thread_;
   std::shared_ptr<std::thread> heart_beat_thread_;
@@ -160,10 +176,10 @@ private:
   protocol::msg::BmsStatus bms_status;
   std::string sn;
   TimeInterval timer_interval;
+  /**
+   * @brief Send heatBeat message
+   */
   void HeartBeat();
-  void sendMsg(
-    const ::grpcapi::SendRequest * request,
-    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // ros interaction codes
   rclcpp::CallbackGroup::SharedPtr callback_group_;
@@ -354,9 +370,6 @@ private:
   void audioVoicePrintDataHandle(
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
-
-  // Report current process
-  void ReportCurrentProgress();
 
   // visual program
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;

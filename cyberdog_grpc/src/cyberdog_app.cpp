@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -3083,6 +3083,8 @@ void Cyberdog_app::ProcessMsg(
           return;
         }
         image_trans_pub_->publish(it_msg);
+        grpc_respond.set_data("");
+        writer->Write(grpc_respond);
       } break;
     case ::grpcapi::SendRequest::CAMERA_SERVICE: {
         uint32_t command = 2;
@@ -3174,6 +3176,8 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::SET_BT_TREAD: {
         setBTTreadHandle(json_resquest);
+        grpc_respond.set_data("");
+        writer->Write(grpc_respond);
       } break;
     case ::grpcapi::SendRequest::GET_BT_TREAD: {
         getBTTreadHandle(grpc_respond, writer);
@@ -3209,6 +3213,8 @@ void Cyberdog_app::ProcessMsg(
         std_msgs::msg::Bool msg;
         msg.data = true;
         app_disconnect_pub_->publish(msg);
+        grpc_respond.set_data("");
+        writer->Write(grpc_respond);
       } break;
     case 1100: {
         startStairAlignHandle(json_resquest, grpc_respond, writer);
