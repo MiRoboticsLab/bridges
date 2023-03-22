@@ -104,3 +104,5 @@ uint16 PID_SELF_CHECK_START = 31038             # 开始自检，请等待
 uint16 PID_MODEL_VERSION_OLD = 31050            # AI模型版本较老，请联网更新
 uint16 PID_MODEL_VERSION_UPDATE_SUCCESS = 31051 # AI模型更新成功
 uint16 PID_MODEL_VERSION_UPDATE_FAIL = 31052    # AI模型更新失败，请重启后重试
+uint16 PID_MOVE_FAILED = 31053                  # 运动执行失败
+uint16 PID_CAMERAR_SELF_CHECK_FAILED = 31054    # camera自检失败，状态异常
