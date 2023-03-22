@@ -5,5 +5,4 @@ string command
 
 # response
 UserInformation[] result
-bool success
 int32 code
