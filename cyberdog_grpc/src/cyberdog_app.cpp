@@ -258,6 +258,10 @@ Cyberdog_app::Cyberdog_app()
   query_account_delete_client_ =
     this->create_client<protocol::srv::AccountDelete>("account_delete");
 
+  // account member change
+  query_account_change_client_ =
+    this->create_client<protocol::srv::AccountChange>("account_change");
+
   set_work_environment_client_ =
     this->create_client<protocol::srv::Trigger>("set_work_environment");
 
@@ -2359,7 +2363,7 @@ bool Cyberdog_app::HandleAccountAdd(
   } else {
     INFO("Failed to call queryaccountadd request  services.");
   }
-  CyberdogJson::Add(json_response, "success", future_result.get()->status);
+  CyberdogJson::Add(json_response, "success", future_result.get()->code);
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while set mic state response encoding to json");
     retrunErrorGrpc(writer);
@@ -2431,13 +2435,54 @@ bool Cyberdog_app::HandleAccountDelete(
       "Failed to call set mic state request  services.");
     return false;
   }
-  CyberdogJson::Add(json_response, "status", future_result.get()->status);
+  CyberdogJson::Add(json_response, "success", future_result.get()->code);
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while set mic state response encoding to json");
     retrunErrorGrpc(writer);
     return false;
   }
   INFO("Account_delete_server grpc_respond is: %s", rsp_string.c_str());
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
+
+bool Cyberdog_app::HandleAccountChange(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(3);
+  if (!query_account_change_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR(
+      "call account delete serve not avaiable"
+    );
+    return false;
+  }
+  auto req = std::make_shared<protocol::srv::AccountChange::Request>();
+  CyberdogJson::Get(json_resquest, "pre_name", req->pre_name);
+  CyberdogJson::Get(json_resquest, "new_name", req->new_name);
+  // call ros service
+  auto future_result = query_account_change_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO(
+      "success to call set mic state request services.");
+  } else {
+    INFO(
+      "Failed to call set mic state request  services.");
+    return false;
+  }
+
+  CyberdogJson::Add(json_response, "success", future_result.get()->code);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set mic state response encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  INFO("account_add_server grpc_response is: %s", rsp_string.c_str());
   grpc_respond.set_data(rsp_string);
   writer->Write(grpc_respond);
   return true;
@@ -3201,6 +3246,11 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_SEARCH: {
         if (!HandleAccountSearch(json_resquest, grpc_respond, writer)) {
+          return;
+        }
+      } break;
+    case ::grpcapi::SendRequest::ACCOUNT_MEMBER_CHANGE: {
+        if (!HandleAccountChange(json_resquest, grpc_respond, writer)) {
           return;
         }
       } break;

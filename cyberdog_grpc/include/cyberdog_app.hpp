@@ -71,6 +71,7 @@
 #include "protocol/srv/account_add.hpp"
 #include "protocol/srv/account_search.hpp"
 #include "protocol/srv/account_delete.hpp"
+#include "protocol/srv/account_change.hpp"
 #include "protocol/msg/person.hpp"
 #include "protocol/msg/ota_update.hpp"
 #include "protocol/srv/body_region.hpp"
@@ -302,6 +303,11 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  bool HandleAccountChange(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   bool HandleUnlockDevelopAccess(
     const Document & json_request,
     ::grpcapi::RecResponse & grpc_respond,
@@ -468,8 +474,11 @@ private:
   // account member search
   rclcpp::Client<protocol::srv::AccountSearch>::SharedPtr query_account_search_client_;
 
-  // account member search
+  // account member delete
   rclcpp::Client<protocol::srv::AccountDelete>::SharedPtr query_account_delete_client_;
+
+  // account member change
+  rclcpp::Client<protocol::srv::AccountChange>::SharedPtr query_account_change_client_;
 
   // process map message
   void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
