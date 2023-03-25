@@ -5,6 +5,7 @@ int32 COMMAND_RECOGNITION_CANCEL = 2
 int32 MAX_TIMEOUT = 300
 int32 MIN_TIMEOUT = 30
 int32 DEFAULT_TIMEOUT = 60
+int32 ALGORITHM_LOAD_DURATION = 100
 
 int32 command
 string username
@@ -15,3 +16,4 @@ int32 timeout #有效时间30s～300s，default = 60;如果不添加该字段，
 int32 ENABLE_SUCCESS = 0
 int32 ENABLE_FAIL = 5901
 int32 result
+int32 code

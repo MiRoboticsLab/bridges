@@ -22,15 +22,14 @@
 #include <vector>
 #include <utility>
 #include <iostream>
-
+#include <unordered_map>
 #include "toml/toml.hpp"
 
 #include "protocol/can/can_utils.hpp"
 #include "embed_parser/parser_base.hpp"
 #include "cyberdog_common/cyberdog_log.hpp"
-
 #define  MAX_LEN   0x80
-
+#define  MAX_CAN_PACKAGE_SIZE  64
 namespace cyberdog
 {
 namespace embed
@@ -68,7 +67,14 @@ public:
         error_clct->LogState(ErrorCode::RULEARRAY_ILLEGAL_ARRAYNAME);
         ERROR("[CAN_PARSER][%s] array_name error, not support empty string", name.c_str());
       }
+      if (can_package_num > MAX_CAN_PACKAGE_SIZE) {
+        ERROR(
+          "[CAN_PARSER][%s] array_name:\"%s\" oversize max package size[%d], not support",
+          name.c_str(), array_name.c_str(), MAX_CAN_PACKAGE_SIZE);
+      }
       array_size = 0;
+
+      /*大概不需要这个逻辑*/
       auto tmp_array_size_vec = toml_at<std::vector<std::uint8_t>>(
         table, "array_size",
         std::vector<std::uint8_t>(0));
@@ -97,7 +103,9 @@ public:
           canid_t canid = HEXtoUINT(single_id, error_clct);
           CanidRangeCheck(canid, extended, name, array_name, error_clct);
           if (can_id.find(canid) == can_id.end()) {
-            can_id.insert(std::pair<canid_t, int>(canid, index++));
+            can_id.insert(std::pair<canid_t, int>(canid, index));
+            can_index_.insert(std::pair<int, canid_t>(index, canid));
+            index++;
           } else {
             error_clct->LogState(ErrorCode::RULEARRAY_SAMECANID_ERROR);
             ERROR(
@@ -123,6 +131,7 @@ public:
               name.c_str(), array_name.c_str());
             break;
           }
+          last_id = id.first;
         }
       } else if (can_package_num > 2 && canid_num == 2) {
         canid_t start_id = HEXtoUINT(tmp_can_id[0], error_clct);
@@ -151,6 +160,7 @@ public:
     bool warn_flag;
     size_t can_package_num;
     std::map<canid_t, int> can_id;
+    std::map<int, canid_t> can_index_;
     std::string array_name;
     size_t array_size;
 
@@ -264,6 +274,10 @@ public:
         if (same_var_error(single_array.array_name, var_name_check)) {continue;}
         check_data_area_error(single_array, data_check);
         parser_array_.push_back(single_array);
+        /*canid与解析对应map*/
+        for (auto can : single_array.can_id) {
+          parser_array_map_.insert(std::make_pair(can.first, single_array));
+        }
       }
     }
     // get cmd rule
@@ -299,7 +313,6 @@ public:
            CAN_MAX_DLEN ? len : CAN_MAX_DLEN);
   }
   bool IsCanfd() {return canfd_;}
-
   std::vector<canid_t> GetRecvList()
   {
     auto recv_list = std::vector<canid_t>();
@@ -329,6 +342,29 @@ public:
     return Decode(
       protocol_data_map, rx_frame->can_id, rx_frame->data, rx_frame->can_dlc,
       error_flag, id_name);
+  }
+
+  // return true when finish all package
+  bool Decode(
+    PROTOCOL_DATA_MAP & protocol_data_map,
+    std::shared_ptr<canfd_frame> rx_frame,
+    bool & error_flag,
+    DataLabel & label)
+  {
+    return Decode(
+      protocol_data_map, rx_frame->can_id, rx_frame->data, rx_frame->len, error_flag,
+      label);
+  }
+  // return true when finish all package
+  bool Decode(
+    PROTOCOL_DATA_MAP & protocol_data_map,
+    std::shared_ptr<can_frame> rx_frame,
+    bool & error_flag,
+    DataLabel & label)
+  {
+    return Decode(
+      protocol_data_map, rx_frame->can_id, rx_frame->data, rx_frame->can_dlc,
+      error_flag, label);
   }
 
   bool Encode(can_frame & tx_frame, const std::string & CMD, const std::vector<uint8_t> & data)
@@ -520,6 +556,9 @@ private:
   std::map<canid_t, std::vector<RuleVar>> parser_var_map_ =
     std::map<canid_t, std::vector<RuleVar>>();
   std::vector<ArrayRule> parser_array_ = std::vector<ArrayRule>();
+
+  std::unordered_map<canid_t, ArrayRule> parser_array_map_;
+
   std::map<std::string, CmdRule> parser_cmd_map_ =
     std::map<std::string, CmdRule>();
 
@@ -661,6 +700,68 @@ private:
     }
     for (auto & single_var : protocol_data_map) {single_var.second.loaded = false;}
     return true;
+  }
+  bool Decode(
+    PROTOCOL_DATA_MAP & protocol_data_map,
+    canid_t can_id,
+    uint8_t * data,
+    uint8_t & data_len,
+    bool & error_flag,
+    DataLabel & label)
+  {
+    label.name.clear();
+    if (parser_array_map_.find(can_id) != parser_array_map_.end()) {
+      auto rule = parser_array_map_.at(can_id);
+      auto offset = rule.get_offset(can_id);
+      if (protocol_data_map.find(rule.array_name) != protocol_data_map.end()) {
+        ProtocolData * var = &protocol_data_map.at(rule.array_name);
+        if (static_cast<int>(offset * CAN_LEN(MAX_LEN)) + static_cast<int>(data_len) <=
+          static_cast<int>(var->len))
+        {
+          memcpy(static_cast<uint8_t *>(var->addr) + offset * CAN_LEN(MAX_LEN), data, data_len);
+          if (var->array_index_flag_ & (1 << offset)) {
+            var->array_index_flag_ = 0;
+            if (offset != 0) {
+              return false;
+            }
+          }
+
+          var->array_index_flag_ |= (1 << offset);
+
+          if (static_cast<int>(offset) == static_cast<int>(rule.can_package_num - 1)) {
+            label.name = rule.array_name;
+            label.is_full = true;
+            for (int i = 0; i < static_cast<int>(rule.can_package_num); i++) {
+              if (!(var->array_index_flag_ & (1 << i))) {
+                label.missed_frame_index.push(i);
+                if (rule.can_index_.find(i) != rule.can_index_.end()) {
+                  label.missed_frame_id.push(rule.can_index_.at(i));
+                } else {
+                  ERROR(
+                    "[CAN_PARSER][%s] array_name:\"%s\" can not find index %d",
+                    name_.c_str(), rule.array_name.c_str(), i);
+                }
+                label.is_full = false;
+              }
+            }
+            var->array_index_flag_ = 0;
+          }
+        } else {
+          ERROR(
+            "[CAN_PARSER][%s] array_name:\"%s\" length overflow",
+            name_.c_str(), rule.array_name.c_str());
+        }
+      } else {
+        error_flag = true;
+        error_clct_->LogState(ErrorCode::RUNTIME_NOLINK_ERROR);
+        ERROR(
+          "[CAN_PARSER][%s] Can't find array_name:\"%s\" in protocol_data_map\n"
+          "\tYou may need use LINK_VAR() to link data class/struct in protocol_data_map",
+          name_.c_str(), rule.array_name.c_str());
+      }
+    }
+
+    return label.name.empty() ? false : true;
   }
 
   bool Encode(

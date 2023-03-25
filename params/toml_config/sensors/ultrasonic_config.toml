@@ -1,0 +1,3 @@
+# ultrasonic配置文件列表
+[ultrasonic_config]
+config_files = ["ultrasonic.toml"]

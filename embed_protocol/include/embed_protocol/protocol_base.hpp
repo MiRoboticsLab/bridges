@@ -22,6 +22,8 @@
 #include <utility>
 #include <iostream>
 #include <functional>
+#include <stack>
+#include <mutex>
 
 #include "toml/toml.hpp"
 #include "embed_protocol/common.hpp"
@@ -49,8 +51,19 @@ public:
     if (callback != nullptr) {protocol_data_callback_ = callback;}
   }
 
+  void SetDataCallback(std::function<void(DataLabel &, std::shared_ptr<TDataClass>)> callback)
+  {
+    if (for_send_) {
+      WARN(
+        "[PROTOCOL][WARN][%s] for_send protocol not need callback function, "
+        "please check the code", name_.c_str());
+    }
+    if (callback != nullptr) {protocol_data_parse_callback_ = callback;}
+  }
+
   void LinkVar(const std::string & name, const ProtocolData & var)
   {
+    std::unique_lock<std::mutex> lock(data_lock_);
     if (protocol_data_map_.find(name) != protocol_data_map_.end()) {
       error_clct_->LogState(ErrorCode::RUNTIME_SAMELINK_ERROR);
       ERROR(
@@ -63,6 +76,7 @@ public:
 
   void BreakVar(const std::string & name)
   {
+    std::unique_lock<std::mutex> lock(data_lock_);
     for (auto iter = protocol_data_map_.begin(); iter != protocol_data_map_.end(); ++iter) {
       if (iter->first == name) {
         protocol_data_map_.erase(iter);
@@ -86,6 +100,10 @@ public:
   virtual bool IsRxTimeout() = 0;
   virtual bool IsTxTimeout() = 0;
   bool IsRxError() {return rx_error_;}
+  std::string GetName()
+  {
+    return name_;
+  }
 
 protected:
   ProtocolBase()
@@ -100,8 +118,11 @@ protected:
   std::string name_;
   CHILD_STATE_CLCT error_clct_;
   PROTOCOL_DATA_MAP protocol_data_map_;
+  std::mutex data_lock_;
   std::shared_ptr<TDataClass> protocol_data_;
-  std::function<void(std::string &, std::shared_ptr<TDataClass>)> protocol_data_callback_;
+  std::function<void(std::string &, std::shared_ptr<TDataClass>)> protocol_data_callback_ = nullptr;
+  std::function<void(DataLabel &,
+    std::shared_ptr<TDataClass>)> protocol_data_parse_callback_ = nullptr;
 };  // class ProtocolBase
 }  // namespace embed
 }  // namespace cyberdog

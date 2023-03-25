@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <stack>
 
 #include "embed_protocol/common.hpp"
 #include "embed_protocol/protocol_base.hpp"
@@ -82,7 +83,6 @@ public:
         std::bind(&CanProtocol::recv_callback_std, this, std::placeholders::_1),
         timeout_us * 1000);
     }
-
     // set can_filter
     if (can_op_ != nullptr && send_only == false) {
       auto filter = new struct can_filter[recv_num];
@@ -152,21 +152,44 @@ private:
   void recv_callback_std(std::shared_ptr<can_frame> recv_frame)
   {
     std::string id_name = name_unkown_;
-    if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, id_name) &&
-      this->protocol_data_callback_ != nullptr)
-    {
-      this->rx_error_ = false;
-      this->protocol_data_callback_(id_name, this->protocol_data_);
+    std::unique_lock<std::mutex> lock(this->data_lock_);
+    if (this->protocol_data_parse_callback_ != nullptr) {
+      DataLabel label;
+      label.group_name = this->GetName();
+      label.is_full = false;
+
+      if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, label)) {
+        this->rx_error_ = false;
+        lock.unlock();
+        this->protocol_data_parse_callback_(label, this->protocol_data_);
+      }
+    } else if (this->protocol_data_callback_ != nullptr) {
+      if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, id_name)) {
+        this->rx_error_ = false;
+        lock.unlock();
+        this->protocol_data_callback_(id_name, this->protocol_data_);
+      }
     }
   }
   void recv_callback_fd(std::shared_ptr<canfd_frame> recv_frame)
   {
     std::string id_name = name_unkown_;
-    if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, id_name) &&
-      this->protocol_data_callback_ != nullptr)
-    {
-      this->rx_error_ = false;
-      this->protocol_data_callback_(id_name, this->protocol_data_);
+    std::unique_lock<std::mutex> lock(this->data_lock_);
+    if (this->protocol_data_parse_callback_ != nullptr) {
+      DataLabel label;
+      label.group_name = this->GetName();
+      label.is_full = false;
+      if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, label)) {
+        this->rx_error_ = false;
+        lock.unlock();
+        this->protocol_data_parse_callback_(label, this->protocol_data_);
+      }
+    } else if (this->protocol_data_callback_ != nullptr) {
+      if (can_parser_->Decode(this->protocol_data_map_, recv_frame, this->rx_error_, id_name)) {
+        this->rx_error_ = false;
+        lock.unlock();
+        this->protocol_data_callback_(id_name, this->protocol_data_);
+      }
     }
   }
 };  // class CanProtocol

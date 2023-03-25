@@ -4,6 +4,7 @@ uint8 CONFIRM_LAST_FACE = 2
 uint8 UPDATE_FACE_ID = 3
 uint8 DELETE_FACE = 4
 uint8 GET_ALL_FACES = 5
+uint8 SET_CURRENT_ACCOUNT = 6
 
 uint8 command
 string args
@@ -23,3 +24,4 @@ uint8 RESULT_UNDEFINED_ERROR = 255
 uint8 result
 string msg
 CompressedImage[] face_images
+int32 code

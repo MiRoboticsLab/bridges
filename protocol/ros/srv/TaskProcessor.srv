@@ -3,3 +3,4 @@ uint8 processor # 处理器
 
 ---
 bool purview    # 权限
+int32 code

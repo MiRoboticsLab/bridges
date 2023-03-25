@@ -1,0 +1,45 @@
+#基于骨骼点检测的动作计数
+[Sport]
+[Sport.Squat]
+DataFusionNumber = 1
+DataFilterNumber = 3
+ThreMinAngle = 110
+ThreMaxAngle = 150
+
+[Sport.HighKnees]
+DataFusionNumber = 1
+DataFilterNumber = 3
+ThreMinAngle = 90
+ThreMaxAngle = 150
+
+[Sport.Situp]
+DataFusionNumber = 1
+DataFilterNumber = 3
+ThreMinAngle = 0
+ThreMidAngle1 = 50
+ThreMidAngle2 = 100
+ThreMaxAngle = 160
+
+[Sport.PressUp]
+DataFusionNumber = 1
+DataFilterNumber = 3
+ThreMaxAngle = 90
+DifMaxAngle = 25
+DifminAngle = 15
+
+[Sport.Plank]
+DataFusionNumber = 1
+DataFilterNumber = 3
+ThreMinAngle = 50
+ThreMaxAngle = 140
+
+[Sport.JumpJack]
+DataFusionNumber = 1
+DataFilterNumber = 3
+ThreMidAngle1 = 50
+ThreMidAngle2 = 80
+ThreMidAngle3 = 180
+ThreMidAngle4 = 0
+ThreMidAngle5 = 10
+ThreMidAngle6 = 15
+ThreMidAngle7 = 60

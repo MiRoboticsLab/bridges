@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+// Copyright (c) 2023 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,14 +28,24 @@ namespace bridge
 
 void publish_callback(void ** unused, struct mqtt_response_publish * published);
 
+/**
+ * @brief Class for publishing MQTT messages
+ */
 class Backend_Publisher final
 {
 public:
+  /**
+   * @brief Construct a new Backend_Publisher object
+   * @param topic_name MQTT topic name
+   */
   explicit Backend_Publisher(const std::string & topic_name = "cyberdog/base_info/submit")
   : sockfd(-1), addr_("10.38.205.52"),
     port_("1883"), topic_(topic_name), is_stop_(false)
   {
   }
+  /**
+   * @brief Destroy the Backend_Publisher object
+   */
   ~Backend_Publisher()
   {
     if (thread_sync_ && thread_sync_->joinable()) {
@@ -43,6 +53,11 @@ public:
     }
   }
 
+  /**
+   * @brief Initialize socket
+   * @return true Successfully initialized
+   * @return false Failed to initialize
+   */
   bool Init()
   {
     sockfd = PosixSocket::open_nb_socket(addr_.c_str(), port_.c_str());
@@ -73,6 +88,12 @@ public:
     return true;
   }
 
+  /**
+   * @brief Publish a message
+   * @param application_message Message content
+   * @return true Successfully published
+   * @return false Failed to publish
+   */
   bool Publish(const char * application_message)
   {
     mqtt_publish(

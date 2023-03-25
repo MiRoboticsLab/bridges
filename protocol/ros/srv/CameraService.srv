@@ -28,3 +28,5 @@ uint8 RESULT_UNDEFINED_ERROR = 255
 
 uint8 result
 string msg
+int32 code
+

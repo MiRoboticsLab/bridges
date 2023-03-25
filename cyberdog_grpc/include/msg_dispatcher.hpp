@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,12 +20,20 @@
 #include <mutex>
 #include <queue>
 #include <utility>
+/**
+ * @brief Message queue for calling sendMsg
+ * @tparam MessageT Message type
+ */
 template<typename MessageT>
 class LatestMsgDispather
 {
   using UniquePtrCallback = std::function<void (const MessageT)>;
 
 public:
+  /**
+   * @brief Construct a new LatestMsgDispather
+   * @param queue_size Max size of message queue
+   */
   explicit LatestMsgDispather(size_t queue_size = 10)
   : callback_(nullptr), need_run_(true), queue_size_(queue_size) {}
   ~LatestMsgDispather()
@@ -36,6 +44,11 @@ public:
       thread_->join();
     }
   }
+  /**
+   * @brief Push a new message to queue
+   * @tparam MsgT Message type
+   * @param msg New message
+   */
   template<typename MsgT>
   void push(MsgT && msg)
   {
@@ -49,6 +62,11 @@ public:
     queue_.push(std::forward<MsgT>(msg));
     cond_.notify_one();
   }
+  /**
+   * @brief Set the function to send message
+   * @tparam CallbackT Callback function type
+   * @param callback Callback function
+   */
   template<typename CallbackT>
   void setCallback(CallbackT && callback)
   {
@@ -57,29 +75,39 @@ public:
   }
 
 private:
+  /**
+   * @brief Activate the thread
+   */
   void run()
   {
     thread_ = std::make_shared<std::thread>(
       &LatestMsgDispather::process_thread,
       this);
   }
+  /**
+   * @brief Main loop
+   */
   void process_thread()
   {
     while (need_run_) {
       if (callback_ != nullptr) {
-        auto msg = get();
-        if (msg) {
+        MessageT msg = get();
+        if (need_run_ && msg) {
           callback_(std::move(msg));
         }
       }
     }
   }
+  /**
+   * @brief Get a earliest message out of queue
+   * @return Message
+   */
   MessageT get()
   {
     std::unique_lock<std::mutex> lock(queue_mutex_);
     cond_.wait(lock, [this] {return !need_run_ || !this->queue_.empty();});
     if (!need_run_) {
-      return NULL;
+      return nullptr;
     }
     MessageT val(std::move(queue_.front()));
     queue_.pop();

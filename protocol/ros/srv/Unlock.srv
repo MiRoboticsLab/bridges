@@ -9,3 +9,4 @@ uint32 unlock_result   # 0 ---  unlocked successfully
                        # 4 ---  unlocked failed,voice control (R239) unlock Settings failed;
                        # 5 ---  The device has not been unlocked;
                        # 100 -- unknow error.
+int32 code

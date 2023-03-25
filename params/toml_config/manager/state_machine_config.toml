@@ -1,8 +1,12 @@
 [controller]
-actuators = ["audio", "device_manager", "sensor_manager", "motion_manager", "algorithm_manager", "vp_engine"]
+actuators = ["motion_manager", "audio", "device_manager", "sensor_manager", "algorithm_manager", "vp_engine", "RealSenseActuator"]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
 default_time = 100 # milliseconds
 default_state = "Uninitialized"
+
+[actuator.motion_manager]
+states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
+times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
 
 [actuator.audio]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
@@ -16,15 +20,15 @@ times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
 times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
 
-[actuator.motion_manager]
-states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
-times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
-
 [actuator.algorithm_manager]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
-times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
+times = [240000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
 
 [actuator.vp_engine]
+states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
+times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
+
+[actuator.RealSenseActuator]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
 times = [120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000, 120000]
 

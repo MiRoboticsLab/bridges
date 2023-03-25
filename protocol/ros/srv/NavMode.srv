@@ -12,3 +12,4 @@ uint8 MODE_STOP        =  6
 uint8 sub_mode
 ---
 bool success
+int32 code

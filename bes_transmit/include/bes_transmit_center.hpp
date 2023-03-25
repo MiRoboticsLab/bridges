@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+// Copyright (c) 2023 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,21 +31,52 @@ namespace cyberdog
 {
 namespace bridge
 {
-class Transmit_Waiter final
+/**
+ * @brief Manager of HTTP and MQTT objects
+ */
+class TransmitCenter final
 {
 public:
-  Transmit_Waiter();
-  ~Transmit_Waiter();
+  /**
+   * @brief Construct a new Transmit Center object
+   */
+  TransmitCenter();
+  /**
+   * @brief Destroy the Transmit Center object
+   */
+  ~TransmitCenter();
   void Run();
 
 private:
+  /**
+   * @brief Callback of ROS subscriber to send message via MQTT
+   * @param msg ROS Msg
+   */
   void MqttPubCallback(const std_msgs::msg::String::SharedPtr msg);
   void MqttSubCallback(const std::string & msg);
-  void BesHttpCallback(const protocol::srv::BesHttp::Request::SharedPtr,
-    protocol::srv::BesHttp::Response::SharedPtr);
+  /**
+   * @brief Callback of ROS server to call HTTP methods
+   * @param request ROS service request
+   * @param respose ROS service respose
+   */
+  void BesHttpCallback(
+    const protocol::srv::BesHttp::Request::SharedPtr request,
+    protocol::srv::BesHttp::Response::SharedPtr respose);
+  /**
+   * @brief Callback of ROS server to call HTTP methods sending files
+   * @param request ROS service request
+   * @param respose ROS service respose
+   */
   void BesHttpSendFileCallback(
     const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
     protocol::srv::BesHttpSendFile::Response::SharedPtr respose);
+  /**
+   * @brief Get SN of the device and user ID
+   * @param sn SN of the device
+   * @param uid User ID
+   * @return true Successfully called service for getting info
+   * @return false Failed to call service for getting info
+   */
   bool getDevInf(std::string & sn, std::string & uid);
 
 private:
@@ -62,7 +93,9 @@ private:
   std::unique_ptr<Backend_Subscriber> bsub_ptr_ {nullptr};
   std::unique_ptr<Backend_Http> bhttp_ptr_ {nullptr};
   rclcpp::Client<protocol::srv::DeviceInfo>::SharedPtr device_info_client_ {nullptr};
-};  // Transmit_Waiter
+  bool bpub_is_ready_ {false};
+  LOGGER_MINOR_INSTANCE("TransmitCenter");
+};  // TransmitCenter
 }  // namespace bridge
 }  // namespace cyberdog
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,8 @@
 #include <vector>
 #include <set>
 #include <atomic>
+#include <condition_variable>
+#include <list>
 
 #include "cyberdog_app_server.hpp"
 #include "transmit_files.hpp"
@@ -44,7 +46,6 @@
 
 using namespace std::chrono_literals;
 using grpc::ServerWriter;
-#define APP_CONNECTED_FAIL_CNT 3
 #define CYBER_CLIENT_LED 1
 using std::placeholders::_1;
 #pragma GCC diagnostic push
@@ -68,7 +69,6 @@ Cyberdog_app::Cyberdog_app()
 : Node("app_server"),
   ticks_(0),
   can_process_messages_(false),
-  heartbeat_err_cnt_(0),
   heart_beat_thread_(nullptr),
   app_server_thread_(nullptr),
   server_(nullptr),
@@ -78,25 +78,28 @@ Cyberdog_app::Cyberdog_app()
   wifi_strength(0),
   sn("")
 {
-  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
-  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
-  sn_ger_srv_ =
-    node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
-  if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
-    ERROR("call sn server not available");
-    sn = "unaviable";
-  } else {
-    auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
-    auto future_result = sn_ger_srv_->async_send_request(req);
-    if (!(rclcpp::spin_until_future_complete(node, future_result, std::chrono::seconds(3)) ==
-      rclcpp::FutureReturnCode::SUCCESS))
-    {
-      ERROR("call get sn service failed!");
-      sn = "unkown";
-    } else {
-      sn = future_result.get()->message;
-    }
-  }
+  ready_sn_ptr =
+    std::make_unique<cyberdog::bridges::ReadySnNode>();
+  sn = ready_sn_ptr->WaitSn();
+  // std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("grpc_get_sn");
+  // rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr sn_ger_srv_;
+  // sn_ger_srv_ =
+  //   node->create_client<std_srvs::srv::Trigger>("get_dog_sn");
+  // if (!sn_ger_srv_->wait_for_service(std::chrono::seconds(20))) {
+  //   ERROR("call sn server not available");
+  //   sn = "unaviable";
+  // } else {
+  //   auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  //   auto future_result = sn_ger_srv_->async_send_request(req);
+  //   if (!(rclcpp::spin_until_future_complete(node, future_result, std::chrono::seconds(3)) ==
+  //     rclcpp::FutureReturnCode::SUCCESS))
+  //   {
+  //     ERROR("call get sn service failed!");
+  //     sn = "unkown";
+  //   } else {
+  //     sn = future_result.get()->message;
+  //   }
+  // }
   INFO("sn:%s", sn.c_str());
   INFO("Cyberdog_app Configuring");
   server_ip = std::make_shared<std::string>("0.0.0.0");
@@ -104,33 +107,33 @@ Cyberdog_app::Cyberdog_app()
   this->declare_parameter("grpc_server_port", "50052");
   this->declare_parameter("grpc_client_port", "8981");
 
-  grpc_server_port_ = get_parameter("grpc_server_port").as_string();
-  grpc_client_port_ = get_parameter("grpc_client_port").as_string();
+  grpc_server_port_ = "50052";
+  grpc_client_port_ = "8981";
 
-  // ip_subscriber = this->create_subscription<std_msgs::msg::String>(
-  // "ip_notify", rclcpp::SystemDefaultsQoS(),
-  // std::bind(&Cyberdog_app::subscribeIp, this, _1));
+  INFO("Start creating ROS components.");
+  connector_callback_group_ =
+    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions connector_sub_option;
+  connector_sub_option.callback_group = connector_callback_group_;
   connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
     "connector_state", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1));
+    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1),
+    connector_sub_option);
 
   timer_interval.init();
-
-  INFO("Create server");
-  if (server_ == nullptr) {
-    app_server_thread_ =
-      std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
-  }
-  heart_beat_thread_ =
-    std::make_shared<std::thread>(&Cyberdog_app::HeartBeat, this);
 
   callback_group_ =
     this->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
   // ros interaction codes
+  motion_callback_group_ =
+    this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions motion_sub_option;
+  motion_sub_option.callback_group = motion_callback_group_;
   motion_servo_response_sub_ =
     this->create_subscription<protocol::msg::MotionServoResponse>(
     "motion_servo_response", 1000,
-    std::bind(&Cyberdog_app::motion_servo_rsp_callback, this, _1));
+    std::bind(&Cyberdog_app::motion_servo_rsp_callback, this, _1),
+    motion_sub_option);
   namecode_queue_size_[::grpcapi::SendRequest::MOTION_SERVO_RESPONSE] = 2;
 
   motion_servo_request_pub_ =
@@ -255,13 +258,25 @@ Cyberdog_app::Cyberdog_app()
   query_account_delete_client_ =
     this->create_client<protocol::srv::AccountDelete>("account_delete");
 
+  // account member change
+  query_account_change_client_ =
+    this->create_client<protocol::srv::AccountChange>("account_change");
+
+  set_work_environment_client_ =
+    this->create_client<protocol::srv::Trigger>("set_work_environment");
+
   // test
   app_disconnect_pub_ = this->create_publisher<std_msgs::msg::Bool>("disconnect_app", 2);
 
   // map subscribe
+  path_map_callback_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
+  rclcpp::SubscriptionOptions map_path_sub_option;
+  map_path_sub_option.callback_group = path_map_callback_group_;
   map_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>(
-    "map", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::processMapMsg, this, _1));
+    "map", rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local(),
+    std::bind(&Cyberdog_app::processMapMsg, this, _1),
+    map_path_sub_option);
   namecode_queue_size_[::grpcapi::SendRequest::MAP_DATA_REQUEST] = 2;
 
   // dog pose
@@ -277,12 +292,16 @@ Cyberdog_app::Cyberdog_app()
   get_label_client_ = this->create_client<protocol::srv::GetMapLabel>(
     "get_label", rmw_qos_profile_services_default, callback_group_);
 
+  navigation_callback_group_ = this->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
   navigation_client_ =
-    rclcpp_action::create_client<Navigation>(this, "start_algo_task");
+    rclcpp_action::create_client<Navigation>(this, "start_algo_task", navigation_callback_group_);
 
   nav_path_sub_ = create_subscription<nav_msgs::msg::Path>(
     "plan", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::uploadNavPath, this, _1));
+    std::bind(&Cyberdog_app::uploadNavPath, this, _1),
+    map_path_sub_option);
+  namecode_queue_size_[::grpcapi::SendRequest::NAV_PLAN_PATH] = 2;
 
   stop_nav_action_client_ = this->create_client<protocol::srv::StopAlgoTask>(
     "stop_algo_task", rmw_qos_profile_services_default, callback_group_);
@@ -321,6 +340,14 @@ Cyberdog_app::Cyberdog_app()
     std::bind(&Cyberdog_app::bleDFUProgressCB, this, _1));
   update_ble_firmware_client_ =
     this->create_client<std_srvs::srv::Trigger>("update_ble_firmware");
+  set_bt_tread_pub_ =
+    this->create_publisher<std_msgs::msg::Int8>(
+    "set_bluetooth_tread", rclcpp::SystemDefaultsQoS());
+  update_bt_tread_sub_ =
+    this->create_subscription<std_msgs::msg::Int8>(
+    "update_bluetooth_tread", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::updateBTTreadCB, this, _1));
+  get_bt_tread_client_ = this->create_client<std_srvs::srv::Trigger>("get_bluetooth_tread");
 
   // status reporting
   motion_status_sub_ = this->create_subscription<protocol::msg::MotionStatus>(
@@ -335,6 +362,13 @@ Cyberdog_app::Cyberdog_app()
   state_switch_status_sub_ = this->create_subscription<protocol::msg::StateSwitchStatus>(
     "state_switch_status", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::stateSwitchStatusCB, this, _1));
+  bmd_status_sub_ = this->create_subscription<protocol::msg::BmsStatus>(
+    "bms_status", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::bmsStatusCB, this, _1));
+
+  // low power dissipation
+  low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
+  auto_low_power_enable_client_ = this->create_client<std_srvs::srv::SetBool>("low_power_onoff");
 
   // stair demo
   start_stair_align_client_ =
@@ -347,6 +381,14 @@ Cyberdog_app::Cyberdog_app()
 
   reboot_machine_client_ =
     this->create_client<protocol::srv::RebootMachine>("reboot_machine");
+
+  INFO("Create server");
+  if (server_ == nullptr) {
+    app_server_thread_ =
+      std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
+  }
+  heart_beat_thread_ =
+    std::make_shared<std::thread>(&Cyberdog_app::HeartBeat, this);
 }
 
 Cyberdog_app::~Cyberdog_app()
@@ -362,21 +404,25 @@ void Cyberdog_app::send_msgs_(
   const std::unique_ptr<::grpcapi::SendRequest> msg)
 {
   std::shared_lock<std::shared_mutex> read_lock(stub_mutex_);
-  if (can_process_messages_ && app_stub_) {
-    app_stub_->sendRequest(*msg);
+  if (can_process_messages_ && app_stub_ && connect_mark_) {
+    bool send_result = app_stub_->sendRequest(*msg);
+    if (!send_result) {
+      ERROR("gRPC Msg sending error.");
+    }
   }
 }
 
 void Cyberdog_app::HeartBeat()
 {
+  static std::chrono::system_clock::time_point heart_beat_time_point(
+    std::chrono::system_clock::now());
   rclcpp::WallRate r(500ms);
   std::string ipv4;
-  bool connect_mark(false);
   while (rclcpp::ok()) {
     if (can_process_messages_) {
       update_time_mutex_.lock();
       bool connector_timeout = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::system_clock::now() - connector_update_time_point_).count() > 5;
+        std::chrono::system_clock::now() - connector_update_time_point_).count() >= 5;
       update_time_mutex_.unlock();
       bool hearbeat_result(false);
       {
@@ -385,6 +431,7 @@ void Cyberdog_app::HeartBeat()
           int motion_id, task_sub_status, self_check_code, state_switch_state, state_switch_code;
           uint8_t task_status;
           std::string description;
+          bool wired_charging, wireless_charging;
           {
             std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
             motion_id = motion_status_.motion_id;
@@ -394,14 +441,17 @@ void Cyberdog_app::HeartBeat()
             description = self_check_status_.description;
             state_switch_state = state_switch_status_.state;
             state_switch_code = state_switch_status_.code;
+            wired_charging = charging_status_.wired_charging;
+            wireless_charging = charging_status_.wireless_charging;
           }
           std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
             local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn,
             motion_id, task_status, task_sub_status, self_check_code, description,
-            state_switch_state, state_switch_code);
+            state_switch_state, state_switch_code, wired_charging, wireless_charging);
         } else if (connector_timeout) {
+          WARN_MILLSECONDS(2000, "connector_state topic timeout");
           hearbeat_result = false;
           app_disconnected = true;
         } else {
@@ -410,29 +460,36 @@ void Cyberdog_app::HeartBeat()
         }
       }
       if (!hearbeat_result) {
-        connect_mark = false;
-        if (heartbeat_err_cnt_++ >= APP_CONNECTED_FAIL_CNT) {
+        bool hear_beat_timeout = std::chrono::duration_cast<std::chrono::seconds>(
+          std::chrono::system_clock::now() - heart_beat_time_point).count() >= 5;
+        if (hear_beat_timeout) {
+          heart_beat_time_point = std::chrono::system_clock::now();
+          connect_mark_ = false;
           std_msgs::msg::Bool msg;
           msg.data = false;
           app_connection_pub_->publish(msg);
+          disconnectTaskRequest();
           if (!app_disconnected) {
             destroyGrpc();
             createGrpc();
           }
         }
       } else {
-        if (!connect_mark) {
-          connect_mark = true;
+        if (!connect_mark_) {
+          connect_mark_ = true;
           publishNotCompleteSendingFiles();
         }
-        heartbeat_err_cnt_ = 0;
+        heart_beat_time_point = std::chrono::system_clock::now();
         std_msgs::msg::Bool msg;
         msg.data = true;
         app_connection_pub_->publish(msg);
       }
+    } else {
+      WARN_MILLSECONDS(2000, "Not able to send heatbeat while creating gRPC client.");
     }
     r.sleep();
   }
+  INFO("Exiting HeartBeat thread...");
 }
 
 std::string Cyberdog_app::getServiceIp() {return *server_ip;}
@@ -481,21 +538,6 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
   }
   return result;
 }
-// void Cyberdog_app::subscribeIp(const std_msgs::msg::String::SharedPtr msg)
-// {
-// INFO("get ip :%s", msg->data.c_str());
-// INFO("old phoneip is:%s", (*server_ip).c_str());
-// app_disconnected = false;
-// local_ip = getDogIp(msg->data, ":");
-// INFO("local_ip ip :%s", local_ip.c_str());
-// std::string phoneIp = getPhoneIp(msg->data, ":");
-// INFO("phoneIp ip :%s", phoneIp.c_str());
-// if (*server_ip != phoneIp) {
-// server_ip = std::make_shared<std::string>(phoneIp);
-// destroyGrpc();
-// createGrpc();
-// }
-// }
 
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
@@ -552,8 +594,9 @@ void Cyberdog_app::destroyGrpc()
 {
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   can_process_messages_ = false;
-  if (app_stub_ != nullptr) {
-    app_stub_ = nullptr;
+  INFO("Try to reset app_stub_ if it is NULL");
+  if (app_stub_) {
+    app_stub_.reset();
   }
   net_checker.pause();
 }
@@ -561,7 +604,7 @@ void Cyberdog_app::destroyGrpc()
 void Cyberdog_app::createGrpc()
 {
   INFO("Create server");
-  if (server_ == nullptr) {
+  if (!server_) {
     app_server_thread_ =
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
@@ -570,9 +613,9 @@ void Cyberdog_app::createGrpc()
   {
     std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
     ip_port = *server_ip + std::string(":") + grpc_client_port_;
+    INFO("Client ip port: %s", ip_port.c_str());
     net_checker.set_ip(*server_ip);
   }
-  heartbeat_err_cnt_ = 0;
   auto channel_ = grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials());
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   app_stub_ = std::make_shared<Cyberdog_App_Client>(channel_);
@@ -615,16 +658,16 @@ void Cyberdog_app::motion_servo_rsp_callback(
   send_grpc_msg(::grpcapi::SendRequest::MOTION_SERVO_RESPONSE, json_response);
 }
 
-void Cyberdog_app::callMotionServoCmd(
+bool Cyberdog_app::callMotionServoCmd(
   const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
   protocol::srv::MotionResultCmd::Response & rsp)
 {
   INFO("callMotionServoCmd.");
-  std::chrono::seconds timeout(5);
+  std::chrono::seconds timeout(20);
 
   if (!motion_ressult_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("callMotionServoCmd server not available");
-    return;
+    return false;
   }
 
   INFO("motion_id: %d.", req->motion_id);
@@ -634,12 +677,14 @@ void Cyberdog_app::callMotionServoCmd(
   if (status == std::future_status::ready) {
     INFO("success to call callMotionServoCmd services.");
   } else {
-    INFO("Failed to call callMotionServoCmd services.");
+    ERROR("Failed to call callMotionServoCmd services.");
+    return false;
   }
 
   rsp.motion_id = future_result.get()->motion_id;
   rsp.result = future_result.get()->result;
   rsp.code = future_result.get()->code;
+  return true;
 }
 
 //  for visual
@@ -733,6 +778,7 @@ void Cyberdog_app::processMapMsg(
   CyberdogJson::Add(json_response, "qz", msg->info.origin.orientation.z);
   CyberdogJson::Add(json_response, "qw", msg->info.origin.orientation.w);
   CyberdogJson::Add(json_response, "data", msg->data);
+  INFO("prepare to upload map data, size: %ld", msg->data.size());
   send_grpc_msg(::grpcapi::SendRequest::MAP_DATA_REQUEST, json_response);
 }
 
@@ -806,6 +852,16 @@ void Cyberdog_app::send_grpc_msg(uint32_t code, const std::string & msg)
   ::grpcapi::SendRequest * grpc_respons = new ::grpcapi::SendRequest();
   grpc_respons->set_namecode(code);
   grpc_respons->set_params(msg);
+  {
+    std::shared_lock<std::shared_mutex> read_lock(send_thread_map_mx_);
+    auto sender = send_thread_map_.find(code);
+    if (sender != send_thread_map_.end()) {
+      INFO("found sender for %d", code);
+      sender->second->push(std::move(std::unique_ptr<::grpcapi::SendRequest>(grpc_respons)));
+      return;
+    }
+  }
+  std::unique_lock<std::shared_mutex> write_lock(send_thread_map_mx_);
   auto sender = send_thread_map_.find(code);
   if (sender != send_thread_map_.end()) {
     INFO("found sender for %d", code);
@@ -1132,65 +1188,43 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
 
 void Cyberdog_app::handleNavigationAction(
   const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
-  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
+  bool create_new_task)
 {
+  INFO("handleNavigationAction");
   int nav_timeout = 7200;
   std::string response_string;
-  std::string type;
+  uint32_t type;
+  geometry_msgs::msg::PoseStamped goal;
   double goal_x, goal_y;
+  double yaw;
+  bool outdoor(false);
+  double keep_distance;
+  bool object_tracking(false);
   CyberdogJson::Get(json_resquest, "type", type);
-  INFO("handleNavigationAction");
-  auto mode_goal = Navigation::Goal();
-  if (type == "MAPPING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_MAPPING;
-    bool outdoor(false);
-    CyberdogJson::Get(json_resquest, "outdoor", outdoor);
-    mode_goal.outdoor = outdoor;
-  } else if (type == "NAVIGATION_AB") {
-    if (!json_resquest.HasMember("goalX") || !json_resquest.HasMember("goalY")) {
-      ERROR("NAVIGATION_AB should have goalX and goalY settings");
-      retrunErrorGrpc(writer);
-    }
-    CyberdogJson::Get(json_resquest, "goalX", goal_x);
-    CyberdogJson::Get(json_resquest, "goalY", goal_y);
-    geometry_msgs::msg::PoseStamped goal;
-    goal.pose.position.x = goal_x;
-    goal.pose.position.y = goal_y;
-    if (json_resquest.HasMember("theta")) {
-      double yaw;
-      CyberdogJson::Get(json_resquest, "theta", yaw);
-      goal.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw));
-    } else {
-      goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
-    }
-    mode_goal.poses.push_back(goal);
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AB;
-  } else if (type == "RELOCOLIZATION") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_LOCALIZATION;
-    bool outdoor(false);
-    CyberdogJson::Get(json_resquest, "outdoor", outdoor);
-    mode_goal.outdoor = outdoor;
-  } else if (type == "AUTO_DOCKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_AUTO_DOCKING;
-  } else if (type == "FOLLOW") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_FOLLOW;
-  } else if (type == "UWB_TRACKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING;
-    uint32_t relative_pos = 0;
-    CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
-    mode_goal.relative_pos = relative_pos;
-    CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
-  } else if (type == "HUMAN_TRACKING") {
-    mode_goal.nav_type = Navigation::Goal::NAVIGATION_TYPE_START_HUMAN_TRACKING;
-    uint32_t relative_pos = 0;
-    CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
-    mode_goal.relative_pos = relative_pos;
-    CyberdogJson::Get(json_resquest, "keep_distance", mode_goal.keep_distance);
-    CyberdogJson::Get(json_resquest, "object_tracking", mode_goal.object_tracking);
+  CyberdogJson::Get(json_resquest, "outdoor", outdoor);
+  CyberdogJson::Get(json_resquest, "goalX", goal_x);
+  CyberdogJson::Get(json_resquest, "goalY", goal_y);
+  if (json_resquest.HasMember("theta")) {
+    CyberdogJson::Get(json_resquest, "theta", yaw);
+    goal.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw));
   } else {
-    ERROR("Unavailable navigation type: %s", type.c_str());
-    retrunErrorGrpc(writer);
+    goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
   }
+  uint32_t relative_pos = 0;
+  CyberdogJson::Get(json_resquest, "relative_pos", relative_pos);
+  CyberdogJson::Get(json_resquest, "keep_distance", keep_distance);
+  CyberdogJson::Get(json_resquest, "object_tracking", object_tracking);
+
+  auto mode_goal = Navigation::Goal();
+  mode_goal.nav_type = type;
+  goal.pose.position.x = goal_x;
+  goal.pose.position.y = goal_y;
+  mode_goal.poses.push_back(goal);
+  mode_goal.outdoor = outdoor;
+  mode_goal.relative_pos = relative_pos;
+  mode_goal.keep_distance = keep_distance;
+  mode_goal.object_tracking = object_tracking;
 
   auto return_result = [&](int result_code) {
       rapidjson::StringBuffer strBuf;
@@ -1202,6 +1236,7 @@ void Cyberdog_app::handleNavigationAction(
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
+      INFO_STREAM("transmit result: " << response_string);
     };
 
   auto return_feedback = [&](int feedback_code, const std::string & feedback_msg) {
@@ -1216,84 +1251,171 @@ void Cyberdog_app::handleNavigationAction(
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
+      INFO_STREAM("transmit feedback: " << response_string);
     };
 
-  auto return_accept = [&](bool accepted) {
+  auto return_accept = [&](int accepted) {
       rapidjson::StringBuffer strBuf;
       rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
       json_writer.StartObject();
       json_writer.Key("accepted");
-      json_writer.Bool(accepted);
+      json_writer.Int(accepted);
       json_writer.EndObject();
       response_string = strBuf.GetString();
       grpc_respond.set_data(response_string);
       writer->Write(grpc_respond);
+      INFO_STREAM("transmit acception: " << response_string);
     };
 
   std::mutex writer_mutex;
   auto feedback_callback =
     [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const Navigation::Feedback> feedback) {
-      std::shared_lock<std::shared_mutex> readlock(nav_map_mutex_);
-      std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
-      size_t goal_hash = goal_id_hash_fun(goal_handel_ptr->get_goal_id());
-      if (hash_handle_map_.find(goal_hash) != hash_handle_map_.end()) {
-        INFO_STREAM(
-          "feedback_code: " << feedback->feedback_code << " feedback_msg: " <<
-            feedback->feedback_msg);
-        writer_mutex.lock();
-        return_feedback(feedback->feedback_code, feedback->feedback_msg);
-        writer_mutex.unlock();
-      }
+      writer_mutex.lock();
+      return_feedback(feedback->feedback_code, feedback->feedback_msg);
+      writer_mutex.unlock();
     };
-  rclcpp_action::Client<Navigation>::SendGoalOptions goal_options;
-  goal_options.feedback_callback = feedback_callback;
-  auto mode_goal_handle = navigation_client_->async_send_goal(mode_goal, goal_options);
-  uint8_t result = 2;
-  bool result_timeout = false;
-  if (mode_goal_handle.wait_for(std::chrono::seconds(5)) == std::future_status::ready) {
-    if (!mode_goal_handle.get()) {
-      WARN("Navigation action request rejected");
-      return_accept(false);
-      return;
-    }
-    return_accept(true);
-    nav_map_mutex_.lock();
-    std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
-    size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
-    hash_handle_map_[goal_hash] = mode_goal_handle.get();
-    nav_map_mutex_.unlock();
-    auto mode_result =
-      navigation_client_->async_get_result(mode_goal_handle.get());
-    if (mode_result.wait_for(std::chrono::seconds(nav_timeout)) == std::future_status::ready) {
-      if (mode_result.get().result->result ==
-        protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS)
-      {
-        INFO("Navigation action succeeded");
-      } else {
-        WARN("Navigation action failed");
+
+  auto fake_feedback_callback =
+    [&](int feedback_code) {
+      writer_mutex.lock();
+      return_feedback(feedback_code, std::string(""));
+      writer_mutex.unlock();
+    };
+
+  std::shared_ptr<std::condition_variable> result_cv_ptr;
+  std::shared_ptr<std::shared_ptr<Navigation::Result>> result_pp;
+  std::shared_ptr<std::mutex> result_mx;
+  bool uwb_not_from_app = false;  // activated uwb tracking not from app
+  size_t goal_hash;
+  {
+    std::unique_lock<std::mutex> init_lock(task_init_mutex_);
+    if (create_new_task) {
+      INFO(
+        "Sending action goal: type:%d, outdoor:%d, reletive_pos:%d, keep_dis:%f, obj_tracking:%d",
+        mode_goal.nav_type, mode_goal.outdoor, mode_goal.relative_pos, mode_goal.keep_distance,
+        mode_goal.object_tracking);
+      bool acception = action_task_manager_.StartActionTask<Navigation>(
+        navigation_client_, mode_goal, feedback_callback,
+        result_cv_ptr, result_pp, result_mx, goal_hash);
+      if (!acception) {
+        WARN("Navigation action request rejected");
+        return_accept(2);
+        return;
       }
-      result = mode_result.get().result->result;
-    } else {
-      WARN("Navigation action result timeout");
-      result_timeout = true;
+      type_hash_mutex_.lock();
+      task_type_hash_map_[mode_goal.nav_type] = goal_hash;
+      type_hash_mutex_.unlock();
+    } else {  // access a task
+      std::shared_lock<std::shared_mutex> read_lock(type_hash_mutex_);
+      if (task_type_hash_map_.find(mode_goal.nav_type) == task_type_hash_map_.end()) {
+        if (mode_goal.nav_type != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
+          return_accept(3);  // no task of that type recorded
+          return;
+        }
+        uwb_not_from_app = true;
+      }
+      bool accepted = false;
+      if (!uwb_not_from_app) {
+        goal_hash = task_type_hash_map_[mode_goal.nav_type];
+        accepted = action_task_manager_.AccessTask<Navigation>(
+          goal_hash, feedback_callback, result_cv_ptr, result_pp, result_mx);
+      } else {
+        if (task_status_.task_status == Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
+          accepted = true;
+        } else {
+          accepted = false;
+        }
+      }
+      if (!accepted) {
+        return_accept(3);  // the task has already finished
+        return;
+      }
     }
-  } else {
-    WARN("Navigation action request timeout");
-    return_accept(false);
+    return_accept(1);
+    if (!create_new_task && uwb_not_from_app) {
+      fake_feedback_callback(task_status_.task_sub_status);
+    } else if (!create_new_task) {  // access task
+      action_task_manager_.CallLatestFeedback(goal_hash);
+    } else {  // create task
+      action_task_manager_.CallFeedbackBeforeAcception(goal_hash);
+    }
+  }
+
+  if (uwb_not_from_app) {
+    rclcpp::WallRate rate(500ms);
+    int latest_sub_status = -1;
+    while (rclcpp::ok() &&
+      task_status_.task_status != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING &&
+      connect_mark_)
+    {
+      rate.sleep();
+      if (latest_sub_status != task_status_.task_sub_status) {
+        fake_feedback_callback(task_status_.task_sub_status);
+        latest_sub_status = task_status_.task_sub_status;
+      }
+    }
+    return_result(Navigation::Result::NAVIGATION_RESULT_TYPE_FAILED);
     return;
   }
-  std::unique_lock<std::shared_mutex> write_lock(nav_map_mutex_);
-  writer_mutex.lock();
-  if (result_timeout) {
-    return_result(10);
+
+  uint8_t result = 2;
+  bool result_timeout = false;
+  auto result_is_ready =
+    [&]() {
+      return result_pp && *result_pp;
+    };
+  std::unique_lock<std::mutex> result_lock(*result_mx);
+  bool is_not_timeout = result_cv_ptr->wait_for(
+    result_lock, std::chrono::seconds(nav_timeout), result_is_ready);
+  if (!is_not_timeout) {
+    WARN("Navigation action result timeout");
+    result_timeout = true;
+    writer_mutex.lock();
+    return_result(99);  // timeout code
+    writer_mutex.unlock();
   } else {
+    result = (*result_pp)->result;
+    if (result == protocol::action::Navigation::Result::NAVIGATION_RESULT_TYPE_SUCCESS) {
+      INFO("Navigation action task succeeded");
+    } else {
+      WARN("Navigation action task failed");
+    }
+    writer_mutex.lock();
     return_result(result);
+    writer_mutex.unlock();
   }
-  writer_mutex.unlock();
-  std::hash<rclcpp_action::GoalUUID> goal_id_hash_fun;
-  size_t goal_hash = goal_id_hash_fun(mode_goal_handle.get()->get_goal_id());
-  hash_handle_map_.erase(goal_hash);
+  if (connect_mark_) {
+    std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
+    task_type_hash_map_.find(mode_goal.nav_type) != task_type_hash_map_.end();
+    if (task_type_hash_map_.find(mode_goal.nav_type) != task_type_hash_map_.end() &&
+      goal_hash == task_type_hash_map_[mode_goal.nav_type])
+    {
+      task_type_hash_map_.erase(mode_goal.nav_type);
+      INFO("Erase finished task type %d", mode_goal.nav_type);
+    }
+  }
+}
+
+void Cyberdog_app::disconnectTaskRequest()
+{
+  std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
+  if (task_type_hash_map_.empty()) {
+    return;
+  }
+  std::list<size_t> remove_hash_list;
+  for (auto & type_hash : task_type_hash_map_) {
+    if (!action_task_manager_.RemoveRequest(type_hash.second)) {
+      remove_hash_list.push_back(type_hash.first);
+    }
+  }
+  if (remove_hash_list.empty()) {
+    return;
+  }
+  for (auto type : remove_hash_list) {
+    task_type_hash_map_.erase(type);
+    INFO("Erase unused task type %d", type);
+  }
 }
 
 void Cyberdog_app::handlLableGetRequest(
@@ -1477,7 +1599,7 @@ void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
   writer.EndArray();
   writer.EndObject();
   std::string param = strBuf.GetString();
-  INFO("sending navigation global plan");
+  INFO("prepare to send navigation global plan, size: %ld", msg->poses.size());
   send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
 }
 
@@ -1528,7 +1650,7 @@ void Cyberdog_app::selectTrackingObject(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!select_tracking_human_client_->wait_for_service(std::chrono::seconds(3))) {
-    ERROR("tracking_object_srv server not avaiable");
+    ERROR("tracking_object_srv server is not available");
     retrunErrorGrpc(writer);
     return;
   }
@@ -1550,8 +1672,9 @@ void Cyberdog_app::selectTrackingObject(
   auto future_result = select_tracking_human_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(timeout);
   if (status == std::future_status::ready) {
-    INFO("Got tracking_object_srv result.");
-    CyberdogJson::Add(json_response, "success", future_result.get()->success);
+    bool suc = future_result.get()->success;
+    INFO("Got tracking_object_srv result: %d.", suc);
+    CyberdogJson::Add(json_response, "success", suc);
   } else {
     ERROR("call tracking_object_srv timeout.");
     retrunErrorGrpc(writer);
@@ -1572,30 +1695,18 @@ void Cyberdog_app::handleStopAction(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
-  std::string type;
-  CyberdogJson::Get(json_resquest, "type", type);
-  auto request = std::make_shared<protocol::srv::StopAlgoTask::Request>();
-  if (type == "ALL") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_ALL;
-  } else if (type == "MAPPING") {
-    CyberdogJson::Get(json_resquest, "map_name", request->map_name);
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_MAPPING;
-  } else if (type == "NAVIGATION_AB") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_AB;
-  } else if (type == "RELOCOLIZATION") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_LOCALIZATION;
-  } else if (type == "AUTO_DOCKING") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_AUTO_DOCKING;
-  } else if (type == "FOLLOW") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_FOLLOW;
-  } else if (type == "UWB_TRACKING") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_UWB_TRACKING;
-  } else if (type == "HUMAN_TRACKING") {
-    request->task_id = protocol::srv::StopAlgoTask::Request::ALGO_TASK_HUMAN_TRACKING;
-  } else {
-    ERROR("Unavailable action type: %s", type.c_str());
+  if (!stop_nav_action_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("stop_algo_task server is not available");
     retrunErrorGrpc(writer);
+    return;
   }
+  uint32_t type(0);
+  std::string map_name;
+  CyberdogJson::Get(json_resquest, "type", type);
+  CyberdogJson::Get(json_resquest, "map_name", map_name);
+  auto request = std::make_shared<protocol::srv::StopAlgoTask::Request>();
+  request->task_id = type;
+  request->map_name = map_name;
   auto future_result = stop_nav_action_client_->async_send_request(request);
   std::chrono::seconds timeout(30);
   std::future_status status = future_result.wait_for(timeout);
@@ -1632,8 +1743,8 @@ void Cyberdog_app::scanBluetoothDevices(
   req->scan_seconds = scan_seconds;
   auto future_result = scan_bluetooth_devices_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(
-    scan_seconds < 5.0 ? std::chrono::seconds(
-      5) : std::chrono::seconds(int64_t(scan_seconds * 1.5)));
+    scan_seconds < 6.0 ? std::chrono::seconds(
+      6) : std::chrono::seconds(int64_t(scan_seconds * 1.5)));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
@@ -1694,11 +1805,16 @@ void Cyberdog_app::connectBluetoothDevice(
     CyberdogJson::Get(selected_device, "addr_type", req->selected_device.addr_type);
   }
   auto future_result = connect_bluetooth_device_client_->async_send_request(req);
-  std::future_status status = future_result.wait_for(std::chrono::seconds(20));
+  std::future_status status = future_result.wait_for(std::chrono::seconds(18));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
+    int connection_result = future_result.get()->result;
+    INFO("bluetooth connection response: %d", connection_result);
     CyberdogJson::Add(json_response, "result", future_result.get()->result);
+  } else {
+    ERROR("call connect_bluetooth_device timeout.");
+    retrunErrorGrpc(grpc_writer);
   }
   std::string rsp_string;
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
@@ -1715,6 +1831,8 @@ void Cyberdog_app::disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   writer.StartObject();
+  writer.Key("disconnected");
+  writer.Bool(msg->data);
   writer.EndObject();
   std::string param = strBuf.GetString();
   send_grpc_msg(::grpcapi::SendRequest::BLUETOOTH_DISCONNECTED_UNEXPECTED, param);
@@ -1917,6 +2035,55 @@ void Cyberdog_app::bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedP
   send_grpc_msg(::grpcapi::SendRequest::BLE_DFU_PROGRESS, param);
 }
 
+void Cyberdog_app::setBTTreadHandle(Document & json_resquest)
+{
+  int data;
+  CyberdogJson::Get(json_resquest, "data", data);
+  std_msgs::msg::Int8 msg;
+  msg.data = data;
+  set_bt_tread_pub_->publish(msg);
+}
+
+void Cyberdog_app::getBTTreadHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!get_bt_tread_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("get_bluetooth_tread server not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = get_bt_tread_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("data");
+    writer.Int(std::stoi(future_result.get()->message));
+    writer.EndObject();
+  } else {
+    ERROR("call get_bluetooth_tread timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::updateBTTreadCB(const std_msgs::msg::Int8::SharedPtr msg)
+{
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("data");
+  writer.Int(msg->data);
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  send_grpc_msg(::grpcapi::SendRequest::UPDATE_BT_TREAD, param);
+}
+
 void Cyberdog_app::motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg)
 {
   std::unique_lock<std::shared_mutex> lock(status_mutex_);
@@ -1942,6 +2109,13 @@ void Cyberdog_app::stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::S
   std::unique_lock<std::shared_mutex> lock(status_mutex_);
   state_switch_status_.state = msg->state;
   state_switch_status_.code = msg->code;
+}
+
+void Cyberdog_app::bmsStatusCB(const protocol::msg::BmsStatus::SharedPtr msg)
+{
+  std::unique_lock<std::shared_mutex> lock(status_mutex_);
+  charging_status_.wired_charging = msg->power_wired_charging;
+  charging_status_.wireless_charging = msg->power_wp_charging;
 }
 
 void Cyberdog_app::statusRequestHandle(
@@ -1979,7 +2153,113 @@ void Cyberdog_app::statusRequestHandle(
     writer.Key("code");
     writer.Int(state_switch_status_.code);
     writer.EndObject();
+    writer.Key("charging_status");
+    writer.StartObject();
+    writer.Key("wired_charging");
+    writer.Bool(charging_status_.wired_charging);
+    writer.Key("wireless_charging");
+    writer.Bool(charging_status_.wireless_charging);
     writer.EndObject();
+    writer.EndObject();
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::lowPowerExitHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!low_power_exit_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("low_power_exit service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  std::chrono::seconds timeout(13);  // wait for completely exiting
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = low_power_exit_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.EndObject();
+  } else {
+    ERROR("call low_power_exit timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::autoLowPowerEnableHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!auto_low_power_enable_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("low_power_onoff service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+  bool data;
+  CyberdogJson::Get(json_resquest, "data", data);
+  req->data = data;
+  auto future_result = auto_low_power_enable_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.EndObject();
+  } else {
+    ERROR("call low_power_onoff timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::setWorkEnvironmentHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!set_work_environment_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("set_work_environment service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::Trigger::Request>();
+  string data;
+  if (!CyberdogJson::Get(json_resquest, "data", data)) {
+    ERROR("Please set data");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  req->data = data;
+  auto future_result = set_work_environment_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call set_work_environment timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
   }
   grpc_respond.set_data(strBuf.GetString());
   grpc_writer->Write(grpc_respond);
@@ -1991,7 +2271,7 @@ bool Cyberdog_app::HandleGetDeviceInfoRequest(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!query_dev_info_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call querydevinfo server not avaiable"
     );
     return false;
@@ -2009,6 +2289,8 @@ bool Cyberdog_app::HandleGetDeviceInfoRequest(
   bool is_audio_state = false;
   bool is_device_model = false;
   bool is_stand_up = false;
+  bool is_lowpower_control = false;
+  std::string cur_uid("");
   CyberdogJson::Get(json_resquest, "is_sn", is_sn);
   CyberdogJson::Get(json_resquest, "is_version", is_version);
   CyberdogJson::Get(json_resquest, "is_uid", is_version);
@@ -2022,6 +2304,8 @@ bool Cyberdog_app::HandleGetDeviceInfoRequest(
   CyberdogJson::Get(json_resquest, "is_audio_state", is_audio_state);
   CyberdogJson::Get(json_resquest, "is_device_model", is_device_model);
   CyberdogJson::Get(json_resquest, "is_stand", is_stand_up);
+  CyberdogJson::Get(json_resquest, "is_lowpower_control", is_lowpower_control);
+  CyberdogJson::Get(json_resquest, "uid", cur_uid);
   std::chrono::seconds timeout(3);
   auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
   req->enables.resize(20);
@@ -2038,6 +2322,8 @@ bool Cyberdog_app::HandleGetDeviceInfoRequest(
   req->enables[10] = is_audio_state;
   req->enables[11] = is_device_model;
   req->enables[12] = is_stand_up;
+  req->enables[13] = is_lowpower_control;
+  req->uid = cur_uid;
   auto future_result = query_dev_info_client_->async_send_request(req);
   std::future_status status = future_result.wait_for(timeout);
   if (status == std::future_status::ready) {
@@ -2059,7 +2345,7 @@ bool Cyberdog_app::HandleAccountAdd(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!query_account_add_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call queryaccountadd server not avaiable"
     );
     return false;
@@ -2077,7 +2363,7 @@ bool Cyberdog_app::HandleAccountAdd(
   } else {
     INFO("Failed to call queryaccountadd request  services.");
   }
-  CyberdogJson::Add(json_response, "success", future_result.get()->status);
+  CyberdogJson::Add(json_response, "success", future_result.get()->code);
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while set mic state response encoding to json");
     retrunErrorGrpc(writer);
@@ -2095,7 +2381,7 @@ bool Cyberdog_app::HandleAccountSearch(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!query_account_search_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call queryaccountsearch server not avaiable"
     );
     return false;
@@ -2130,7 +2416,7 @@ bool Cyberdog_app::HandleAccountDelete(
   std::string rsp_string;
   std::chrono::seconds timeout(3);
   if (!query_account_delete_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call account delete serve not avaiable"
     );
     return false;
@@ -2149,13 +2435,54 @@ bool Cyberdog_app::HandleAccountDelete(
       "Failed to call set mic state request  services.");
     return false;
   }
-  CyberdogJson::Add(json_response, "status", future_result.get()->status);
+  CyberdogJson::Add(json_response, "success", future_result.get()->code);
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while set mic state response encoding to json");
     retrunErrorGrpc(writer);
     return false;
   }
   INFO("Account_delete_server grpc_respond is: %s", rsp_string.c_str());
+  grpc_respond.set_data(rsp_string);
+  writer->Write(grpc_respond);
+  return true;
+}
+
+bool Cyberdog_app::HandleAccountChange(
+  const Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  Document json_response(kObjectType);
+  std::string rsp_string;
+  std::chrono::seconds timeout(3);
+  if (!query_account_change_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR(
+      "call account delete serve not avaiable"
+    );
+    return false;
+  }
+  auto req = std::make_shared<protocol::srv::AccountChange::Request>();
+  CyberdogJson::Get(json_resquest, "pre_name", req->pre_name);
+  CyberdogJson::Get(json_resquest, "new_name", req->new_name);
+  // call ros service
+  auto future_result = query_account_change_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    INFO(
+      "success to call set mic state request services.");
+  } else {
+    INFO(
+      "Failed to call set mic state request  services.");
+    return false;
+  }
+
+  CyberdogJson::Add(json_response, "success", future_result.get()->code);
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set mic state response encoding to json");
+    retrunErrorGrpc(writer);
+    return false;
+  }
+  INFO("account_add_server grpc_response is: %s", rsp_string.c_str());
   grpc_respond.set_data(rsp_string);
   writer->Write(grpc_respond);
   return true;
@@ -2179,6 +2506,7 @@ void Cyberdog_app::motionServoRequestHandle(
   CyberdogJson::Get(
     json_resquest, "step_height",
     motion_servo_cmd.step_height);
+  CyberdogJson::Get(json_resquest, "value", motion_servo_cmd.value);
   motion_servo_request_pub_->publish(motion_servo_cmd);
   grpc_respond.set_data("");
   writer->Write(grpc_respond);
@@ -2201,9 +2529,14 @@ void Cyberdog_app::motionCMDRequestHandle(
   CyberdogJson::Get(json_resquest, "ctrl_point", req->ctrl_point);
   CyberdogJson::Get(json_resquest, "foot_pose", req->foot_pose);
   CyberdogJson::Get(json_resquest, "step_height", req->step_height);
+  CyberdogJson::Get(json_resquest, "contact", req->contact);
   CyberdogJson::Get(json_resquest, "duration", req->duration);
+  CyberdogJson::Get(json_resquest, "value", req->value);
   // call ros service
-  callMotionServoCmd(req, rsp);
+  if (!callMotionServoCmd(req, rsp)) {
+    retrunErrorGrpc(writer);
+    return;
+  }
   // send service response
   CyberdogJson::Add(json_response, "motion_id", rsp.motion_id);
   CyberdogJson::Add(json_response, "result", rsp.result);
@@ -2213,6 +2546,10 @@ void Cyberdog_app::motionCMDRequestHandle(
     ERROR("error while encoding to json");
     retrunErrorGrpc(writer);
     return;
+  } else {
+    INFO(
+      "motion_result_cmd response: motion_id: %d, result: %d, code: %d",
+      rsp.motion_id, rsp.result, rsp.code);
   }
   // send grpc result
   grpc_respond.set_data(rsp_string);
@@ -2297,7 +2634,7 @@ void Cyberdog_app::deviceNameSwitchHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!dev_name_enable_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call set nickname switch server not avaiable"
     );
     retrunErrorGrpc(writer);
@@ -2332,7 +2669,7 @@ void Cyberdog_app::deviceNameSetHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
   if (!dev_name_set_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO(
+    ERROR(
       "call setnickname server not avaiable"
     );
     retrunErrorGrpc(writer);
@@ -2640,11 +2977,12 @@ bool Cyberdog_app::HandleUnlockDevelopAccess(
   ::grpcapi::RecResponse & grpc_respond,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
 {
+  int unlock_result_ = 100;
   Document json_response(kObjectType);
   std::string rsp_string;
   std::chrono::seconds timeout(10);
   if (!unlock_develop_access_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("call unlock develop access serve not avaiable");
+    ERROR("call unlock develop access serve not avaiable");
     return false;
   }
   auto req = std::make_shared<protocol::srv::Unlock::Request>();
@@ -2656,12 +2994,12 @@ bool Cyberdog_app::HandleUnlockDevelopAccess(
   if (status == std::future_status::ready) {
     INFO(
       "success to call unlock develop access request services.");
+    unlock_result_ = future_result.get()->unlock_result;
   } else {
     INFO(
       "Failed to call unlock develop access request  services.");
-    return false;
   }
-  int unlock_result_ = future_result.get()->unlock_result;
+  // int unlock_result_ = future_result.get()->unlock_result;
   CyberdogJson::Add(json_response, "unlock_result", unlock_result_);
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while set unlock develop access encoding to json");
@@ -2682,7 +3020,7 @@ bool Cyberdog_app::RebootManchine(
   std::string rsp_string;
   std::chrono::seconds timeout(5);
   if (!reboot_machine_client_->wait_for_service(std::chrono::seconds(3))) {
-    INFO("call reboot machine server not avaiable");
+    ERROR("call reboot machine server not avaiable");
     return false;
   }
   auto req = std::make_shared<protocol::srv::RebootMachine::Request>();
@@ -2698,7 +3036,6 @@ bool Cyberdog_app::RebootManchine(
   } else {
     INFO(
       "Failed to call reboot machine request  services.");
-    return false;
   }
   int reboot_result_ = future_result.get()->rebootresult;
   CyberdogJson::Add(json_response, "reboot_result", reboot_result_);
@@ -2791,6 +3128,8 @@ void Cyberdog_app::ProcessMsg(
           return;
         }
         image_trans_pub_->publish(it_msg);
+        grpc_respond.set_data("");
+        writer->Write(grpc_respond);
       } break;
     case ::grpcapi::SendRequest::CAMERA_SERVICE: {
         uint32_t command = 2;
@@ -2848,13 +3187,16 @@ void Cyberdog_app::ProcessMsg(
         handlLableGetRequest(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::NAV_ACTION: {
-        handleNavigationAction(json_resquest, grpc_respond, writer);
+        handleNavigationAction(json_resquest, grpc_respond, writer, true);
       } break;
     case ::grpcapi::SendRequest::SELECTED_TRACKING_OBJ: {
         selectTrackingObject(json_resquest, json_response, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::STOP_NAV_ACTION: {
         handleStopAction(json_resquest, json_response, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::ACCESS_NAV_ACTION: {
+        handleNavigationAction(json_resquest, grpc_respond, writer, false);
       } break;
     case ::grpcapi::SendRequest::BLUETOOTH_SCAN: {
         scanBluetoothDevices(json_resquest, grpc_respond, writer);
@@ -2877,8 +3219,25 @@ void Cyberdog_app::ProcessMsg(
     case ::grpcapi::SendRequest::UPDATE_BLE_FIRMWARE: {
         updateBLEFirmwareHandle(grpc_respond, writer);
       } break;
+    case ::grpcapi::SendRequest::SET_BT_TREAD: {
+        setBTTreadHandle(json_resquest);
+        grpc_respond.set_data("");
+        writer->Write(grpc_respond);
+      } break;
+    case ::grpcapi::SendRequest::GET_BT_TREAD: {
+        getBTTreadHandle(grpc_respond, writer);
+      } break;
     case ::grpcapi::SendRequest::STATUS_REQUEST: {
         statusRequestHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::LOW_POWER_EXIT: {
+        lowPowerExitHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::AUTO_LOW_POWER_ENABLE: {
+        autoLowPowerEnableHandle(json_resquest, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::SET_WORK_ENVIRONMENT: {
+        setWorkEnvironmentHandle(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
@@ -2890,6 +3249,11 @@ void Cyberdog_app::ProcessMsg(
           return;
         }
       } break;
+    case ::grpcapi::SendRequest::ACCOUNT_MEMBER_CHANGE: {
+        if (!HandleAccountChange(json_resquest, grpc_respond, writer)) {
+          return;
+        }
+      } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_DELETE: {
         if (!HandleAccountDelete(json_resquest, grpc_respond, writer)) {
           return;
@@ -2898,10 +3262,9 @@ void Cyberdog_app::ProcessMsg(
     case 55001: {  // for testing
         std_msgs::msg::Bool msg;
         msg.data = true;
-        grpc_respond.set_namecode(55001);
+        app_disconnect_pub_->publish(msg);
         grpc_respond.set_data("");
         writer->Write(grpc_respond);
-        app_disconnect_pub_->publish(msg);
       } break;
     case 1100: {
         startStairAlignHandle(json_resquest, grpc_respond, writer);

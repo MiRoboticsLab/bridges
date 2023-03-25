@@ -1,0 +1,6 @@
+string trigger
+string type
+string value
+---
+int32 skill_id
+int32 code

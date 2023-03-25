@@ -1,0 +1,5 @@
+uint16 play_id      # 播放ID
+---
+# response
+bool exist
+int32 code

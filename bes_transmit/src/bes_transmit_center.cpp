@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+// Copyright (c) 2023 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,7 +74,7 @@ void publish_callback(void **, struct mqtt_response_publish *)
 }  // namespace bridge
 }  // namespace cyberdog
 
-cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
+cyberdog::bridge::TransmitCenter::TransmitCenter()
 {
   tpub_node_ptr_ = rclcpp::Node::make_shared(BTW_PUB_NODE_NAME);
   tsub_node_ptr_ = rclcpp::Node::make_shared(BTW_SUB_NODE_NAME);
@@ -83,53 +83,65 @@ cyberdog::bridge::Transmit_Waiter::Transmit_Waiter()
   executor_.add_node(tsub_node_ptr_);
   executor_.add_node(http_node_ptr_);
 
+  http_node_cb_group_ = http_node_ptr_->create_callback_group(
+    rclcpp::CallbackGroupType::Reentrant);
+  device_info_client_ =
+    http_node_ptr_->create_client<protocol::srv::DeviceInfo>(
+    "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
+
   bpub_ptr_ = std::make_unique<Backend_Publisher>(std::string("cyberdog/base_info/submit"));
+  bpub_is_ready_ = bpub_ptr_->Init();
+  if (bpub_is_ready_) {
+    INFO("mqtt publisher is ready");
+  }
   be_sub_ =
     tsub_node_ptr_->create_subscription<std_msgs::msg::String>(
     "cyberdog/base_info/submit", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Transmit_Waiter::MqttPubCallback, this, std::placeholders::_1));
-
-  bsub_ptr_ = std::make_unique<Backend_Subscriber>();
+    std::bind(&TransmitCenter::MqttPubCallback, this, std::placeholders::_1));
   be_pub_ =
     tpub_node_ptr_->create_publisher<std_msgs::msg::String>(
     "bes_to_dog",
     rclcpp::SystemDefaultsQoS());
+  bsub_ptr_ = std::make_unique<Backend_Subscriber>();
 
-  bhttp_ptr_ = std::make_unique<Backend_Http>();
-  http_node_cb_group_ = http_node_ptr_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+  bhttp_ptr_ = std::make_unique<Backend_Http>(
+    "https://test-server.cyberdog.xiaomi.com", "/toml_config/manager/settings.json");
+  INFO("http client is ready");
+
   http_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttp>(
     "bes_http_srv",
     std::bind(
-      &Transmit_Waiter::BesHttpCallback, this, std::placeholders::_1,
+      &TransmitCenter::BesHttpCallback, this, std::placeholders::_1,
       std::placeholders::_2), rmw_qos_profile_services_default, http_node_cb_group_);
   http_send_file_srv_ =
     http_node_ptr_->create_service<protocol::srv::BesHttpSendFile>(
     "bes_http_send_file_srv",
     std::bind(
-      &Transmit_Waiter::BesHttpSendFileCallback, this, std::placeholders::_1,
+      &TransmitCenter::BesHttpSendFileCallback, this, std::placeholders::_1,
       std::placeholders::_2), rmw_qos_profile_services_default, http_node_cb_group_);
-  device_info_client_ =
-    http_node_ptr_->create_client<protocol::srv::DeviceInfo>(
-    "query_divice_info", rmw_qos_profile_services_default, http_node_cb_group_);
-  INFO("http client is ready");
-
-  if (bpub_ptr_->Init()) {
-    INFO("mqtt publisher is ready");
-  }
 }
 
-cyberdog::bridge::Transmit_Waiter::~Transmit_Waiter()
+cyberdog::bridge::TransmitCenter::~TransmitCenter()
 {
 }
 
-void cyberdog::bridge::Transmit_Waiter::Run()
+void cyberdog::bridge::TransmitCenter::Run()
 {
+  INFO("start spin");
   executor_.spin();
 }
 
-void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)
+void cyberdog::bridge::TransmitCenter::MqttPubCallback(const std_msgs::msg::String::SharedPtr msg)
 {
+  if (!bpub_is_ready_) {
+    INFO("mqtt publisher is not ready");
+    bpub_is_ready_ = bpub_ptr_->Init();
+    if (!bpub_is_ready_) {
+      ERROR("Failed to init mqtt publisher.");
+      return;
+    }
+  }
   rapidjson::Document json_msg(kObjectType);
   std::string sn, uid, str_to_be_sent;
   if (!getDevInf(sn, uid)) {
@@ -149,19 +161,20 @@ void cyberdog::bridge::Transmit_Waiter::MqttPubCallback(const std_msgs::msg::Str
   bpub_ptr_->Publish(str_to_be_sent.c_str());
 }
 
-void cyberdog::bridge::Transmit_Waiter::MqttSubCallback(const std::string & msg)
+void cyberdog::bridge::TransmitCenter::MqttSubCallback(const std::string & msg)
 {
   std_msgs::msg::String msg_data;
   msg_data.data = msg;
   be_pub_->publish(msg_data);
 }
 
-void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
+void cyberdog::bridge::TransmitCenter::BesHttpCallback(
   const protocol::srv::BesHttp::Request::SharedPtr request,
   protocol::srv::BesHttp::Response::SharedPtr respose)
 {
   if (request->url.empty() || request->url == "/") {
     respose->data = Backend_Http::GetDefaultResponse("Empty url");
+    respose->code = Backend_Http::ErrorCode::EMPTY_URL;
     ERROR("Empty url");
     return;
   }
@@ -173,23 +186,34 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpCallback(
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+  respose->code = Backend_Http::ErrorCode::OK;
   if (getDevInf(sn, uid)) {
+    if (sn.empty()) {
+      respose->data = Backend_Http::GetDefaultResponse("SN is invalid");
+      respose->code = Backend_Http::ErrorCode::INVALID_SN;
+      return;
+    }
+    int error_code = Backend_Http::ErrorCode::OK;
     bhttp_ptr_->SetInfo(sn, uid);
     if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_GET) {
-      respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds);
+      respose->data = bhttp_ptr_->get(request->url, request->params, mill_seconds, error_code);
     } else if (request->method == protocol::srv::BesHttp::Request::HTTP_METHOD_POST) {
-      respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds);
+      respose->data = bhttp_ptr_->post(request->url, request->params, mill_seconds, error_code);
     }
+    respose->code = error_code;
+  } else {
+    respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+    respose->code = Backend_Http::ErrorCode::INFO_SERVICE_ERROR;
   }
 }
 
-void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
+void cyberdog::bridge::TransmitCenter::BesHttpSendFileCallback(
   const protocol::srv::BesHttpSendFile::Request::SharedPtr request,
   protocol::srv::BesHttpSendFile::Response::SharedPtr respose)
 {
   if (request->url.empty() || request->url == "/") {
     respose->data = Backend_Http::GetDefaultResponse("Empty url");
+    respose->code = Backend_Http::ErrorCode::EMPTY_URL;
     ERROR("Empty url");
     return;
   }
@@ -197,22 +221,38 @@ void cyberdog::bridge::Transmit_Waiter::BesHttpSendFileCallback(
   mill_seconds = std::max(0, mill_seconds);
   mill_seconds = (mill_seconds == 0) ? 3000 : mill_seconds;
   std::string sn, uid;
-  respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+  respose->code = Backend_Http::ErrorCode::OK;
   if (getDevInf(sn, uid)) {
+    if (sn.empty()) {
+      respose->data = Backend_Http::GetDefaultResponse("SN is invalid");
+      respose->code = Backend_Http::ErrorCode::INVALID_SN;
+      return;
+    }
     bhttp_ptr_->SetInfo(sn, uid);
+    int error_code = Backend_Http::ErrorCode::OK;
     respose->data = bhttp_ptr_->SendFile(
-      request->method, request->url, request->file_name, request->content_type, request->milsecs);
+      request->method, request->url, request->file_name,
+      request->content_type, request->milsecs, error_code);
+    respose->code = error_code;
+  } else {
+    respose->data = Backend_Http::GetDefaultResponse("DeviceInfo service not available");
+    respose->code = Backend_Http::ErrorCode::INFO_SERVICE_ERROR;
   }
 }
 
-bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string & uid)
+bool cyberdog::bridge::TransmitCenter::getDevInf(std::string & sn, std::string & uid)
 {
+  static std::string sn_;
   if (!device_info_client_->wait_for_service(std::chrono::seconds(3))) {
     WARN("query_divice_info server not avalible!");
     return false;
   }
   auto req = std::make_shared<protocol::srv::DeviceInfo::Request>();
   std::vector<bool> req_v {true, false, true};
+  bool sn_acquired = !sn_.empty();
+  if (sn_acquired) {
+    req_v[0] = false;
+  }
   req->enables = req_v;
   auto future_result = device_info_client_->async_send_request(req);
   rapidjson::Document json_dev_inf_doc(kObjectType);
@@ -220,8 +260,13 @@ bool cyberdog::bridge::Transmit_Waiter::getDevInf(std::string & sn, std::string 
   if (status == std::future_status::ready) {
     std::string info = future_result.get()->info;
     if (!json_dev_inf_doc.Parse<0>(info.c_str()).HasParseError()) {
-      return common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
-             common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+      if (sn_acquired) {
+        sn = sn_;
+        return common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+      } else {
+        return common::CyberdogJson::Get(json_dev_inf_doc, "sn", sn) &&
+               common::CyberdogJson::Get(json_dev_inf_doc, "uid", uid);
+      }
     } else {
       WARN("Parse json error!");
     }

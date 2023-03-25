@@ -116,13 +116,6 @@ target_link_libraries(${executable_name}
   #
 )
 
-install(TARGETS ${library_name}
-  ARCHIVE DESTINATION lib
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin
-)
-
-
 install(TARGETS ${executable_name}
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )

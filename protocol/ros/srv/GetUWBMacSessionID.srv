@@ -5,3 +5,4 @@ uint16 slave1
 uint16 slave2
 uint16 slave3
 uint16 slave4
+int32 code

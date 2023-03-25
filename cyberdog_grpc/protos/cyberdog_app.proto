@@ -46,6 +46,11 @@ message StateSwitchStatus{
     int32 code = 2;
 }
 
+message ChargingStatus{
+    bool wired_charging = 1;
+    bool wireless_charging = 2;
+}
+
 message Ticks{
     string ip = 1;
     fixed32 wifi_strength = 2;
@@ -56,6 +61,7 @@ message Ticks{
     TaskStatus task_status = 7;
     SelfCheckStatus self_check_status = 8;
     StateSwitchStatus state_switch_status = 9;
+    ChargingStatus charging_status = 10;
 }
 
 message SendRequest {
@@ -75,6 +81,7 @@ message SendRequest {
         ACCOUNT_MEMBER_ADD = 1020;
         ACCOUNT_MEMBER_SEARCH = 1021;
         ACCOUNT_MEMBER_DELETE = 1022;
+        ACCOUNT_MEMBER_CHANGE = 1024;
         VISUAL_BACKEND_MSG = 2001;
         VISUAL_FRONTEND_MSG = 2002;
         AUDIO_AUTHENTICATION_REQUEST = 3001;
@@ -103,6 +110,7 @@ message SendRequest {
         TRACKING_OBJ = 6007;
         SELECTED_TRACKING_OBJ = 6008;
         STOP_NAV_ACTION = 6009;
+        ACCESS_NAV_ACTION = 6010;
         FACE_ENTRY_REQUEST = 7001;
         FACE_RECORDING_REQUEST = 7002;
         FACE_ENTRY_RESULT_PUBLISH = 7003;
@@ -117,9 +125,15 @@ message SendRequest {
         BLE_FIRMWARE_UPDATE_NOTIFICATION = 8008;
         UPDATE_BLE_FIRMWARE = 8009;
         BLE_DFU_PROGRESS = 8010;
-        STATUS_REQUEST = 10001;
+        SET_BT_TREAD = 8011;
+        UPDATE_BT_TREAD = 8012;
+        GET_BT_TREAD = 8013;
         UNLOCK_DEVELOP_ACCESS = 9030;
         REBOOT_MACHINE = 9031;
+        STATUS_REQUEST = 10001;
+        LOW_POWER_EXIT = 10002;
+        AUTO_LOW_POWER_ENABLE = 10003;
+        SET_WORK_ENVIRONMENT = 10004;
     }
 }
 

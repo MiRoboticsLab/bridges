@@ -1,0 +1,22 @@
+uint8 SPORT_SQUAT= 1             #深蹲
+uint8 SPORT_HIGHKNEES = 2        #高抬腿
+uint8 SPORT_SITUP = 3            #仰卧起坐
+uint8 SPORT_PRESSUP = 4          #俯卧撑
+uint8 SPORT_PLANK = 5            #平板支撑
+uint8 SPORT_JUMPJACK = 6         #开合跳
+
+int32 DEFAULT_TIMEOUT = 100
+int32 MAX_TIMEOUT = 300
+int32 MIN_TIMEOUT = 5
+
+uint8 sport_type
+string id
+bool  command
+int32 counts
+int32 timeout
+
+---
+int32 ENABLE_SUCCESS = 0
+int32 ENABLE_FAIL = 7001
+int32 result
+int32 code
