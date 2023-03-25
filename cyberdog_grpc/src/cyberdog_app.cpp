@@ -306,6 +306,14 @@ Cyberdog_app::Cyberdog_app()
   stop_nav_action_client_ = this->create_client<protocol::srv::StopAlgoTask>(
     "stop_algo_task", rmw_qos_profile_services_default, callback_group_);
 
+  tf_buffer_ =
+    std::make_unique<tf2_ros::Buffer>(this->get_clock());
+  tf_listener_ =
+    std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+  laser_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
+    "scan", 100, std::bind(&Cyberdog_app::laserScanCB, this, _1), map_path_sub_option);
+  namecode_queue_size_[::grpcapi::SendRequest::LASER_SCAN] = 1;
+
   // tracking
   rclcpp::SensorDataQoS tracking_qos;
   tracking_qos.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
@@ -1601,6 +1609,45 @@ void Cyberdog_app::uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg)
   std::string param = strBuf.GetString();
   INFO("prepare to send navigation global plan, size: %ld", msg->poses.size());
   send_grpc_msg(::grpcapi::SendRequest::NAV_PLAN_PATH, param);
+}
+
+void Cyberdog_app::laserScanCB(const sensor_msgs::msg::LaserScan::SharedPtr msg)
+{
+  geometry_msgs::msg::TransformStamped T_map_laser_msg;
+  try {
+    T_map_laser_msg = tf_buffer_->lookupTransform(
+      "map", "laser_frame", tf2::TimePointZero);
+  } catch (const tf2::TransformException & ex) {
+    WARN_MILLSECONDS(10000, "Could not transform from map to laser_frame");
+    return;
+  }
+  tf2::Transform T_map_laser;
+  tf2::fromMsg(T_map_laser_msg.transform, T_map_laser);
+  int ranges_size = msg->ranges.size();
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("laser_point");
+  writer.StartArray();
+  for (int i = 0; i < ranges_size; ++i) {
+    if (msg->ranges[i] < 0.05f) {
+      continue;
+    }
+    float angle = msg->angle_min + i * msg->angle_increment;
+    tf2::Vector3 map_frame_point = T_map_laser * tf2::Vector3(
+      msg->ranges[i] * std::cos(angle), msg->ranges[i] * std::sin(angle), 0.0);
+    writer.StartObject();
+    writer.Key("px");
+    writer.Double(map_frame_point.x());
+    writer.Key("py");
+    writer.Double(map_frame_point.y());
+    writer.EndObject();
+  }
+  writer.EndArray();
+  writer.EndObject();
+  std::string param = strBuf.GetString();
+  INFO("prepare to send laser points, size: %ld", msg->ranges.size());
+  send_grpc_msg(::grpcapi::SendRequest::LASER_SCAN, param);
 }
 
 void Cyberdog_app::publishTrackingPersonCB(const protocol::msg::Person::SharedPtr msg)

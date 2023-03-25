@@ -45,6 +45,10 @@
 #include "nav2_msgs/srv/save_map.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
+#include "tf2/exceptions.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
+#include "sensor_msgs/msg/laser_scan.hpp"
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
@@ -521,6 +525,11 @@ private:
   rclcpp::CallbackGroup::SharedPtr path_map_callback_group_;
   bool connect_mark_ {false};
   void disconnectTaskRequest();
+
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
+  void laserScanCB(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 
   void handleStopAction(
     const Document & json_resquest, Document & json_response,
