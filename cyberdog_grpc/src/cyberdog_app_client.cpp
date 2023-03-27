@@ -55,6 +55,10 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
     INFO_STREAM(
       "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
         std::string("path data ... json string size: ") << msg.params().size());
+  } else if (msg.namecode() == grpcapi::SendRequest::LASER_SCAN) {
+    INFO_STREAM(
+      "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
+        std::string("laser data ... json string size: ") << msg.params().size());
   } else {
     INFO_STREAM(
       "sendMsg rpc success. namecode: " << msg.namecode() << " params: " << msg.params());
