@@ -1617,6 +1617,14 @@ void Cyberdog_app::laserScanCB(const sensor_msgs::msg::LaserScan::SharedPtr msg)
   try {
     T_map_laser_msg = tf_buffer_->lookupTransform(
       "map", "laser_frame", tf2::TimePointZero);
+    if (!tf_buffer_->canTransform(
+        "map", "laser_frame", tf2::get_now(), tf2::durationFromSec(1)))
+    {
+      return;
+    }
+  } catch (const tf2::LookupException & ex) {
+    WARN_MILLSECONDS(10000, "Map frame doesn't exist");
+    return;
   } catch (const tf2::TransformException & ex) {
     WARN_MILLSECONDS(10000, "Could not transform from map to laser_frame");
     return;
