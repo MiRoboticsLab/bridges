@@ -2055,7 +2055,7 @@ void Cyberdog_app::updateBLEFirmwareHandle(
   }
   auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
   auto future_result = update_ble_firmware_client_->async_send_request(req);
-  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  std::future_status status = future_result.wait_for(std::chrono::seconds(10));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
