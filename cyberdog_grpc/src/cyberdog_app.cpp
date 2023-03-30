@@ -265,6 +265,9 @@ Cyberdog_app::Cyberdog_app()
   set_work_environment_client_ =
     this->create_client<protocol::srv::Trigger>("set_work_environment");
 
+  upload_syslog_client_ =
+    this->create_client<std_srvs::srv::Trigger>("upload_syslog");
+
   // test
   app_disconnect_pub_ = this->create_publisher<std_msgs::msg::Bool>("disconnect_app", 2);
 
@@ -1763,7 +1766,7 @@ void Cyberdog_app::handleStopAction(
   request->task_id = type;
   request->map_name = map_name;
   auto future_result = stop_nav_action_client_->async_send_request(request);
-  std::chrono::seconds timeout(30);
+  std::chrono::seconds timeout(60);
   std::future_status status = future_result.wait_for(timeout);
   if (status == std::future_status::ready) {
     INFO("Got stop_algo_task result.");
@@ -2313,6 +2316,34 @@ void Cyberdog_app::setWorkEnvironmentHandle(
     writer.EndObject();
   } else {
     ERROR("call set_work_environment timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::uploadSyslogHandle(
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!upload_syslog_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("upload_syslog service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = upload_syslog_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(59));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.EndObject();
+  } else {
+    ERROR("call upload_syslog_client_ timeout.");
     retrunErrorGrpc(grpc_writer);
     return;
   }
@@ -3293,6 +3324,9 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::SET_WORK_ENVIRONMENT: {
         setWorkEnvironmentHandle(json_resquest, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::UPLOAD_SYSLOG: {
+        uploadSyslogHandle(grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
