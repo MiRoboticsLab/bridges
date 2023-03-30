@@ -311,7 +311,7 @@ Cyberdog_app::Cyberdog_app()
   tf_listener_ =
     std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
   laser_sub_ = create_subscription<sensor_msgs::msg::LaserScan>(
-    "scan", 100, std::bind(&Cyberdog_app::laserScanCB, this, _1), map_path_sub_option);
+    "scan", 1, std::bind(&Cyberdog_app::laserScanCB, this, _1), map_path_sub_option);
   namecode_queue_size_[::grpcapi::SendRequest::LASER_SCAN] = 1;
 
   // tracking
