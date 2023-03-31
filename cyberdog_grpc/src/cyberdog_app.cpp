@@ -145,11 +145,11 @@ Cyberdog_app::Cyberdog_app()
 
   //  code for visual program
   visual_response_sub_ = this->create_subscription<std_msgs::msg::String>(
-    "robotend_message", rclcpp::SystemDefaultsQoS(),
+    "robotend_message", rclcpp::ParametersQoS(),
     std::bind(&Cyberdog_app::backend_message_callback, this, _1));
 
   visual_request_pub_ = this->create_publisher<std_msgs::msg::String>(
-    "frontend_message", rclcpp::SystemDefaultsQoS());
+    "frontend_message", rclcpp::ParametersQoS());
 
   // code for ai
   ai_face_entry_client_ =
