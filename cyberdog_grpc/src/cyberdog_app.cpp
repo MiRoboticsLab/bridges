@@ -263,7 +263,7 @@ Cyberdog_app::Cyberdog_app()
     this->create_client<protocol::srv::AccountChange>("account_change");
 
   set_work_environment_client_ =
-    this->create_client<protocol::srv::Trigger>("set_work_environment");
+    this->create_client<protocol::srv::Trigger>("set_nx_environment");
 
   upload_syslog_client_ =
     this->create_client<std_srvs::srv::Trigger>("upload_syslog");
@@ -2291,7 +2291,7 @@ void Cyberdog_app::setWorkEnvironmentHandle(
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
 {
   if (!set_work_environment_client_->wait_for_service(std::chrono::seconds(3))) {
-    ERROR("set_work_environment service is not avaiable");
+    ERROR("set_nx_environment service is not avaiable");
     retrunErrorGrpc(grpc_writer);
     return;
   }
@@ -2315,7 +2315,7 @@ void Cyberdog_app::setWorkEnvironmentHandle(
     writer.String(future_result.get()->message.c_str());
     writer.EndObject();
   } else {
-    ERROR("call set_work_environment timeout.");
+    ERROR("call set_nx_environment timeout.");
     retrunErrorGrpc(grpc_writer);
     return;
   }
