@@ -1398,7 +1398,6 @@ void Cyberdog_app::handleNavigationAction(
   }
   if (connect_mark_) {
     std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
-    task_type_hash_map_.find(mode_goal.nav_type) != task_type_hash_map_.end();
     if (task_type_hash_map_.find(mode_goal.nav_type) != task_type_hash_map_.end() &&
       goal_hash == task_type_hash_map_[mode_goal.nav_type])
     {
@@ -1769,8 +1768,9 @@ void Cyberdog_app::handleStopAction(
   std::chrono::seconds timeout(60);
   std::future_status status = future_result.wait_for(timeout);
   if (status == std::future_status::ready) {
-    INFO("Got stop_algo_task result.");
-    CyberdogJson::Add(json_response, "result", future_result.get()->result);
+    uint8_t stop_task_result = future_result.get()->result;
+    INFO("Got stop_algo_task result: %d.", stop_task_result);
+    CyberdogJson::Add(json_response, "result", stop_task_result);
   } else {
     ERROR("call stop_algo_task timeout.");
     CyberdogJson::Add(json_response, "result", 10);
