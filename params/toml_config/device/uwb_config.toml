@@ -73,3 +73,5 @@ description = ""
 index = 3
 com_file = "uwb_head_tof.toml"
 mac = 0x0005
+
+square_deviation_threshold_ = 0.6
