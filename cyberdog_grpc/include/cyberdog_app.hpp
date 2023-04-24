@@ -93,6 +93,7 @@
 #include "protocol/srv/unlock.hpp"
 #include "protocol/srv/reboot_machine.hpp"
 #include "protocol/srv/trigger.hpp"
+#include "protocol/srv/elec_skin.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -672,6 +673,18 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void stopStairAlignHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
+  // elec skin
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_elec_skin_client_;
+  rclcpp::Client<protocol::srv::ElecSkin>::SharedPtr set_elec_skin_client_;
+  void enableElecSkinHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+  void setElecSkinHandle(
+    Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 

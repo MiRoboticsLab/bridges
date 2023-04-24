@@ -381,6 +381,10 @@ Cyberdog_app::Cyberdog_app()
   low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
   auto_low_power_enable_client_ = this->create_client<std_srvs::srv::SetBool>("low_power_onoff");
 
+  // elec skin
+  enable_elec_skin_client_ = this->create_client<std_srvs::srv::SetBool>("enable_elec_skin");
+  set_elec_skin_client_ = this->create_client<protocol::srv::ElecSkin>("set_elec_skin");
+
   // stair demo
   start_stair_align_client_ =
     this->create_client<std_srvs::srv::SetBool>("start_stair_align");
@@ -3135,6 +3139,86 @@ bool Cyberdog_app::RebootManchine(
   writer->Write(grpc_respond);
   return true;
 }
+
+void Cyberdog_app::enableElecSkinHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!enable_elec_skin_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("enable_elec_skin service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+  bool data;
+  if (!CyberdogJson::Get(json_resquest, "data", data)) {
+    ERROR("Please set data");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  req->data = data;
+  auto future_result = enable_elec_skin_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(5));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call enable_elec_skin timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  INFO("enable_elec_skin result: %d", future_result.get()->success);
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
+void Cyberdog_app::setElecSkinHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!set_elec_skin_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("set_elec_skin service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::ElecSkin::Request>();
+  int mode = 0, wave_cycle_time = 50;
+  if (!CyberdogJson::Get(json_resquest, "mode", mode) ||
+    !CyberdogJson::Get(json_resquest, "wave_cycle_time", wave_cycle_time))
+  {
+    ERROR("Please set mode and wave_cycle_time");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  req->mode = mode;
+  req->wave_cycle_time = wave_cycle_time;
+  auto future_result = set_elec_skin_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(5));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.EndObject();
+  } else {
+    ERROR("call set_elec_skin timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  INFO("set_elec_skin result: %d", future_result.get()->success);
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
+
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -3327,6 +3411,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::UPLOAD_SYSLOG: {
         uploadSyslogHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::ENABLE_ELEC_SKIN: {
+        enableElecSkinHandle(json_resquest, grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::SET_ELEC_SKIN: {
+        setElecSkinHandle(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
