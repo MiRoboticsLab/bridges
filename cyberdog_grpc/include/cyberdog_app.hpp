@@ -661,6 +661,13 @@ private:
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
 
+  // dog leg calibration
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr dog_leg_calibration_client_;
+  void dogLegCalibrationHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
   // test
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
 
