@@ -381,6 +381,10 @@ Cyberdog_app::Cyberdog_app()
   low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
   auto_low_power_enable_client_ = this->create_client<std_srvs::srv::SetBool>("low_power_onoff");
 
+  // dog leg calibration
+  dog_leg_calibration_client_ = this->create_client<std_srvs::srv::SetBool>(
+    "dog_leg_calibration", rmw_qos_profile_services_default, callback_group_);
+
   // stair demo
   start_stair_align_client_ =
     this->create_client<std_srvs::srv::SetBool>("start_stair_align");
@@ -3135,6 +3139,39 @@ bool Cyberdog_app::RebootManchine(
   writer->Write(grpc_respond);
   return true;
 }
+void Cyberdog_app::dogLegCalibrationHandle(
+  Document & json_resquest,
+  ::grpcapi::RecResponse & grpc_respond,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!dog_leg_calibration_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("dog_leg_calibration service is not avaiable");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+  bool data;
+  CyberdogJson::Get(json_resquest, "data", data);
+  req->data = data;
+  auto future_result = dog_leg_calibration_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(10));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call dog_leg_calibration timeout.");
+    retrunErrorGrpc(grpc_writer);
+    return;
+  }
+  grpc_respond.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_respond);
+}
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -3327,6 +3364,9 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::UPLOAD_SYSLOG: {
         uploadSyslogHandle(grpc_respond, writer);
+      } break;
+    case ::grpcapi::SendRequest::DOG_LEG_CALIBRATION: {
+        dogLegCalibrationHandle(json_resquest, grpc_respond, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_resquest, grpc_respond, writer)) {
