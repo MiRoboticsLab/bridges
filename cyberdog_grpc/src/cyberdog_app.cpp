@@ -3154,7 +3154,7 @@ void Cyberdog_app::dogLegCalibrationHandle(
   CyberdogJson::Get(json_resquest, "data", data);
   req->data = data;
   auto future_result = dog_leg_calibration_client_->async_send_request(req);
-  std::future_status status = future_result.wait_for(std::chrono::seconds(5));
+  std::future_status status = future_result.wait_for(std::chrono::seconds(10));
   rapidjson::StringBuffer strBuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
   if (status == std::future_status::ready) {
