@@ -437,7 +437,7 @@ void Cyberdog_app::HeartBeat()
     if (can_process_messages_) {
       update_time_mutex_.lock();
       bool connector_timeout = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::system_clock::now() - connector_update_time_point_).count() >= 5;
+        std::chrono::system_clock::now() - connector_update_time_point_).count() > 2;
       update_time_mutex_.unlock();
       bool hearbeat_result(false);
       {
@@ -556,10 +556,10 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
-  update_time_mutex_.lock();
-  connector_update_time_point_ = std::chrono::system_clock::now();
-  update_time_mutex_.unlock();
   if (msg->is_connected) {
+    update_time_mutex_.lock();
+    connector_update_time_point_ = std::chrono::system_clock::now();
+    update_time_mutex_.unlock();
     std::string phoneIp = msg->provider_ip;
     if (!phoneIp.empty() && phoneIp != "0.0.0.0") {
       app_disconnected = false;
