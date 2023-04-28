@@ -22,3 +22,4 @@ int32 RESULT_UNDEFINED_ERROR = 5901
 
 int32 result
 string allfaces
+int32 code

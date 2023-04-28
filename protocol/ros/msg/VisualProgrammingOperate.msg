@@ -18,6 +18,8 @@ string MODE_SEQUENCE="sequence"             # 序列
 string MODE_SINGLE_STEP="single_step"       # 单步
 string MODE_ORIGINAL="original"             # 原始
 
+string MODE_ALL="all"                       # 所有
+
 string MODE_PERSONNEL="personnel"           # 人员
 string MODE_FACE="face"                     # 人脸
 string MODE_VOICEPRINT="voiceprint"         # 声纹
@@ -63,13 +65,16 @@ string FSM_LOW_POWER="LowPower"             # [状态机] LowPower
 string FSM_OTA="OTA"                        # [状态机] OTA
 string FSM_ERROR="Error"                    # [状态机] Error
 
-string type
-string id
-string[] target_id
-string describe
-string style
-string operate
-string mode
-string condition
-string body
-string fsm
+string type                                 # 消息类型
+string id                                   # 消息ID
+string[] target_id                          # 目标ID
+string describe                             # 消息描述
+string style                                # 消息样式
+string operate                              # 操作类型
+string mode                                 # 模式类型
+string condition                            # 约束信息
+string body                                 # 消息主体
+string fsm                                  # 状态机状态
+string[] dependent                          # 依赖项
+string[] be_depended                        # 被依赖项
+

@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,9 +32,20 @@ namespace cyberdog
 {
 namespace bridges
 {
+/**
+ * @brief Class for transmit files via gRPC
+ */
 class TransmitFiles
 {
 public:
+  /**
+   * @brief Get and send a file produced from camera
+   * @param writer FileChunk writer
+   * @param result Result from camera service
+   * @param msg Camsera service response message
+   * @return true Successfully sent file
+   * @return false Failed to send file
+   */
   static bool ReturnCameraFile(
     ::grpc::ServerWriter<::grpcapi::FileChunk> * writer,
     uint8_t result,
@@ -54,6 +65,11 @@ public:
     return SendFile(writer, file_name, "/home/mi/Camera/", file_size);
   }
 
+  /**
+   * @brief Send error code with the writer
+   * @param code Error code
+   * @param writer FileChunk writer
+   */
   static void SendErrorCode(uint32_t code, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
   {
     ::grpcapi::FileChunk chunk;
@@ -61,6 +77,16 @@ public:
     writer->Write(chunk);
   }
 
+  /**
+   * @brief Send file implementation
+   * @param writer FileChunk writer
+   * @param file_name File name
+   * @param name_prefix Folder of the file
+   * @param file_size File size
+   * @param file_set Container to record file names that are transmiting
+   * @return true Successfully sent file
+   * @return false Failed to send file
+   */
   static bool SendFile(
     ::grpc::ServerWriter<::grpcapi::FileChunk> * writer,
     const std::string & file_name,
@@ -152,7 +178,14 @@ public:
     thread_counts_--;
     return true;
   }
-
+  /**
+   * @brief Parse camera service response message string
+   * @param str Message string
+   * @param file_size Parsed file size
+   * @param file_name Parsed file name
+   * @return true Successfully parsed
+   * @return false Failed to parse
+   */
   static bool ParseCameraServiceResponseString(
     const std::string & str,
     size_t & file_size,

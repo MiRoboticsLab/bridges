@@ -1,0 +1,53 @@
+# Testing normal usage STD_CAN with std_frame
+protocol = "can"
+name = "uwb_rear_uwb"
+
+can_interface = "can0"
+extended_frame = true
+canfd_enable = false
+timeout_us = 1234567
+
+[[array]]
+description = ""
+can_package_num = 2
+can_id = ["0x050B4000", "0x050B4001"]
+array_name = "data"
+
+[[array]]
+description = ""
+can_package_num = 1
+can_id = ["0x050B2100"]
+array_name = "enable_initial_ack"
+
+[[array]]
+description = ""
+can_package_num = 1
+can_id = ["0x050B2200"]
+array_name = "enable_on_ack"
+
+[[array]]
+description = ""
+can_package_num = 1
+can_id = ["0x050B2400"]
+array_name = "enable_off_ack"
+
+[[cmd]]
+description = ""
+cmd_name = "enable_initial"
+can_id = "0x050A2100"
+ctrl_len = 0
+ctrl_data = []
+
+[[cmd]]
+description = ""
+cmd_name = "enable_on"
+can_id = "0x050A2200"
+ctrl_len = 1
+ctrl_data = ["0x00"]
+
+[[cmd]]
+description = ""
+cmd_name = "enable_off"
+can_id = "0x050A2400"
+ctrl_len = 1
+ctrl_data = ["0x00"]

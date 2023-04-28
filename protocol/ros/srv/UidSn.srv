@@ -1,3 +1,4 @@
 ---
 string uid    # 用户账号id
 string sn     # 设备序列号
+int32 code

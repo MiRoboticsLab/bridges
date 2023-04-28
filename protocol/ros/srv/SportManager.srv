@@ -8,6 +8,7 @@ uint8 SPORT_JUMPJACK = 6         #开合跳
 int32 DEFAULT_TIMEOUT = 100
 int32 MAX_TIMEOUT = 300
 int32 MIN_TIMEOUT = 5
+int32 ALGORITHM_LOAD_DURATION = 100
 
 uint8 sport_type
 string id
@@ -17,5 +18,6 @@ int32 timeout
 
 ---
 int32 ENABLE_SUCCESS = 0
-int32 ENABLE_FAIL = 1
+int32 ENABLE_FAIL = 7001
 int32 result
+int32 code

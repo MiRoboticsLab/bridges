@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,6 +34,10 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
   std::unique_ptr<grpc::ClientReader<::grpcapi::RecResponse>> reader(
     stub_->sendMsg(&context, msg));
 
+  if (!reader) {
+    ERROR("sendMsg returns empty pointer!");
+    return false;
+  }
   while (reader->Read(&rsp)) {
   }
 
@@ -51,6 +55,10 @@ bool Cyberdog_App_Client::sendRequest(const ::grpcapi::SendRequest & msg)
     INFO_STREAM(
       "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
         std::string("path data ... json string size: ") << msg.params().size());
+  } else if (msg.namecode() == grpcapi::SendRequest::LASER_SCAN) {
+    INFO_STREAM(
+      "sendMsg rpc success. namecode: " << msg.namecode() << " params: " <<
+        std::string("laser data ... json string size: ") << msg.params().size());
   } else {
     INFO_STREAM(
       "sendMsg rpc success. namecode: " << msg.namecode() << " params: " << msg.params());
@@ -68,14 +76,7 @@ bool Cyberdog_App_Client::sendHeartBeat(
   ClientContext context;
   context.set_deadline(
     std::chrono::system_clock::now() +
-    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(3)));
-  /*
-  gpr_timespec timespec;
-  timespec.tv_sec = 2;
-  timespec.tv_nsec = 0;
-  timespec.clock_type = GPR_TIMESPAN;
-  context.set_deadline(timespec);
-  */
+    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(1)));
   Result result;
   Ticks ticks_;
   ticks_.set_ip(ip);
@@ -108,8 +109,10 @@ bool Cyberdog_App_Client::sendHeartBeat(
     return false;
   }
   INFO_MILLSECONDS(
-    2000, "SetHeartBeat rpc success, status: %d, %d, %d, %d, %s, %d, %d, %d, %d",
-    motion_id, task_status, task_sub_status, self_check_code, description.c_str(),
-    state_switch_state, state_switch_code, wired_charging, wireless_charging);
+    2000, "SetHeartBeat rpc success, %s,%d,%d,%d,%s, status: %d,%d,%d,%d,%d,%d,%d,%d",
+    ip.c_str(), wstrength, battery, internet, sn.c_str(),
+    motion_id, task_status, task_sub_status, self_check_code,
+    state_switch_state, state_switch_code, wired_charging,
+    wireless_charging);
   return true;
 }

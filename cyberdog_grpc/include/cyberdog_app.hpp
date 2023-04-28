@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,6 +45,10 @@
 #include "nav2_msgs/srv/save_map.hpp"
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2/utils.h"
+#include "tf2/exceptions.h"
+#include "tf2_ros/transform_listener.h"
+#include "tf2_ros/buffer.h"
+#include "sensor_msgs/msg/laser_scan.hpp"
 #include "net_avalible.hpp"
 #include "protocol/msg/motion_servo_cmd.hpp"
 #include "protocol/msg/motion_servo_response.hpp"
@@ -71,6 +75,7 @@
 #include "protocol/srv/account_add.hpp"
 #include "protocol/srv/account_search.hpp"
 #include "protocol/srv/account_delete.hpp"
+#include "protocol/srv/account_change.hpp"
 #include "protocol/msg/person.hpp"
 #include "protocol/msg/ota_update.hpp"
 #include "protocol/srv/body_region.hpp"
@@ -87,6 +92,7 @@
 #include "protocol/msg/state_switch_status.hpp"
 #include "protocol/srv/unlock.hpp"
 #include "protocol/srv/reboot_machine.hpp"
+#include "protocol/srv/trigger.hpp"
 #include "rapidjson/document.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/stringbuffer.h"
@@ -99,6 +105,7 @@
 #include "std_srvs/srv/trigger.hpp"
 #include "threadsafe_queue.hpp"
 #include "time_interval.hpp"
+#include "ready_sn.hpp"
 using string = std::string;
 using cyberdog::common::CyberdogJson;
 using rapidjson::Document;
@@ -107,15 +114,28 @@ namespace cyberdog
 {
 namespace bridges
 {
+/**
+ * @brief ROS node for connection between APP and cyberdog
+ */
 class Cyberdog_app : public rclcpp::Node
 {
 public:
   Cyberdog_app();
   ~Cyberdog_app();
   std::string getServiceIp();
+  /**
+   * @brief Distribute gRPC request
+   * @param grpc_request Request from APP
+   * @param writer Stream response writer
+   */
   void ProcessMsg(
     const ::grpcapi::SendRequest * grpc_request,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  /**
+   * @brief Process getFile request
+   * @param grpc_request getFile request
+   * @param writer Stream response writer
+   */
   void ProcessGetFile(
     const ::grpcapi::SendRequest * grpc_request,
     ::grpc::ServerWriter<::grpcapi::FileChunk> * writer);
@@ -123,11 +143,15 @@ public:
 private:
   uint32_t ticks_;
   std::atomic_bool can_process_messages_;
+  /**
+   * @brief Running gRPC server
+   */
   void RunServer();
   std::shared_ptr<std::thread> app_server_thread_;
   std::shared_ptr<std::thread> heart_beat_thread_;
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr ip_subscriber;
   rclcpp::Subscription<protocol::msg::ConnectorStatus>::SharedPtr connect_status_subscriber;
+  rclcpp::CallbackGroup::SharedPtr connector_callback_group_;
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr
     dog_pose_sub_;
@@ -145,7 +169,6 @@ private:
   void createGrpc();
   string GetFileConecxt(string path);
   NetChecker net_checker;
-  std::atomic<uint32_t> heartbeat_err_cnt_;
   std::atomic_bool app_disconnected;
   std::string local_ip;
   bool is_internet;
@@ -158,22 +181,23 @@ private:
   protocol::msg::BmsStatus bms_status;
   std::string sn;
   TimeInterval timer_interval;
+  /**
+   * @brief Send heatBeat message
+   */
   void HeartBeat();
-  void sendMsg(
-    const ::grpcapi::SendRequest * request,
-    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // ros interaction codes
   rclcpp::CallbackGroup::SharedPtr callback_group_;
   rclcpp::Subscription<protocol::msg::MotionServoResponse>::SharedPtr
     motion_servo_response_sub_;
+  rclcpp::CallbackGroup::SharedPtr motion_callback_group_;
   rclcpp::Publisher<protocol::msg::MotionServoCmd>::SharedPtr
     motion_servo_request_pub_;
   void motion_servo_rsp_callback(
     const protocol::msg::MotionServoResponse::SharedPtr msg);
   rclcpp::Client<protocol::srv::MotionResultCmd>::SharedPtr
     motion_ressult_client_;
-  void callMotionServoCmd(
+  bool callMotionServoCmd(
     const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
     protocol::srv::MotionResultCmd::Response & rep);
   void retrunErrorGrpc(
@@ -283,6 +307,11 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
+  bool HandleAccountChange(
+    const Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+
   bool HandleUnlockDevelopAccess(
     const Document & json_request,
     ::grpcapi::RecResponse & grpc_respond,
@@ -351,9 +380,6 @@ private:
   void audioVoicePrintDataHandle(
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
-
-  // Report current process
-  void ReportCurrentProgress();
 
   // visual program
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr visual_response_sub_;
@@ -452,8 +478,11 @@ private:
   // account member search
   rclcpp::Client<protocol::srv::AccountSearch>::SharedPtr query_account_search_client_;
 
-  // account member search
+  // account member delete
   rclcpp::Client<protocol::srv::AccountDelete>::SharedPtr query_account_delete_client_;
+
+  // account member change
+  rclcpp::Client<protocol::srv::AccountChange>::SharedPtr query_account_change_client_;
 
   // process map message
   void processMapMsg(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
@@ -466,6 +495,7 @@ private:
       std::unique_ptr<::grpcapi::SendRequest>>>>
   send_thread_map_;
   std::map<uint32_t, size_t> namecode_queue_size_;
+  std::shared_mutex send_thread_map_mx_;
 
   // mapping and navigation
   void handlLableSetRequest(
@@ -486,12 +516,20 @@ private:
   ActionTaskManager action_task_manager_;
   rclcpp_action::Client<protocol::action::Navigation>::SharedPtr
     navigation_client_;
+  rclcpp::CallbackGroup::SharedPtr navigation_callback_group_;
   std::map<uint8_t, size_t> task_type_hash_map_;
   std::shared_mutex type_hash_mutex_;
+  std::mutex task_init_mutex_;
   void uploadNavPath(const nav_msgs::msg::Path::SharedPtr msg);
   rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr nav_path_sub_;
+  rclcpp::CallbackGroup::SharedPtr path_map_callback_group_;
   bool connect_mark_ {false};
   void disconnectTaskRequest();
+
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  rclcpp::Subscription<sensor_msgs::msg::LaserScan>::SharedPtr laser_sub_;
+  void laserScanCB(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 
   void handleStopAction(
     const Document & json_resquest, Document & json_response,
@@ -608,8 +646,27 @@ private:
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
+  // work environment
+  rclcpp::Client<protocol::srv::Trigger>::SharedPtr set_work_environment_client_;
+  void setWorkEnvironmentHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr upload_syslog_client_;
+  void uploadSyslogHandle(
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
+
+  // dog leg calibration
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr dog_leg_calibration_client_;
+  void dogLegCalibrationHandle(
+    Document & json_resquest,
+    ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // test
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
@@ -624,6 +681,8 @@ private:
   void stopStairAlignHandle(
     ::grpcapi::RecResponse & grpc_respond,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
+  std::unique_ptr<ReadySnNode> ready_sn_ptr {nullptr};
 
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };

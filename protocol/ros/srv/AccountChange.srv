@@ -1,7 +1,6 @@
 # request
-string member
-
+string pre_name
+string new_name
 ---
 # reponse
-string data
 int32 code

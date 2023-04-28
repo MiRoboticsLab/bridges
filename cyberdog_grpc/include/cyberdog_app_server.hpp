@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,10 +40,21 @@ using grpc::ServerWriter;
 using grpc::Status;
 using std::chrono::system_clock;
 
+/**
+ * @brief Implementation of grpcapi::GrpcApp::Service
+ */
 class CyberdogAppImpl final : public grpcapi::GrpcApp::Service
 {
 public:
+  /**
+   * @brief Construct a new CyberdogAppImpl
+   * @param db Server address:port
+   */
   explicit CyberdogAppImpl(const std::string & db);
+  /**
+   * @brief Set object to distribute message
+   * @param decision Object that has function to distribute message
+   */
   void SetRequesProcess(cyberdog::bridges::Cyberdog_app * decision)
   {
     decision_ = decision;
@@ -60,6 +71,12 @@ public:
   override;
 
 private:
+  /**
+   * @brief If the client is feasible (not check)
+   * @param peer Identification to recognize app client (not use)
+   * @return true Identification is correct
+   * @return false Identification is not permitted
+   */
   bool isPeerAvalible(std::string peer);
   cyberdog::bridges::Cyberdog_app * decision_;
 };

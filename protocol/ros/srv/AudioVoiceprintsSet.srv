@@ -4,3 +4,4 @@ VoicePrints voice_prints
 
 # response
 bool result
+int32 code

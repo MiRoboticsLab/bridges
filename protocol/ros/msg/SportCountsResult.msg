@@ -1,5 +1,7 @@
-uint8 ALGO_OPEN = 0              #算法开
-uint8 ALGO_CLOSE = 1             #算法关
+uint8 ALGO_OPEN = 0                     #算法开
+uint8 COUNT_COMPLETE_CLOSE = 1       #计数完成，算法关
+uint8 TIMEOUT_CLOSE = 2              #超时，算法关
+uint8 REQUEST_CLOSE = 3              #请求算法关闭，算法关
 
 int32 SPORT_SQUAT= 1             #深蹲
 int32 SPORT_HIGHKNEES = 2        #高抬腿
