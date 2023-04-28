@@ -437,7 +437,7 @@ void Cyberdog_app::HeartBeat()
     if (can_process_messages_) {
       update_time_mutex_.lock();
       bool connector_timeout = std::chrono::duration_cast<std::chrono::seconds>(
-        std::chrono::system_clock::now() - connector_update_time_point_).count() >= 5;
+        std::chrono::system_clock::now() - connector_update_time_point_).count() > 2;
       update_time_mutex_.unlock();
       bool hearbeat_result(false);
       {
