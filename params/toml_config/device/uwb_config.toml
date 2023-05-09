@@ -3,6 +3,8 @@ enable = true
 simulate = false
 use_static_mac = false
 
+
+square_deviation_threshold_ = 0.35
 front_back_threshold = 7.0
 left_right_threshold = 7.0
 
@@ -73,3 +75,4 @@ description = ""
 index = 3
 com_file = "uwb_head_tof.toml"
 mac = 0x0005
+
