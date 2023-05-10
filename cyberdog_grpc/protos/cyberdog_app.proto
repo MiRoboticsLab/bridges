@@ -138,6 +138,7 @@ message SendRequest {
         UPLOAD_SYSLOG = 10005;
         ENABLE_ELEC_SKIN = 11001;
         SET_ELEC_SKIN = 11002;
+        DOG_LEG_CALIBRATION = 12001;
     }
 }
 

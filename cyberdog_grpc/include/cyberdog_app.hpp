@@ -201,185 +201,186 @@ private:
   bool callMotionServoCmd(
     const std::shared_ptr<protocol::srv::MotionResultCmd::Request> req,
     protocol::srv::MotionResultCmd::Response & rep);
-  void retrunErrorGrpc(
-    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer, int error_code = -1);
+  void returnErrorGrpc(
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer,
+    int error_code = -1, uint32_t namecode = 0);
 
   /**
    * @brief handle ota stauts
    *
-   * @param json_resquest
-   * @param grpc_respond
+   * @param json_request
+   * @param grpc_response
    * @param writer
    * @return true
    * @return false
    */
   bool HandleOTAStatusRequest(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   /**
    * @brief handle ota version
    *
-   * @param json_resquest
-   * @param grpc_respond
+   * @param json_request
+   * @param grpc_response
    * @param writer
    * @return true
    * @return false
    */
   bool HandleOTAVersionQueryRequest(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   /**
    * @brief handle ota download
    *
-   * @param json_resquest
-   * @param grpc_respond
+   * @param json_request
+   * @param grpc_response
    * @param writer
    * @return true
    * @return false
    */
   bool HandleOTAStartDownloadRequest(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   /**
    * @brief handle ota upgrade
    *
-   * @param json_resquest
-   * @param grpc_respond
+   * @param json_request
+   * @param grpc_response
    * @param writer
    * @return true
    * @return false
    */
   bool HandleOTAStartUpgradeRequest(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   /**
    * @brief handle ota process query
    *
-   * @param json_resquest
-   * @param grpc_respond
+   * @param json_request
+   * @param grpc_response
    * @param writer
    * @return true
    * @return false
    */
   bool HandleOTAProcessQueryRequest(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   /**
    * @brief handle ota time upgrade
    *
-   * @param json_resquest
-   * @param grpc_respond
+   * @param json_request
+   * @param grpc_response
    * @param writer
    * @return true
    * @return false
    */
   bool HandleOTAEstimateUpgradeTimeRequest(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   bool HandleGetDeviceInfoRequest(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   bool HandleAccountAdd(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   bool HandleAccountSearch(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   bool HandleAccountDelete(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   bool HandleAccountChange(
-    const Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   bool HandleUnlockDevelopAccess(
     const Document & json_request,
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   bool RebootManchine(
     const Document & json_request,
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   void motionServoRequestHandle(
-    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void motionCMDRequestHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void faceEntryRequestHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void faceRecRequestHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void deviceNameSwitchHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void deviceNameSetHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void deviceValuemSetHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void deviceVolumeSetHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void deviceMicSetHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void deviceAudioSetHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void audioAuthenticationRequestHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void audioAuthenticationResponseHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void audioVoicePrintTrainStartHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void audioVoicePrintTrainCancelHandle(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   void audioVoicePrintDataHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // visual program
@@ -500,17 +501,17 @@ private:
 
   // mapping and navigation
   void handlLableSetRequest(
-    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp::Client<protocol::srv::SetMapLabel>::SharedPtr set_label_client_;
 
   void handlLableGetRequest(
-    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp::Client<protocol::srv::GetMapLabel>::SharedPtr get_label_client_;
 
   void handleNavigationAction(
-    const Document & json_resquest, ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
     bool create_new_task = true);
 
@@ -533,8 +534,8 @@ private:
   void laserScanCB(const sensor_msgs::msg::LaserScan::SharedPtr msg);
 
   void handleStopAction(
-    const Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
   rclcpp::Client<protocol::srv::StopAlgoTask>::SharedPtr stop_nav_action_client_;
 
@@ -543,8 +544,8 @@ private:
   void publishTrackingPersonCB(const protocol::msg::Person::SharedPtr msg);
   rclcpp::Client<protocol::srv::BodyRegion>::SharedPtr select_tracking_human_client_;
   void selectTrackingObject(
-    Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // bluetooth
@@ -562,36 +563,36 @@ private:
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr get_bt_tread_client_;
 
   void scanBluetoothDevices(
-    Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void connectBluetoothDevice(
-    Document & json_resquest, Document & json_response,
-    ::grpcapi::RecResponse & grpc_respond,
+    Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr disconnected_unexpected_sub_;
   void disconnectedUnexpectedCB(const std_msgs::msg::Bool::SharedPtr msg);
   void currentConnectedBluetoothDevices(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void getBLEBatteryLevelHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void getBLEFirmwareVersionHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void deleteBLEHistoryHandle(
-    Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void bleFirmwareUpdateNotificationCB(const std_msgs::msg::String::SharedPtr msg);
   void updateBLEFirmwareHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void bleDFUProgressCB(const protocol::msg::BLEDFUProgress::SharedPtr msg);
-  void setBTTreadHandle(Document & json_resquest);
+  void setBTTreadHandle(Document & json_request);
   void getBTTreadHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void updateBTTreadCB(const std_msgs::msg::Int8::SharedPtr msg);
 
@@ -633,34 +634,41 @@ private:
 
   std::shared_mutex status_mutex_;
   void statusRequestHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // low power dissipation
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr low_power_exit_client_;
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr auto_low_power_enable_client_;
   void lowPowerExitHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void autoLowPowerEnableHandle(
-    Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // work environment
   rclcpp::Client<protocol::srv::Trigger>::SharedPtr set_work_environment_client_;
   void setWorkEnvironmentHandle(
-    Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr upload_syslog_client_;
   void uploadSyslogHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // audio action state
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr audio_action_set_client_;
+
+  // dog leg calibration
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr dog_leg_calibration_client_;
+  void dogLegCalibrationHandle(
+    Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // test
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr app_disconnect_pub_ {nullptr};
@@ -669,11 +677,11 @@ private:
   rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr start_stair_align_client_;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr stop_stair_align_client_;
   void startStairAlignHandle(
-    Document & json_resquest,
-    ::grpcapi::RecResponse & grpc_respond,
+    Document & json_request,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
   void stopStairAlignHandle(
-    ::grpcapi::RecResponse & grpc_respond,
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   // elec skin
