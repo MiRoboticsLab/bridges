@@ -1,4 +1,3 @@
-
 string module_name  # 模块名
 uint16 play_id      # 播放ID
 
@@ -7,7 +6,7 @@ uint16 PID_WIFI_ENTER_CONNECTION_MODE_0 = 1  # 进入连接模式
 uint16 PID_WIFI_ENTER_CONNECTION_MODE_1 = 2  # 开启连接模式
 uint16 PID_WIFI_WAIT_FOR_SCAN_CODE_0 = 3     # 请出示WIFI二维码辅助连接
 uint16 PID_WIFI_SCAN_CODE_SUCCEEDED_0 = 4    # 扫码成功，正在连接，请稍后
-uint16 PID_WIFI_CONNECTION_SUCCEEDED_0 = 5   # 目标WIFI连接成功，可以访问互联网
+uint16 PID_WIFI_CONNECTION_SUCCEEDED_0 = 2001   # 目标WIFI连接成功，可以访问互联网
 uint16 PID_WIFI_CONNECTION_SUCCEEDED_1 = 6   # 目标WIFI连接成功，但不可以访问互联网
 uint16 PID_WIFI_CONNECTION_FAILED_0 = 7      # 目标WIFI连接失败，请核对WIFI名称
 uint16 PID_WIFI_CONNECTION_FAILED_1 = 8      # 目标WIFI连接失败，请核对WIFI密码
