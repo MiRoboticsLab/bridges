@@ -381,6 +381,10 @@ Cyberdog_app::Cyberdog_app()
   low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
   auto_low_power_enable_client_ = this->create_client<std_srvs::srv::SetBool>("low_power_onoff");
 
+  // elec skin
+  enable_elec_skin_client_ = this->create_client<std_srvs::srv::SetBool>("enable_elec_skin");
+  set_elec_skin_client_ = this->create_client<protocol::srv::ElecSkin>("set_elec_skin");
+
   // dog leg calibration
   dog_leg_calibration_client_ = this->create_client<std_srvs::srv::SetBool>(
     "dog_leg_calibration", rmw_qos_profile_services_default, callback_group_);
@@ -2425,7 +2429,7 @@ bool Cyberdog_app::HandleGetDeviceInfoRequest(
   }
   grpc_response.set_data(future_result.get()->info);
   INFO(
-    "respond namecode:%d, message:%s", grpc_response.namecode(),
+    "response namecode:%d, message:%s", grpc_response.namecode(),
     future_result.get()->info.c_str());
   writer->Write(grpc_response);
   return true;
@@ -3174,6 +3178,86 @@ void Cyberdog_app::dogLegCalibrationHandle(
   grpc_response.set_data(strBuf.GetString());
   grpc_writer->Write(grpc_response);
 }
+
+void Cyberdog_app::enableElecSkinHandle(
+  Document & json_request,
+  ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!enable_elec_skin_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("enable_elec_skin service is not avaiable");
+    returnErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
+  bool data;
+  if (!CyberdogJson::Get(json_request, "data", data)) {
+    ERROR("Please set data");
+    returnErrorGrpc(grpc_writer);
+    return;
+  }
+  req->data = data;
+  auto future_result = enable_elec_skin_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(5));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call enable_elec_skin timeout.");
+    returnErrorGrpc(grpc_writer);
+    return;
+  }
+  INFO("enable_elec_skin result: %d", future_result.get()->success);
+  grpc_response.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_response);
+}
+
+void Cyberdog_app::setElecSkinHandle(
+  Document & json_request,
+  ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!set_elec_skin_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("set_elec_skin service is not avaiable");
+    returnErrorGrpc(grpc_writer);
+    return;
+  }
+  auto req = std::make_shared<protocol::srv::ElecSkin::Request>();
+  int mode = 0, wave_cycle_time = 50;
+  if (!CyberdogJson::Get(json_request, "mode", mode) ||
+    !CyberdogJson::Get(json_request, "wave_cycle_time", wave_cycle_time))
+  {
+    ERROR("Please set mode and wave_cycle_time");
+    returnErrorGrpc(grpc_writer);
+    return;
+  }
+  req->mode = mode;
+  req->wave_cycle_time = wave_cycle_time;
+  auto future_result = set_elec_skin_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(5));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(future_result.get()->success);
+    writer.EndObject();
+  } else {
+    ERROR("call set_elec_skin timeout.");
+    returnErrorGrpc(grpc_writer);
+    return;
+  }
+  INFO("set_elec_skin result: %d", future_result.get()->success);
+  grpc_response.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_response);
+}
+
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -3369,6 +3453,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::DOG_LEG_CALIBRATION: {
         dogLegCalibrationHandle(json_request, grpc_response, writer);
+      } break;
+    case ::grpcapi::SendRequest::ENABLE_ELEC_SKIN: {
+        enableElecSkinHandle(json_request, grpc_response, writer);
+      } break;
+    case ::grpcapi::SendRequest::SET_ELEC_SKIN: {
+        setElecSkinHandle(json_request, grpc_response, writer);
       } break;
     case ::grpcapi::SendRequest::ACCOUNT_MEMBER_ADD: {
         if (!HandleAccountAdd(json_request, grpc_response, writer)) {
