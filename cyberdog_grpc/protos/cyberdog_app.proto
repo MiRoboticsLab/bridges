@@ -136,6 +136,7 @@ message SendRequest {
         AUTO_LOW_POWER_ENABLE = 10003;
         SET_WORK_ENVIRONMENT = 10004;
         UPLOAD_SYSLOG = 10005;
+        DOG_LEG_CALIBRATION = 12001;
     }
 }
 
