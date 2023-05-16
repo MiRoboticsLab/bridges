@@ -1216,20 +1216,24 @@ void Cyberdog_app::handleNavigationAction(
   std::string response_string;
   uint32_t type;
   geometry_msgs::msg::PoseStamped goal;
-  double goal_x, goal_y;
-  double yaw;
+  double goal_x(0), goal_y(0);
+  double yaw(0);
   bool outdoor(false);
   double keep_distance;
   bool object_tracking(false);
+  bool empty_coordinates(true);
   CyberdogJson::Get(json_request, "type", type);
   CyberdogJson::Get(json_request, "outdoor", outdoor);
-  CyberdogJson::Get(json_request, "goalX", goal_x);
-  CyberdogJson::Get(json_request, "goalY", goal_y);
-  if (json_request.HasMember("theta")) {
-    CyberdogJson::Get(json_request, "theta", yaw);
-    goal.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw));
-  } else {
-    goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
+  if (json_request.HasMember("goalX") && json_request.HasMember("goalY")) {
+    empty_coordinates = false;
+    CyberdogJson::Get(json_request, "goalX", goal_x);
+    CyberdogJson::Get(json_request, "goalY", goal_y);
+    if (json_request.HasMember("theta")) {
+      CyberdogJson::Get(json_request, "theta", yaw);
+      goal.pose.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0, 0, 1), yaw));
+    } else {
+      goal.pose.orientation.w = 0;  // if goal without theta, then set quaternion illegal
+    }
   }
   uint32_t relative_pos = 0;
   CyberdogJson::Get(json_request, "relative_pos", relative_pos);
@@ -1238,9 +1242,11 @@ void Cyberdog_app::handleNavigationAction(
 
   auto mode_goal = Navigation::Goal();
   mode_goal.nav_type = type;
-  goal.pose.position.x = goal_x;
-  goal.pose.position.y = goal_y;
-  mode_goal.poses.push_back(goal);
+  if (!empty_coordinates) {
+    goal.pose.position.x = goal_x;
+    goal.pose.position.y = goal_y;
+    mode_goal.poses.emplace_back(goal);
+  }
   mode_goal.outdoor = outdoor;
   mode_goal.relative_pos = relative_pos;
   mode_goal.keep_distance = keep_distance;
