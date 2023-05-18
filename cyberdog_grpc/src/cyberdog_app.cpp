@@ -376,6 +376,9 @@ Cyberdog_app::Cyberdog_app()
   bmd_status_sub_ = this->create_subscription<protocol::msg::BmsStatus>(
     "bms_status", rclcpp::SystemDefaultsQoS(),
     std::bind(&Cyberdog_app::bmsStatusCB, this, _1));
+  audio_playing_sub_ = this->create_subscription<std_msgs::msg::Bool>(
+    "audio_notification_report", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::audioPlayingCB, this, _1));
 
   // low power dissipation
   low_power_exit_client_ = this->create_client<std_srvs::srv::Trigger>("low_power_exit");
@@ -400,6 +403,9 @@ Cyberdog_app::Cyberdog_app()
 
   reboot_machine_client_ =
     this->create_client<protocol::srv::RebootMachine>("reboot_machine");
+
+  stop_audio_client_ =
+    this->create_client<std_srvs::srv::Empty>("stop_play");
 
   INFO("Create server");
   if (server_ == nullptr) {
@@ -450,7 +456,7 @@ void Cyberdog_app::HeartBeat()
           int motion_id, task_sub_status, self_check_code, state_switch_state, state_switch_code;
           uint8_t task_status;
           std::string description;
-          bool wired_charging, wireless_charging;
+          bool wired_charging, wireless_charging, audio_playing;
           {
             std::shared_lock<std::shared_mutex> status_lock(status_mutex_);
             motion_id = motion_status_.motion_id;
@@ -462,13 +468,15 @@ void Cyberdog_app::HeartBeat()
             state_switch_code = state_switch_status_.code;
             wired_charging = charging_status_.wired_charging;
             wireless_charging = charging_status_.wireless_charging;
+            audio_playing = audio_playing_;
           }
           std::shared_lock<std::shared_mutex> connector_read_lock(connector_mutex_);
           hearbeat_result =
             app_stub_->sendHeartBeat(
             local_ip, wifi_strength, bms_status.batt_soc, is_internet, sn,
             motion_id, task_status, task_sub_status, self_check_code, description,
-            state_switch_state, state_switch_code, wired_charging, wireless_charging);
+            state_switch_state, state_switch_code, wired_charging, wireless_charging,
+            audio_playing);
         } else if (connector_timeout) {
           WARN_MILLSECONDS(2000, "connector_state topic timeout");
           hearbeat_result = false;
@@ -2192,6 +2200,13 @@ void Cyberdog_app::bmsStatusCB(const protocol::msg::BmsStatus::SharedPtr msg)
   charging_status_.wireless_charging = msg->power_wp_charging;
 }
 
+void Cyberdog_app::audioPlayingCB(const std_msgs::msg::Bool::SharedPtr msg)
+{
+  status_mutex_.lock();
+  audio_playing_ = msg->data;
+  status_mutex_.unlock();
+}
+
 void Cyberdog_app::statusRequestHandle(
   ::grpcapi::RecResponse & grpc_response,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
@@ -3192,14 +3207,14 @@ void Cyberdog_app::enableElecSkinHandle(
 {
   if (!enable_elec_skin_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("enable_elec_skin service is not avaiable");
-    returnErrorGrpc(grpc_writer);
+    returnErrorGrpc(grpc_writer, 322, grpc_response.namecode());
     return;
   }
   auto req = std::make_shared<std_srvs::srv::SetBool::Request>();
   bool data;
   if (!CyberdogJson::Get(json_request, "data", data)) {
     ERROR("Please set data");
-    returnErrorGrpc(grpc_writer);
+    returnErrorGrpc(grpc_writer, 323, grpc_response.namecode());
     return;
   }
   req->data = data;
@@ -3216,7 +3231,7 @@ void Cyberdog_app::enableElecSkinHandle(
     writer.EndObject();
   } else {
     ERROR("call enable_elec_skin timeout.");
-    returnErrorGrpc(grpc_writer);
+    returnErrorGrpc(grpc_writer, 321, grpc_response.namecode());
     return;
   }
   INFO("enable_elec_skin result: %d", future_result.get()->success);
@@ -3231,7 +3246,7 @@ void Cyberdog_app::setElecSkinHandle(
 {
   if (!set_elec_skin_client_->wait_for_service(std::chrono::seconds(3))) {
     ERROR("set_elec_skin service is not avaiable");
-    returnErrorGrpc(grpc_writer);
+    returnErrorGrpc(grpc_writer, 322, grpc_response.namecode());
     return;
   }
   auto req = std::make_shared<protocol::srv::ElecSkin::Request>();
@@ -3240,7 +3255,7 @@ void Cyberdog_app::setElecSkinHandle(
     !CyberdogJson::Get(json_request, "wave_cycle_time", wave_cycle_time))
   {
     ERROR("Please set mode and wave_cycle_time");
-    returnErrorGrpc(grpc_writer);
+    returnErrorGrpc(grpc_writer, 323, grpc_response.namecode());
     return;
   }
   req->mode = mode;
@@ -3256,10 +3271,36 @@ void Cyberdog_app::setElecSkinHandle(
     writer.EndObject();
   } else {
     ERROR("call set_elec_skin timeout.");
-    returnErrorGrpc(grpc_writer);
+    returnErrorGrpc(grpc_writer, 321, grpc_response.namecode());
     return;
   }
   INFO("set_elec_skin result: %d", future_result.get()->success);
+  grpc_response.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_response);
+}
+
+void Cyberdog_app::stopAudioHandle(
+  ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!stop_audio_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("stop_play service is not avaiable");
+    returnErrorGrpc(grpc_writer, 322, grpc_response.namecode());
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Empty::Request>();
+  auto future_result = stop_audio_client_->async_send_request(req);
+  std::future_status status = future_result.wait_for(std::chrono::seconds(3));
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  if (status == std::future_status::ready) {
+    writer.StartObject();
+    writer.EndObject();
+  } else {
+    ERROR("call stop_play timeout.");
+    returnErrorGrpc(grpc_writer, 321, grpc_response.namecode());
+    return;
+  }
   grpc_response.set_data(strBuf.GetString());
   grpc_writer->Write(grpc_response);
 }
@@ -3485,6 +3526,9 @@ void Cyberdog_app::ProcessMsg(
         if (!HandleAccountDelete(json_request, grpc_response, writer)) {
           return;
         }
+      } break;
+    case ::grpcapi::SendRequest::STOP_AUDIO_PLAY: {
+        stopAudioHandle(grpc_response, writer);
       } break;
     case 55001: {  // for testing
         std_msgs::msg::Bool msg;
