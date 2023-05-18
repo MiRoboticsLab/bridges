@@ -104,6 +104,7 @@
 #include "std_msgs/msg/int32.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_srvs/srv/trigger.hpp"
+#include "std_srvs/srv/empty.hpp"
 #include "threadsafe_queue.hpp"
 #include "time_interval.hpp"
 #include "ready_sn.hpp"
@@ -602,11 +603,13 @@ private:
   rclcpp::Subscription<protocol::msg::SelfCheckStatus>::SharedPtr self_check_status_sub_;
   rclcpp::Subscription<protocol::msg::StateSwitchStatus>::SharedPtr state_switch_status_sub_;
   rclcpp::Subscription<protocol::msg::BmsStatus>::SharedPtr bmd_status_sub_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr audio_playing_sub_;
   void motionStatusCB(const protocol::msg::MotionStatus::SharedPtr msg);
   void taskStatusCB(const protocol::msg::AlgoTaskStatus::SharedPtr msg);
   void selfCheckStatusCB(const protocol::msg::SelfCheckStatus::SharedPtr msg);
   void stateSwitchStatusCB(const protocol::msg::StateSwitchStatus::SharedPtr msg);
   void bmsStatusCB(const protocol::msg::BmsStatus::SharedPtr msg);
+  void audioPlayingCB(const std_msgs::msg::Bool::SharedPtr msg);
   struct
   {
     int motion_id {0};
@@ -631,6 +634,7 @@ private:
     bool wired_charging {false};
     bool wireless_charging {false};
   } charging_status_;
+  bool audio_playing_ {false};
 
   std::shared_mutex status_mutex_;
   void statusRequestHandle(
@@ -694,6 +698,12 @@ private:
   void setElecSkinHandle(
     Document & json_resquest,
     ::grpcapi::RecResponse & grpc_respond,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
+  // stop audio
+  rclcpp::Client<std_srvs::srv::Empty>::SharedPtr stop_audio_client_;
+  void stopAudioHandle(
+    ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   std::unique_ptr<ReadySnNode> ready_sn_ptr {nullptr};

@@ -71,7 +71,7 @@ bool Cyberdog_App_Client::sendHeartBeat(
   int motion_id, uint8_t task_status, int task_sub_status,
   int self_check_code, const std::string & description,
   int state_switch_state, int state_switch_code,
-  bool wired_charging, bool wireless_charging)
+  bool wired_charging, bool wireless_charging, bool audio_playing)
 {
   ClientContext context;
   context.set_deadline(
@@ -103,6 +103,7 @@ bool Cyberdog_App_Client::sendHeartBeat(
   charging_status->set_wired_charging(wired_charging);
   charging_status->set_wireless_charging(wireless_charging);
   ticks_.set_allocated_charging_status(charging_status);
+  ticks_.set_audio(audio_playing);
   Status status = stub_->heartbeat(&context, ticks_, &result);
   if (!status.ok()) {
     INFO("SetHeartBeat error code:%d", status.error_code());
