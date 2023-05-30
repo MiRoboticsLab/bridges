@@ -407,6 +407,9 @@ Cyberdog_app::Cyberdog_app()
   stop_audio_client_ =
     this->create_client<std_srvs::srv::Empty>("stop_play");
 
+  power_off_client_ =
+    this->create_client<std_srvs::srv::Trigger>("poweroff");
+
   INFO("Create server");
   if (server_ == nullptr) {
     app_server_thread_ =
@@ -3305,6 +3308,27 @@ void Cyberdog_app::stopAudioHandle(
   grpc_writer->Write(grpc_response);
 }
 
+void Cyberdog_app::powerOffHandle(
+  ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!power_off_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("power_off service is not avaiable");
+    returnErrorGrpc(grpc_writer, 322, grpc_response.namecode());
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  writer.StartObject();
+  writer.Key("success");
+  writer.Bool(true);
+  writer.EndObject();
+  grpc_response.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_response);
+  power_off_client_->async_send_request(req);
+}
+
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -3529,6 +3553,9 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::STOP_AUDIO_PLAY: {
         stopAudioHandle(grpc_response, writer);
+      } break;
+    case ::grpcapi::SendRequest::POWER_OFF: {
+        powerOffHandle(grpc_response, writer);
       } break;
     case 55001: {  // for testing
         std_msgs::msg::Bool msg;

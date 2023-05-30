@@ -706,6 +706,12 @@ private:
     ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
+  // power off
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr power_off_client_;
+  void powerOffHandle(
+    ::grpcapi::RecResponse & grpc_response,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
   std::unique_ptr<ReadySnNode> ready_sn_ptr {nullptr};
 
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
