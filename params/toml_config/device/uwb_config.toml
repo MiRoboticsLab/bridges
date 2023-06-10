@@ -18,10 +18,10 @@ AoA_L_PMAX = 60.0
 AoA_R_NMAX = -48.0
 AoA_R_PMAX = 48.0
 
-#ID
+# ID
 session_id = 0x00000100
 
-#ctrl mac
+# ctrl mac
 controller_mac = 0x0001
 
 
@@ -46,33 +46,39 @@ head_uwb_mac = 0x0003
 rear_tof_mac = 0x0004
 rear_uwb_mac = 0x0005
 
-#uwb list
+# uwb list
 
+# UWB index id which in using; for all -- using_ids = [0,1,2,3]
+using_ids = [0, 3]
+
+# 前
 [[UWB]]
 name = "uwb_head_uwb"
-description = ""
+description = "front tof"
 index = 0
 com_file = "uwb_head_uwb.toml"
 mac = 0x0002
 
+# 左
 [[UWB]]
 name = "uwb_rear_uwb"
-description = ""
+description = "left tof"
 index = 1
 com_file = "uwb_rear_uwb.toml"
 mac = 0x0003
 
+# 右
 [[UWB]]
 name = "uwb_rear_tof"
-description = ""
+description = "right tof"
 index = 2
 com_file = "uwb_rear_tof.toml"
 mac = 0x0004
 
+# 后
 [[UWB]]
 name = "uwb_head_tof"
-description = ""
+description = "back tof"
 index = 3
 com_file = "uwb_head_tof.toml"
 mac = 0x0005
-
