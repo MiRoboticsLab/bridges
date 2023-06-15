@@ -1,5 +1,5 @@
 [controller]
-actuators = ["motion_manager", "audio", "device_manager", "sensor_manager"， "RealSenseActuator"]
+actuators = ["motion_manager", "audio", "device_manager", "sensor_manager", "RealSenseActuator"]
 states = ["SetUp", "TearDown", "SelfCheck", "Active", "DeActive", "Protected", "LowPower", "OTA", "Error"]
 default_time = 100 # milliseconds
 default_state = "Uninitialized"
