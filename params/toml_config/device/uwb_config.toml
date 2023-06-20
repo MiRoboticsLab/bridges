@@ -5,8 +5,8 @@ use_static_mac = false
 
 
 square_deviation_threshold_ = 0.35
-front_back_threshold = 7.0
-left_right_threshold = 7.0
+front_back_threshold = 1.8
+left_right_threshold = 1.8
 
 AoA_F_NMAX = -48.0
 AoA_F_PMAX = 60.0
