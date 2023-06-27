@@ -1,8 +1,8 @@
 # goal definition
 string OPERATE_INQUIRE="inquire"                  # [操作]查询设备信息
 string OPERATE_DOWNLOAD="download"                # [操作]下载目标版本
-string OPERATE_INSTALL="install"                  # [操作]安装目标版本
-string OPERATE_DELETE="delete"                    # [操作]删除目标文件
+string OPERATE_UPGRADE="upgrade"                  # [操作]升级目标版本
+string OPERATE_DELETE="remove"                    # [操作]清除目标文件
 string OPERATE_ROBOOT="reboot"                    # [操作]重启设备
 
 string goal_msg                                   # [操作]重启
@@ -14,17 +14,20 @@ string data                                       # 当前操作类型对应的�
 ---
 # result definition
 string TYPE="result"                              # [操作]重启
-string RESULT_SUCCESS="success"                   # [操作]成功，
+string RESULT_SUCCESS="success"                   # [操作]成功
 string RESULT_FSM_EXCEPTION="fsm_exception"       # [操作]状态机异常
 string RESULT_MOTION_EXCEPTION="motion_exception" # [操作]趴下异常
 string RESULT_BATTERY_IS_LOW="battery_is_low"     # [操作]电池电量低
 string RESULT_UNLOCKED="unlocked"                 # [操作]已解锁
 string RESULT_NOT_ENOUGH_SPACE="not_enough_space" # [操作]空间不足
-string RESULT_OTHER_REASONS="other_reasons"       # [操作]其他原因
-string REBOOT_UPGRADE="upgrade"                   # [操作]重启
-string REBOOT_OTHER="other"                       # [操作]重启
-string STATE_SUCCESS="success"                    # [操作]重启
-string STATE_FAIL="fail"                          # [操作]重启
+string RESULT_BASE_INFO="base_info_exception"     # [操作]基础信息异常
+string RESULT_OTHER_REASONS="fail"                # [操作]其他原因导致的失败
+
+string REBOOT_UPGRADE_RESTART="upgrade_restart"   # [操作]升级重启
+string REBOOT_INVALID="invalid"                   # [操作]其他重启
+string STATE_DURING_UPGRADE="during_upgrade"      # [操作]升级中
+string STATE_UPGRADE_SUCCESSED="upgrade_successed"# [状态]升级成功
+string STATE_INVALID="invalid"                    # [状态]未开始，无效
 
 string result_msg
 
@@ -33,8 +36,20 @@ string type                                       # 当前消息帧类型
 string operate                                    # 当前操作类型
 string result                                     # 当前操作结果{}
 string sn                                         # 标识设备SN号
-string unlock                                     # 标识设备是否解锁
-string version                                    # 标识设备当前版本
+string not_unlocked                               # 标识设备是否解锁
+string version_nx                                 # 标识设备当前版本
+string version_nx_mini_led                        # 标识设备当前版本
+string version_nx_head_tof                        # 标识设备当前版本
+string version_nx_rear_tof                        # 标识设备当前版本
+string version_nx_head_uwb                        # 标识设备当前版本
+string version_nx_rear_uwb                        # 标识设备当前版本
+string version_nx_imu                             # 标识设备当前版本
+string version_nx_power                           # 标识设备当前版本
+string version_r329                               # 标识设备当前版本
+string version_mr813                              # 标识设备当前版本
+string version_mr813_spie1                        # 标识设备当前版本
+string version_mr813_spie2                        # 标识设备当前版本
+string[] version_motors                           # 标识设备当前版本
 string reboot                                     # 标识是否为升级后首次重启？
 string state                                      # 标识最近一次升级是否成功？
 
@@ -49,8 +64,8 @@ string feedback_msg
 string id                                         # 当前消息帧ID
 string type                                       # 当前消息帧类型
 string operate                                    # 当前操作类型
-string version                                    # 标识当前操作的目标版本
 string target                                     # 标识当前操作的目标类型{ota包，deb包}
 string file                                       # 标识当前操作的目标文件
+string size                                       # 标识当前操作目标大小
 string progress                                   # 标识当前操作的进度
 string speed                                      # 标识当前操作的速度
