@@ -40,6 +40,7 @@
 #include "geometry_msgs/msg/pose_stamped.hpp"
 #include "msg_dispatcher.hpp"
 #include "protocol/action/navigation.hpp"
+#include "protocol/action/over_the_air.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/msg/path.hpp"
 #include "nav2_msgs/srv/save_map.hpp"
@@ -452,6 +453,14 @@ private:
   rclcpp::Subscription<protocol::msg::OtaUpdate>::SharedPtr upgrade_subscriber_ {nullptr};
   rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr reboot_subscriber_ {nullptr};
   rclcpp::Client<protocol::srv::OtaServerCmd>::SharedPtr ota_client_;
+
+  rclcpp_action::Client<protocol::action::OverTheAir>::SharedPtr ota_action_client_;
+  void handleOTAAction(
+    const std::string & request_param, ::grpcapi::RecResponse & grpc_response,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
+    bool create_new_task);
+  std::shared_mutex ota_hash_mx_;
+  std::map<std::string, size_t> ota_hash_map_;
 
   // configured ports
   std::string grpc_server_port_;
