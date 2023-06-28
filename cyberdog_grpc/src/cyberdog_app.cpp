@@ -330,6 +330,12 @@ Cyberdog_app::Cyberdog_app()
   namecode_queue_size_[::grpcapi::SendRequest::TRACKING_OBJ] = 2;
   select_tracking_human_client_ = this->create_client<protocol::srv::BodyRegion>(
     "tracking_object_srv", rmw_qos_profile_services_default, callback_group_);
+  enable_point_cloud_client_ =
+    this->create_client<std_srvs::srv::SetBool>(
+    "switch_visual_obstacle_avoidance", rmw_qos_profile_services_default, callback_group_);
+  point_cloud_state_client_ =
+    this->create_client<std_srvs::srv::Trigger>(
+    "query_visual_obstacle_avoidance_status", rmw_qos_profile_services_default, callback_group_);
 
   // bluetooth
   scan_bluetooth_devices_client_ =
@@ -1914,6 +1920,79 @@ void Cyberdog_app::selectTrackingObject(
   std::string rsp_string;
   if (!CyberdogJson::Document2String(json_response, rsp_string)) {
     ERROR("error while set tracking_object_srv response encoding to json");
+    returnErrorGrpc(writer, 323, grpc_response.namecode());
+    return;
+  }
+  grpc_response.set_data(rsp_string);
+  writer->Write(grpc_response);
+}
+
+void Cyberdog_app::handleEnablePointCloud(
+  const Document & json_request, Document & json_response,
+  ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  if (!enable_point_cloud_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("switch_visual_obstacle_avoidance server is not available");
+    returnErrorGrpc(writer, 322, grpc_response.namecode());
+    return;
+  }
+  bool enable;
+  CyberdogJson::Get(json_request, "data", enable);
+  auto request = std::make_shared<std_srvs::srv::SetBool::Request>();
+  request->data = enable;
+  auto future_result = enable_point_cloud_client_->async_send_request(request);
+  std::chrono::seconds timeout(5);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    bool success = future_result.get()->success;
+    std::string message = future_result.get()->message;
+    INFO("Got switch_visual_obstacle_avoidance result: %d %s.", success, message.c_str());
+    CyberdogJson::Add(json_response, "success", success);
+    CyberdogJson::Add(json_response, "success", message);
+  } else {
+    ERROR("call switch_visual_obstacle_avoidance timeout.");
+    returnErrorGrpc(writer, 321, grpc_response.namecode());
+    return;
+  }
+  std::string rsp_string;
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set switch_visual_obstacle_avoidance response encoding to json");
+    returnErrorGrpc(writer, 323, grpc_response.namecode());
+    return;
+  }
+  grpc_response.set_data(rsp_string);
+  writer->Write(grpc_response);
+}
+
+void Cyberdog_app::handlePointCloudStateRequest(
+  Document & json_response,
+  ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
+{
+  if (!point_cloud_state_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("query_visual_obstacle_avoidance_status server is not available");
+    returnErrorGrpc(writer, 322, grpc_response.namecode());
+    return;
+  }
+  auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = point_cloud_state_client_->async_send_request(request);
+  std::chrono::seconds timeout(3);
+  std::future_status status = future_result.wait_for(timeout);
+  if (status == std::future_status::ready) {
+    bool success = future_result.get()->success;
+    std::string message = future_result.get()->message;
+    INFO("Got query_visual_obstacle_avoidance_status result: %d %s.", success, message.c_str());
+    CyberdogJson::Add(json_response, "success", success);
+    CyberdogJson::Add(json_response, "success", message);
+  } else {
+    ERROR("call query_visual_obstacle_avoidance_status timeout.");
+    returnErrorGrpc(writer, 321, grpc_response.namecode());
+    return;
+  }
+  std::string rsp_string;
+  if (!CyberdogJson::Document2String(json_response, rsp_string)) {
+    ERROR("error while set query_visual_obstacle_avoidance_status response encoding to json");
     returnErrorGrpc(writer, 323, grpc_response.namecode());
     return;
   }
@@ -3624,6 +3703,12 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::SELECTED_TRACKING_OBJ: {
         selectTrackingObject(json_request, json_response, grpc_response, writer);
+      } break;
+    case ::grpcapi::SendRequest::ENABLE_POINT_CLOUD: {
+        handleEnablePointCloud(json_request, json_response, grpc_response, writer);
+      } break;
+    case ::grpcapi::SendRequest::POINT_CLOUD_STATE: {
+        handlePointCloudStateRequest(json_response, grpc_response, writer);
       } break;
     case ::grpcapi::SendRequest::STOP_NAV_ACTION: {
         handleStopAction(json_request, json_response, grpc_response, writer);
