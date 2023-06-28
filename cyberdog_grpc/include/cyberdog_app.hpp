@@ -557,6 +557,16 @@ private:
     Document & json_request, Document & json_response,
     ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  rclcpp::Client<std_srvs::srv::SetBool>::SharedPtr enable_point_cloud_client_;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr point_cloud_state_client_;
+  void handleEnablePointCloud(
+    const Document & json_request, Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
+  void handlePointCloudStateRequest(
+    Document & json_response,
+    ::grpcapi::RecResponse & grpc_response,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * writer);
 
   // bluetooth
   rclcpp::Client<protocol::srv::BLEScan>::SharedPtr scan_bluetooth_devices_client_;
