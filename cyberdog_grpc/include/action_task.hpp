@@ -293,7 +293,7 @@ public:
 
 private:
   /**
-   * @brief Add a fake result when need to unbind the request (from grpc)
+   * @brief Add a fake result when result is not received
    */
   void addFakeResult()
   {
@@ -482,7 +482,7 @@ private:
    * @brief Feedback callback of action
    * @tparam ActionType Type of action
    * @param goal_handle Goal handle hash
-   * @param fb Action beedback pointer
+   * @param fb Action feedback pointer
    */
   template<typename ActionType>
   void feedbackCB(

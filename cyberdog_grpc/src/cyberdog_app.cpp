@@ -219,6 +219,10 @@ Cyberdog_app::Cyberdog_app()
 
   ota_client_ = this->create_client<protocol::srv::OtaServerCmd>("ota_grpc");
 
+  ota_action_client_ =
+    rclcpp_action::create_client<protocol::action::OverTheAir>(
+    this, "cyberdog_ota_action", navigation_callback_group_);
+
   // connection
   app_connection_pub_ = this->create_publisher<std_msgs::msg::Bool>(
     "app_connection_state", rclcpp::SystemDefaultsQoS());
@@ -1217,12 +1221,140 @@ bool Cyberdog_app::HandleOTAEstimateUpgradeTimeRequest(
   return true;
 }
 
+void Cyberdog_app::handleOTAAction(
+  const std::string & request_param, ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
+  bool create_new_task)
+{
+  INFO("handleOTAAction");
+  if (!ota_action_client_->wait_for_action_server(std::chrono::seconds(3))) {
+    ERROR("cyberdog_ota_action action is not available");
+    returnErrorGrpc(writer, 322, grpc_response.namecode());
+    return;
+  }
+  int ota_timeout = 10800;  // 3H
+  auto action_goal = protocol::action::OverTheAir::Goal();
+  action_goal.goal_msg = request_param;
+
+  auto return_result = [&](const std::string & result_str) {
+      grpc_response.set_data(result_str);
+      writer->Write(grpc_response);
+      INFO_STREAM("transmit result: " << result_str);
+    };
+
+  auto return_feedback = [&](const std::string & feedback_str) {
+      grpc_response.set_data(feedback_str);
+      writer->Write(grpc_response);
+      INFO_STREAM("transmit feedback: " << feedback_str);
+    };
+
+  auto return_accept = [&](int accepted) {
+      rapidjson::StringBuffer strBuf;
+      rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
+      json_writer.StartObject();
+      json_writer.Key("accepted");
+      json_writer.Int(accepted);
+      json_writer.EndObject();
+      std::string response_string(strBuf.GetString());
+      grpc_response.set_data(response_string);
+      writer->Write(grpc_response);
+      INFO_STREAM("transmit acception: " << response_string);
+    };
+
+  std::mutex writer_mutex;
+  auto feedback_callback =
+    [&](rclcpp_action::Client<protocol::action::OverTheAir>::GoalHandle::SharedPtr goal_handel_ptr,
+      const std::shared_ptr<const protocol::action::OverTheAir::Feedback> feedback) {
+      writer_mutex.lock();
+      return_feedback(feedback->feedback_msg);
+      writer_mutex.unlock();
+    };
+
+  std::shared_ptr<std::condition_variable> result_cv_ptr;
+  std::shared_ptr<std::shared_ptr<protocol::action::OverTheAir::Result>> result_pp;
+  std::shared_ptr<std::mutex> result_mx;
+  size_t goal_hash = 0;
+  {
+    std::unique_lock<std::mutex> init_lock(task_init_mutex_);
+    if (create_new_task) {
+      bool acception = action_task_manager_.StartActionTask<protocol::action::OverTheAir>(
+        ota_action_client_, action_goal, feedback_callback,
+        result_cv_ptr, result_pp, result_mx, goal_hash);
+      if (!acception) {
+        WARN("Navigation action request rejected");
+        return_accept(2);
+        return;
+      }
+      ota_hash_mx_.lock();
+      ota_hash_map_["ota"] = goal_hash;
+      ota_hash_mx_.unlock();
+    } else {  // access task
+      std::shared_lock<std::shared_mutex> read_lock(ota_hash_mx_);
+      auto ota_hash_itr = ota_hash_map_.find("ota");
+      if (ota_hash_itr == ota_hash_map_.end()) {
+        return_accept(3);  // no task of that type recorded
+        return;
+      } else {
+        bool accepted = false;
+        goal_hash = ota_hash_itr->second;
+        accepted = action_task_manager_.AccessTask<protocol::action::OverTheAir>(
+          goal_hash, feedback_callback, result_cv_ptr, result_pp, result_mx);
+        if (!accepted) {
+          return_accept(3);  // the task has already finished
+          return;
+        }
+      }
+    }
+    return_accept(1);
+    if (!create_new_task) {  // access task
+      action_task_manager_.CallLatestFeedback(goal_hash);
+    } else {  // create task
+      action_task_manager_.CallFeedbackBeforeAcception(goal_hash);
+    }
+  }
+
+  std::string result;
+  bool result_timeout = false;
+  auto result_is_ready =
+    [&]() {
+      return result_pp && *result_pp;
+    };
+  std::unique_lock<std::mutex> result_lock(*result_mx);
+  bool is_not_timeout = result_cv_ptr->wait_for(
+    result_lock, std::chrono::seconds(ota_timeout), result_is_ready);
+  if (!is_not_timeout) {
+    WARN("OTA action result timeout");
+    result_timeout = true;
+    writer_mutex.lock();
+    return_result("");  // timeout code
+    writer_mutex.unlock();
+  } else {
+    result = (*result_pp)->result_msg;
+    INFO("OTA result: %s", result.c_str());
+    writer_mutex.lock();
+    return_result(result);
+    writer_mutex.unlock();
+  }
+
+  if (connect_mark_) {
+    ota_hash_mx_.lock();
+    ota_hash_map_.erase("ota");
+    INFO("Erase finished task type ota");
+    ota_hash_mx_.unlock();
+  }
+}
+
 void Cyberdog_app::handleNavigationAction(
   const Document & json_request, ::grpcapi::RecResponse & grpc_response,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer,
   bool create_new_task)
 {
   INFO("handleNavigationAction");
+  if (!navigation_client_->wait_for_action_server(std::chrono::seconds(3))) {
+    ERROR("start_algo_task action is not available");
+    returnErrorGrpc(writer, 322, grpc_response.namecode());
+    return;
+  }
   int nav_timeout = 7200;
   std::string response_string;
   uint32_t type;
@@ -1324,7 +1456,7 @@ void Cyberdog_app::handleNavigationAction(
   std::shared_ptr<std::shared_ptr<Navigation::Result>> result_pp;
   std::shared_ptr<std::mutex> result_mx;
   bool uwb_not_from_app = false;  // activated uwb tracking not from app
-  size_t goal_hash;
+  size_t goal_hash = 0;
   {
     std::unique_lock<std::mutex> init_lock(task_init_mutex_);
     if (create_new_task) {
@@ -1345,7 +1477,8 @@ void Cyberdog_app::handleNavigationAction(
       type_hash_mutex_.unlock();
     } else {  // access a task
       std::shared_lock<std::shared_mutex> read_lock(type_hash_mutex_);
-      if (task_type_hash_map_.find(mode_goal.nav_type) == task_type_hash_map_.end()) {
+      auto task_hash_itr = task_type_hash_map_.find(mode_goal.nav_type);
+      if (task_hash_itr == task_type_hash_map_.end()) {
         if (mode_goal.nav_type != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING) {
           return_accept(3);  // no task of that type recorded
           return;
@@ -1354,7 +1487,7 @@ void Cyberdog_app::handleNavigationAction(
       }
       bool accepted = false;
       if (!uwb_not_from_app) {
-        goal_hash = task_type_hash_map_[mode_goal.nav_type];
+        goal_hash = task_hash_itr->second;
         accepted = action_task_manager_.AccessTask<Navigation>(
           goal_hash, feedback_callback, result_cv_ptr, result_pp, result_mx);
       } else {
@@ -1435,22 +1568,36 @@ void Cyberdog_app::handleNavigationAction(
 
 void Cyberdog_app::disconnectTaskRequest()
 {
-  std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
-  if (task_type_hash_map_.empty()) {
-    return;
-  }
-  std::list<size_t> remove_hash_list;
-  for (auto & type_hash : task_type_hash_map_) {
-    if (!action_task_manager_.RemoveRequest(type_hash.second)) {
-      remove_hash_list.push_back(type_hash.first);
+  {
+    std::unique_lock<std::shared_mutex> write_lock(type_hash_mutex_);
+    if (!task_type_hash_map_.empty()) {
+      std::list<size_t> remove_hash_list;
+      for (auto & type_hash : task_type_hash_map_) {
+        if (!action_task_manager_.RemoveRequest(type_hash.second)) {
+          remove_hash_list.emplace_back(type_hash.first);
+        }
+      }
+      if (!remove_hash_list.empty()) {
+        for (auto type : remove_hash_list) {
+          task_type_hash_map_.erase(type);
+          INFO("Erase unused task type %d", type);
+        }
+      }
     }
   }
-  if (remove_hash_list.empty()) {
+  std::unique_lock<std::shared_mutex> ota_write_lock(ota_hash_mx_);
+  if (ota_hash_map_.empty()) {
     return;
   }
-  for (auto type : remove_hash_list) {
-    task_type_hash_map_.erase(type);
-    INFO("Erase unused task type %d", type);
+  bool remove_ota_task = false;
+  for (auto & type_hash : ota_hash_map_) {
+    if (!action_task_manager_.RemoveRequest(type_hash.second)) {
+      remove_ota_task = true;
+    }
+  }
+  if (remove_ota_task) {
+    ota_hash_map_.clear();
+    INFO("Erase unused task type ota");
   }
 }
 
@@ -3460,6 +3607,12 @@ void Cyberdog_app::ProcessMsg(
         }
       }
       break;
+    case ::grpcapi::SendRequest::OTA_ACTION_START: {
+        handleOTAAction(grpc_request->params(), grpc_response, writer, true);
+      } break;
+    case ::grpcapi::SendRequest::OTA_ACTION_CONTINUE: {
+        handleOTAAction(grpc_request->params(), grpc_response, writer, false);
+      } break;
     case ::grpcapi::SendRequest::MAP_SET_LABLE_REQUEST: {
         handlLableSetRequest(json_request, grpc_response, writer);
       } break;
