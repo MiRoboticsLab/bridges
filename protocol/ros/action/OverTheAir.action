@@ -15,12 +15,24 @@ string data                                       # 当前操作类型对应的�
 # result definition
 string TYPE="result"                              # [操作]重启
 string RESULT_SUCCESS="success"                   # [操作]成功
+string RESULT_PROTOCOL_FORMAT="protocol_format"   # [操作]协议错误
 string RESULT_FSM_EXCEPTION="fsm_exception"       # [操作]状态机异常
 string RESULT_MOTION_EXCEPTION="motion_exception" # [操作]趴下异常
 string RESULT_BATTERY_IS_LOW="battery_is_low"     # [操作]电池电量低
+string RESULT_BATTERY_NOT_CHARGED="battery_not_charged" # [操作]电池未充电
 string RESULT_UNLOCKED="unlocked"                 # [操作]已解锁
+string RESULT_BUILD_ENVIRONMENT="build_environment"     # [操作]构建环境失败
 string RESULT_NOT_ENOUGH_SPACE="not_enough_space" # [操作]空间不足
 string RESULT_BASE_INFO="base_info_exception"     # [操作]基础信息异常
+string RESULT_CATCH_EXCEPTION="catch_exception"   # [操作]捕获到异常
+string RESULT_CREAT_WORKSPACE="creat_workspace"   # [操作]创建工作空间失败
+string RESULT_BUILD_CONFIG="build_config"         # [操作]构建配置文件失败
+string RESULT_INVALID_URL="invalid_url"           # [操作]存在无效url
+string RESULT_BUILD_URLS="build_urls"             # [操作]构建下载目标连接文件失败
+string RESULT_DOWNLOAD="download"                 # [操作]下载目标文件失败
+string RESULT_CLEAN_WORKSPACE="clean_workspace"   # [操作]清除工作空间失败
+string RESULT_WAITING_NETWORK_RECOVERY_TIMEOUT="waiting_network_recovery_timeout"   # [操作]等待网络恢复超时
+string RESULT_UNABLE_RESOLVE_HOST_ADDRESS="unable_to_resolve_host_address"          # [操作]无法解析主机地址
 string RESULT_OTHER_REASONS="fail"                # [操作]其他原因导致的失败
 
 string REBOOT_UPGRADE_RESTART="upgrade_restart"   # [操作]升级重启
@@ -64,8 +76,13 @@ string feedback_msg
 string id                                         # 当前消息帧ID
 string type                                       # 当前消息帧类型
 string operate                                    # 当前操作类型
+string stage                                      # 当前阶段
 string target                                     # 标识当前操作的目标类型{ota包，deb包}
+string target_stage                               # 标识当前操作的目标阶段
 string file                                       # 标识当前操作的目标文件
-string size                                       # 标识当前操作目标大小
+string size                                       # 标识当前操作目标总计大小
+string schedule                                   # 标识当前操作目标下载大小
+string time_remaining                             # 预计剩余时间
 string progress                                   # 标识当前操作的进度
 string speed                                      # 标识当前操作的速度
+string describe                                   # 描述信息
