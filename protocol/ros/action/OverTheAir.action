@@ -2,7 +2,7 @@
 string OPERATE_INQUIRE="inquire"                  # [操作]查询设备信息
 string OPERATE_DOWNLOAD="download"                # [操作]下载目标版本
 string OPERATE_UPGRADE="upgrade"                  # [操作]升级目标版本
-string OPERATE_DELETE="remove"                    # [操作]清除目标文件
+string OPERATE_DELETE="delete"                    # [操作]清除目标文件
 string OPERATE_ROBOOT="reboot"                    # [操作]重启设备
 
 string goal_msg                                   # [操作]重启
@@ -29,10 +29,17 @@ string RESULT_CREAT_WORKSPACE="creat_workspace"   # [操作]创建工作空间�
 string RESULT_BUILD_CONFIG="build_config"         # [操作]构建配置文件失败
 string RESULT_INVALID_URL="invalid_url"           # [操作]存在无效url
 string RESULT_BUILD_URLS="build_urls"             # [操作]构建下载目标连接文件失败
-string RESULT_DOWNLOAD="download"                 # [操作]下载目标文件失败
 string RESULT_CLEAN_WORKSPACE="clean_workspace"   # [操作]清除工作空间失败
 string RESULT_WAITING_NETWORK_RECOVERY_TIMEOUT="waiting_network_recovery_timeout"   # [操作]等待网络恢复超时
 string RESULT_UNABLE_RESOLVE_HOST_ADDRESS="unable_to_resolve_host_address"          # [操作]无法解析主机地址
+string RESULT_RESET_PROCESS="reset_process"       # [操作]重置进展失败
+string RESULT_UPDATE_PROCESS="update_process"     # [操作]更新进展失败
+string RESULT_CALL_FLOW_ERROR="call_flow_error"   # [操作]调用流程错误
+string RESULT_DOWNLOAD="download"                 # [操作]下载目标文件失败
+string RESULT_UPGRADE="upgrade"                   # [操作]升级目标文件失败
+string RESULT_DELETE="delete"                     # [操作]删除目标文件失败
+string RESULT_REBOOT="reboot"                     # [操作]重启设备失败
+
 string RESULT_OTHER_REASONS="fail"                # [操作]其他原因导致的失败
 
 string REBOOT_UPGRADE_RESTART="upgrade_restart"   # [操作]升级重启
