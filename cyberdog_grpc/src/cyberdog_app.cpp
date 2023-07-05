@@ -1949,7 +1949,7 @@ void Cyberdog_app::handleEnablePointCloud(
     std::string message = future_result.get()->message;
     INFO("Got switch_visual_obstacle_avoidance result: %d %s.", success, message.c_str());
     CyberdogJson::Add(json_response, "success", success);
-    CyberdogJson::Add(json_response, "success", message);
+    CyberdogJson::Add(json_response, "message", message);
   } else {
     ERROR("call switch_visual_obstacle_avoidance timeout.");
     returnErrorGrpc(writer, 321, grpc_response.namecode());
@@ -1984,7 +1984,7 @@ void Cyberdog_app::handlePointCloudStateRequest(
     std::string message = future_result.get()->message;
     INFO("Got query_visual_obstacle_avoidance_status result: %d %s.", success, message.c_str());
     CyberdogJson::Add(json_response, "success", success);
-    CyberdogJson::Add(json_response, "success", message);
+    CyberdogJson::Add(json_response, "message", message);
   } else {
     ERROR("call query_visual_obstacle_avoidance_status timeout.");
     returnErrorGrpc(writer, 321, grpc_response.namecode());
