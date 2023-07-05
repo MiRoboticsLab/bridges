@@ -83,6 +83,8 @@ string feedback_msg
 string id                                         # 当前消息帧ID
 string type                                       # 当前消息帧类型
 string operate                                    # 当前操作类型
+string now_version                                # 标识设备当前版本
+string ota_version                                # 标识设备目标版本
 string stage                                      # 当前阶段
 string target                                     # 标识当前操作的目标类型{ota包，deb包}
 string target_stage                               # 标识当前操作的目标阶段
