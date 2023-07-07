@@ -4,10 +4,12 @@ string OPERATE_DOWNLOAD="download"                # [操作]下载目标版本
 string OPERATE_UPGRADE="upgrade"                  # [操作]升级目标版本
 string OPERATE_DELETE="delete"                    # [操作]清除目标文件
 string OPERATE_ROBOOT="reboot"                    # [操作]重启设备
+string OPERATE_RESET="reset"                      # [操作]重置状态
 
 string goal_msg                                   # [操作]重启
 
 string id                                         # 当前消息帧ID
+string user                                       # 当前消息帧源用户标识
 string operate                                    # 当前操作类型
 string data                                       # 当前操作类型对应的附加数据{下载的目标版本地址}
 
@@ -39,6 +41,7 @@ string RESULT_DOWNLOAD="download"                 # [操作]下载目标文件�
 string RESULT_UPGRADE="upgrade"                   # [操作]升级目标文件失败
 string RESULT_DELETE="delete"                     # [操作]删除目标文件失败
 string RESULT_REBOOT="reboot"                     # [操作]重启设备失败
+string RESULT_RESET="reset"                       # [操作]重置设备失败
 
 string RESULT_OTHER_REASONS="fail"                # [操作]其他原因导致的失败
 
