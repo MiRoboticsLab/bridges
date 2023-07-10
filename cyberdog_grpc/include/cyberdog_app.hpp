@@ -731,6 +731,11 @@ private:
     ::grpcapi::RecResponse & grpc_response,
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr lcm_log_upload_client_;
+  void lcmLogHandle(
+    ::grpcapi::RecResponse & grpc_response,
+    ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
+
   std::unique_ptr<ReadySnNode> ready_sn_ptr {nullptr};
 
   LOGGER_MINOR_INSTANCE("Cyberdog_app");

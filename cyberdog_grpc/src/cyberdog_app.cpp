@@ -420,6 +420,9 @@ Cyberdog_app::Cyberdog_app()
   power_off_client_ =
     this->create_client<std_srvs::srv::Trigger>("poweroff");
 
+  lcm_log_upload_client_ =
+    this->create_client<std_srvs::srv::Trigger>("lcm_log_upload");
+
   INFO("Create server");
   if (server_ == nullptr) {
     app_server_thread_ =
@@ -1251,7 +1254,7 @@ void Cyberdog_app::handleOTAAction(
   auto return_feedback = [&](const std::string & feedback_str) {
       grpc_response.set_data(feedback_str);
       writer->Write(grpc_response);
-      INFO_STREAM("transmit feedback: " << feedback_str);
+      INFO_STREAM("transmit feedback progress: " << feedback_str);
     };
 
   auto return_accept = [&](int accepted) {
@@ -1272,7 +1275,7 @@ void Cyberdog_app::handleOTAAction(
     [&](rclcpp_action::Client<protocol::action::OverTheAir>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const protocol::action::OverTheAir::Feedback> feedback) {
       writer_mutex.lock();
-      return_feedback(feedback->feedback_msg);
+      return_feedback(feedback->progress);
       writer_mutex.unlock();
     };
 
@@ -3555,6 +3558,38 @@ void Cyberdog_app::powerOffHandle(
   power_off_client_->async_send_request(req);
 }
 
+void Cyberdog_app::lcmLogHandle(
+  ::grpcapi::RecResponse & grpc_response,
+  ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer)
+{
+  if (!lcm_log_upload_client_->wait_for_service(std::chrono::seconds(3))) {
+    ERROR("lcm_log_upload server not avaiable");
+    returnErrorGrpc(grpc_writer, 322, grpc_response.namecode());
+    return;
+  }
+  auto req = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto future_result = lcm_log_upload_client_->async_send_request(req);
+  rapidjson::StringBuffer strBuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strBuf);
+  std::future_status status = future_result.wait_for(
+    std::chrono::seconds(60));
+  if (status == std::future_status::ready) {
+    bool success = future_result.get()->success;
+    writer.StartObject();
+    writer.Key("success");
+    writer.Bool(success);
+    writer.Key("message");
+    writer.String(future_result.get()->message.c_str());
+    writer.EndObject();
+  } else {
+    ERROR("call lcm_log_upload timeout.");
+    returnErrorGrpc(grpc_writer, 321, grpc_response.namecode());
+    return;
+  }
+  grpc_response.set_data(strBuf.GetString());
+  grpc_writer->Write(grpc_response);
+}
+
 void Cyberdog_app::ProcessMsg(
   const ::grpcapi::SendRequest * grpc_request,
   ::grpc::ServerWriter<::grpcapi::RecResponse> * writer)
@@ -3794,6 +3829,9 @@ void Cyberdog_app::ProcessMsg(
       } break;
     case ::grpcapi::SendRequest::POWER_OFF: {
         powerOffHandle(grpc_response, writer);
+      } break;
+    case ::grpcapi::SendRequest::LCM_LOG_UPLOAD: {
+        lcmLogHandle(grpc_response, writer);
       } break;
     case 55001: {  // for testing
         std_msgs::msg::Bool msg;

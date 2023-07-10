@@ -143,6 +143,7 @@ message SendRequest {
         SET_WORK_ENVIRONMENT = 10004;
         UPLOAD_SYSLOG = 10005;
         POWER_OFF = 10006;
+        LCM_LOG_UPLOAD = 10007;
         ENABLE_ELEC_SKIN = 11001;
         SET_ELEC_SKIN = 11002;
         DOG_LEG_CALIBRATION = 12001;
