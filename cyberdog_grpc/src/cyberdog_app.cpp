@@ -1251,10 +1251,10 @@ void Cyberdog_app::handleOTAAction(
       INFO_STREAM("transmit result: " << result_str);
     };
 
-  auto return_feedback = [&](const std::string & feedback_str) {
+  auto return_feedback = [&](const std::string & feedback_str, const std::string & progress_str) {
       grpc_response.set_data(feedback_str);
       writer->Write(grpc_response);
-      INFO_STREAM("transmit feedback progress: " << feedback_str);
+      INFO_STREAM("transmit feedback progress: " << progress_str);
     };
 
   auto return_accept = [&](int accepted) {
@@ -1275,7 +1275,7 @@ void Cyberdog_app::handleOTAAction(
     [&](rclcpp_action::Client<protocol::action::OverTheAir>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const protocol::action::OverTheAir::Feedback> feedback) {
       writer_mutex.lock();
-      return_feedback(feedback->progress);
+      return_feedback(feedback->feedback_msg, feedback->progress);
       writer_mutex.unlock();
     };
 
