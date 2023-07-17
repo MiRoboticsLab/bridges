@@ -1290,7 +1290,7 @@ void Cyberdog_app::handleOTAAction(
         ota_action_client_, action_goal, feedback_callback,
         result_cv_ptr, result_pp, result_mx, goal_hash);
       if (!acception) {
-        WARN("Navigation action request rejected");
+        WARN("OTA action request rejected");
         return_accept(2);
         return;
       }
