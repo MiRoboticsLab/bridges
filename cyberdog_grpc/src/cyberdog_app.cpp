@@ -423,8 +423,8 @@ Cyberdog_app::Cyberdog_app()
   lcm_log_upload_client_ =
     this->create_client<std_srvs::srv::Trigger>("lcm_log_upload");
 
-  INFO("Create server");
-  if (server_ == nullptr) {
+  INFO("Initializing grpc server");
+  if (!server_) {
     app_server_thread_ =
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
@@ -559,7 +559,7 @@ void Cyberdog_app::RunServer()
   INFO("Server listening on %s", server_address.c_str());
   INFO("server thread id is %ld", gettid());
   server_->Wait();
-  INFO("after wait");
+  INFO("gRPC server is down.");
 }
 
 std::string Cyberdog_app::getDogIp(const string str, const string & split)
@@ -628,8 +628,10 @@ void Cyberdog_app::destroyGrpcServer()
     INFO("close server");
     server_->Shutdown();
     INFO("join server");
-    app_server_thread_->join();
-    server_ = nullptr;
+    if (app_server_thread_->joinable()) {
+      app_server_thread_->join();
+    }
+    server_.reset();
   }
 }
 
@@ -637,7 +639,7 @@ void Cyberdog_app::destroyGrpc()
 {
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   can_process_messages_ = false;
-  INFO("Try to reset app_stub_ if it is NULL");
+  INFO("Try to reset app_stub_ if it is not NULL");
   if (app_stub_) {
     app_stub_.reset();
   }
@@ -646,12 +648,7 @@ void Cyberdog_app::destroyGrpc()
 
 void Cyberdog_app::createGrpc()
 {
-  INFO("Create server");
-  if (!server_) {
-    app_server_thread_ =
-      std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
-  }
-  INFO("Create client");
+  INFO("Creating client");
   grpc::string ip_port;
   {
     std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
