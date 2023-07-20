@@ -115,10 +115,6 @@ Cyberdog_app::Cyberdog_app()
     this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   rclcpp::SubscriptionOptions connector_sub_option;
   connector_sub_option.callback_group = connector_callback_group_;
-  connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
-    "connector_state", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1),
-    connector_sub_option);
 
   timer_interval.init();
 
@@ -423,6 +419,11 @@ Cyberdog_app::Cyberdog_app()
   lcm_log_upload_client_ =
     this->create_client<std_srvs::srv::Trigger>("lcm_log_upload");
 
+  connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
+    "connector_state", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1),
+    connector_sub_option);
+
   INFO("Initializing grpc server");
   if (!server_) {
     app_server_thread_ =
@@ -585,6 +586,10 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
   if (msg->is_connected) {
+    if (!server_) {
+      WARN("gRPC server is not ready yet.");
+      return;
+    }
     update_time_mutex_.lock();
     connector_update_time_point_ = std::chrono::system_clock::now();
     update_time_mutex_.unlock();
