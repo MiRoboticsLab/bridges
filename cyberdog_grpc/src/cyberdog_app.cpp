@@ -115,10 +115,6 @@ Cyberdog_app::Cyberdog_app()
     this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
   rclcpp::SubscriptionOptions connector_sub_option;
   connector_sub_option.callback_group = connector_callback_group_;
-  connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
-    "connector_state", rclcpp::SystemDefaultsQoS(),
-    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1),
-    connector_sub_option);
 
   timer_interval.init();
 
@@ -423,8 +419,13 @@ Cyberdog_app::Cyberdog_app()
   lcm_log_upload_client_ =
     this->create_client<std_srvs::srv::Trigger>("lcm_log_upload");
 
-  INFO("Create server");
-  if (server_ == nullptr) {
+  connect_status_subscriber = this->create_subscription<protocol::msg::ConnectorStatus>(
+    "connector_state", rclcpp::SystemDefaultsQoS(),
+    std::bind(&Cyberdog_app::subscribeConnectStatus, this, _1),
+    connector_sub_option);
+
+  INFO("Initializing grpc server");
+  if (!server_) {
     app_server_thread_ =
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
   }
@@ -559,7 +560,7 @@ void Cyberdog_app::RunServer()
   INFO("Server listening on %s", server_address.c_str());
   INFO("server thread id is %ld", gettid());
   server_->Wait();
-  INFO("after wait");
+  INFO("gRPC server is down.");
 }
 
 std::string Cyberdog_app::getDogIp(const string str, const string & split)
@@ -585,6 +586,10 @@ std::string Cyberdog_app::getPhoneIp(const string str, const string & split)
 void Cyberdog_app::subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg)
 {
   if (msg->is_connected) {
+    if (!server_) {
+      WARN("gRPC server is not ready yet.");
+      return;
+    }
     update_time_mutex_.lock();
     connector_update_time_point_ = std::chrono::system_clock::now();
     update_time_mutex_.unlock();
@@ -628,8 +633,10 @@ void Cyberdog_app::destroyGrpcServer()
     INFO("close server");
     server_->Shutdown();
     INFO("join server");
-    app_server_thread_->join();
-    server_ = nullptr;
+    if (app_server_thread_->joinable()) {
+      app_server_thread_->join();
+    }
+    server_.reset();
   }
 }
 
@@ -637,7 +644,7 @@ void Cyberdog_app::destroyGrpc()
 {
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   can_process_messages_ = false;
-  INFO("Try to reset app_stub_ if it is NULL");
+  INFO("Try to reset app_stub_ if it is not NULL");
   if (app_stub_) {
     app_stub_.reset();
   }
@@ -646,12 +653,7 @@ void Cyberdog_app::destroyGrpc()
 
 void Cyberdog_app::createGrpc()
 {
-  INFO("Create server");
-  if (!server_) {
-    app_server_thread_ =
-      std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
-  }
-  INFO("Create client");
+  INFO("Creating client");
   grpc::string ip_port;
   {
     std::shared_lock<std::shared_mutex> read_lock(connector_mutex_);
@@ -1290,7 +1292,7 @@ void Cyberdog_app::handleOTAAction(
         ota_action_client_, action_goal, feedback_callback,
         result_cv_ptr, result_pp, result_mx, goal_hash);
       if (!acception) {
-        WARN("Navigation action request rejected");
+        WARN("OTA action request rejected");
         return_accept(2);
         return;
       }
