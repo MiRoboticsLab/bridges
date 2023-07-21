@@ -1,52 +1,30 @@
 # goal definition
+
+string USER_APP="APP"                             # [操作]app
+
 string OPERATE_INQUIRE="inquire"                  # [操作]查询设备信息
 string OPERATE_DOWNLOAD="download"                # [操作]下载目标版本
 string OPERATE_UPGRADE="upgrade"                  # [操作]升级目标版本
 string OPERATE_UPGRADE_AND_ROBOOT="upgrade_and_reboot"  # [操作]升级目标版本
 string OPERATE_DELETE="delete"                    # [操作]清除目标文件
 string OPERATE_ROBOOT="reboot"                    # [操作]重启设备
-
 string OPERATE_RESET="reset"                      # [操作]重置状态
+string OPERATE_DISK="disk"                        # [操作]磁盘状态
+
+string TYPE_RESET="file"                          # [操作]文件
+string TYPE_DISK="directory"                      # [操作]目录
 
 string goal_msg                                   # [操作]重启
 
 string id                                         # 当前消息帧ID
 string user                                       # 当前消息帧源用户标识
 string operate                                    # 当前操作类型
-string data                                       # 当前操作类型对应的附加数据{下载的目标版本地址}
-
+string data                                       # 当前操作类型对应的附加数据{下载的目标版本地址/磁盘路径}
+string type                                       # 类型
+string depth                                      # 深度
 ---
 # result definition
 string TYPE="result"                              # [操作]重启
-string RESULT_SUCCESS="success"                   # [操作]成功
-string RESULT_PROTOCOL_FORMAT="protocol_format"   # [操作]协议错误
-string RESULT_FSM_EXCEPTION="fsm_exception"       # [操作]状态机异常
-string RESULT_MOTION_EXCEPTION="motion_exception" # [操作]趴下异常
-string RESULT_BATTERY_IS_LOW="battery_is_low"     # [操作]电池电量低
-string RESULT_BATTERY_NOT_CHARGED="battery_not_charged" # [操作]电池未充电
-string RESULT_UNLOCKED="unlocked"                 # [操作]已解锁
-string RESULT_BUILD_ENVIRONMENT="build_environment"     # [操作]构建环境失败
-string RESULT_NOT_ENOUGH_SPACE="not_enough_space" # [操作]空间不足
-string RESULT_BASE_INFO="base_info_exception"     # [操作]基础信息异常
-string RESULT_CATCH_EXCEPTION="catch_exception"   # [操作]捕获到异常
-string RESULT_CREAT_WORKSPACE="creat_workspace"   # [操作]创建工作空间失败
-string RESULT_BUILD_CONFIG="build_config"         # [操作]构建配置文件失败
-string RESULT_INVALID_URL="invalid_url"           # [操作]存在无效url
-string RESULT_BUILD_URLS="build_urls"             # [操作]构建下载目标连接文件失败
-string RESULT_CLEAN_WORKSPACE="clean_workspace"   # [操作]清除工作空间失败
-string RESULT_WAITING_NETWORK_RECOVERY_TIMEOUT="waiting_network_recovery_timeout"   # [操作]等待网络恢复超时
-string RESULT_UNABLE_RESOLVE_HOST_ADDRESS="unable_to_resolve_host_address"          # [操作]无法解析主机地址
-string RESULT_RESET_PROCESS="reset_process"       # [操作]重置进展失败
-string RESULT_UPDATE_PROCESS="update_process"     # [操作]更新进展失败
-string RESULT_CALL_FLOW_ERROR="call_flow_error"   # [操作]调用流程错误
-string RESULT_DOWNLOAD="download"                 # [操作]下载目标文件失败
-string RESULT_UPGRADE="upgrade"                   # [操作]升级目标文件失败
-string RESULT_DELETE="delete"                     # [操作]删除目标文件失败
-string RESULT_REBOOT="reboot"                     # [操作]重启设备失败
-string RESULT_RESET="reset"                       # [操作]重置设备失败
-
-string RESULT_OTHER_REASONS="fail"                # [操作]其他原因导致的失败
-
 string REBOOT_UPGRADE_RESTART="upgrade_restart"   # [操作]升级重启
 string REBOOT_INVALID="invalid"                   # [操作]其他重启
 string STATE_DURING_UPGRADE="during_upgrade"      # [操作]升级中
@@ -58,7 +36,6 @@ string result_msg
 string id                                         # 当前消息帧ID
 string type                                       # 当前消息帧类型
 string operate                                    # 当前操作类型
-string result                                     # 当前操作结果{}
 string sn                                         # 标识设备SN号
 string not_unlocked                               # 标识设备是否解锁
 string version_nx                                 # 标识设备当前版本
@@ -74,8 +51,21 @@ string version_mr813                              # 标识设备当前版本
 string version_mr813_spie1                        # 标识设备当前版本
 string version_mr813_spie2                        # 标识设备当前版本
 string[] version_motors                           # 标识设备当前版本
+string disk_name                                  # 标识磁盘名称
+string disk_filesystem                            # 标识磁盘文件系统
+string disk_size                                  # 标识磁盘大小
+string disk_used                                  # 标识磁盘使用大小
+string disk_avail                                 # 标识磁盘剩余大小
+string disk_scale                                 # 标识磁盘使用占比
+string disk_mounted                               # 标识磁盘挂载对象
+string[] disk_meta_name                           # 标识磁盘元素名称
+string[] disk_meta_size                           # 标识磁盘大小
+string[] disk_meta_change_time                    # 标识磁盘修改时间
+string[] disk_meta_user_rights                    # 标识磁盘用户权限
 string reboot                                     # 标识是否为升级后首次重启？
 string state                                      # 标识最近一次升级是否成功？
+int32 code                                        # 当前操作状态码
+string result                                     # 当前操作结果
 
 ---
 # feedback definition
