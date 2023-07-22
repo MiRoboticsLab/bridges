@@ -6,13 +6,13 @@ string OPERATE_INQUIRE="inquire"                  # [操作]查询设备信息
 string OPERATE_DOWNLOAD="download"                # [操作]下载目标版本
 string OPERATE_UPGRADE="upgrade"                  # [操作]升级目标版本
 string OPERATE_UPGRADE_AND_ROBOOT="upgrade_and_reboot"  # [操作]升级目标版本
-string OPERATE_DELETE="delete"                    # [操作]清除目标文件
+string OPERATE_REMOVE="remove"                    # [操作]清除目标文件
 string OPERATE_ROBOOT="reboot"                    # [操作]重启设备
 string OPERATE_RESET="reset"                      # [操作]重置状态
 string OPERATE_DISK="disk"                        # [操作]磁盘状态
 
-string TYPE_RESET="file"                          # [操作]文件
-string TYPE_DISK="directory"                      # [操作]目录
+string TYPE_FILE="file"                           # [操作]文件
+string TYPE_DIRECTORY="directory"                 # [操作]目录
 
 string goal_msg                                   # [操作]重启
 
