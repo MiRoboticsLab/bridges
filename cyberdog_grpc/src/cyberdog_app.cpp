@@ -1332,10 +1332,14 @@ void Cyberdog_app::handleOTAAction(
     WARN("OTA action result timeout");
     result_timeout = true;
     writer_mutex.lock();
-    return_result("");  // timeout code
+    returnErrorGrpc(writer, 321, grpc_response.namecode());  // timeout
     writer_mutex.unlock();
   } else {
     result = (*result_pp)->result_msg;
+    if (result.empty() || !connect_mark_) {
+      WARN("APP is disconnected, halt this request!");
+      return;
+    }
     INFO("OTA result: %s", result.c_str());
     writer_mutex.lock();
     return_result(result);
@@ -1548,7 +1552,7 @@ void Cyberdog_app::handleNavigationAction(
     WARN("Navigation action result timeout");
     result_timeout = true;
     writer_mutex.lock();
-    return_result(99);  // timeout code
+    returnErrorGrpc(writer, 321, grpc_response.namecode());  // timeout
     writer_mutex.unlock();
   } else {
     result = (*result_pp)->result;
@@ -1556,6 +1560,10 @@ void Cyberdog_app::handleNavigationAction(
       INFO("Navigation action task succeeded");
     } else {
       WARN("Navigation action task failed");
+    }
+    if (!connect_mark_) {
+      WARN("APP is disconnected, halt this request!");
+      return;
     }
     writer_mutex.lock();
     return_result(result);

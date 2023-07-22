@@ -76,7 +76,7 @@ bool Cyberdog_App_Client::sendHeartBeat(
   ClientContext context;
   context.set_deadline(
     std::chrono::system_clock::now() +
-    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(1)));
+    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(2500)));
   Result result;
   Ticks ticks_;
   ticks_.set_ip(ip);
