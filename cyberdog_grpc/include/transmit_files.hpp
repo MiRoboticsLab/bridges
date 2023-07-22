@@ -21,6 +21,7 @@
 #include <set>
 #include <mutex>
 #include <atomic>
+#include <cstring>
 #include "./cyberdog_app.grpc.pb.h"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
@@ -65,6 +66,25 @@ public:
     return SendFile(writer, file_name, "/home/mi/Camera/", file_size);
   }
 
+  static int ListUnuploadedfiles(const std::string & path, std::set<std::string> & files)
+  {
+    std::string cmd("ls ");
+    cmd += path;
+    FILE * fp;
+    char buf[128] {'\0'};
+    if ((fp = popen(cmd.c_str(), "r")) == NULL) {
+      printf("failed to popen");
+      return -1;
+    }
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+      std::string file_name(buf);
+      file_name = file_name.substr(0, file_name.length() - 1);
+      files.insert(file_name);
+      memset(buf, '\0', sizeof(buf));
+    }
+    return pclose(fp);
+  }
+
   /**
    * @brief Send error code with the writer
    * @param code Error code
@@ -96,17 +116,19 @@ public:
   {
     static std::set<std::string> uncomplete_files;
     static std::mutex file_set_mutex;
-    if (!writer && file_set) {
+    static std::string default_folder = "/home/mi/Camera/";
+    if (!writer && file_set) {  // check undownloaded files
       std::unique_lock<std::mutex> lock(file_set_mutex);
       if (file_set->empty()) {
-        for (auto & file : *file_set) {
-          uncomplete_files.insert(file);
-          INFO_STREAM("Add auto saved file: " << file << " to uncomplete list.");
+        for (auto & file : uncomplete_files) {
+          file_set->insert(file);
+          INFO_STREAM("Add auto saved file: " << file << " to output list.");
         }
       } else {
         *file_set = uncomplete_files;
         INFO("Get uncomplete list.");
       }
+      ListUnuploadedfiles(default_folder, *file_set);
       return true;
     } else if (!writer) {
       ERROR("Illegal calling SendFile!");
