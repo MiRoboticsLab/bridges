@@ -3938,6 +3938,7 @@ void Cyberdog_app::publishNotCompleteSendingFiles()
     writer.EndArray();
     writer.EndObject();
     std::string param = strBuf.GetString();
+    sleep(2);
     send_grpc_msg(::grpcapi::SendRequest::FILES_NOT_DOWNLOAD_COMPLETE, param);
   }
 }
