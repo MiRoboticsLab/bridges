@@ -92,6 +92,7 @@ public:
    */
   static void SendErrorCode(uint32_t code, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
   {
+    ERROR("Sendfile error: %d", code);
     ::grpcapi::FileChunk chunk;
     chunk.set_error_code(code);
     writer->Write(chunk);
