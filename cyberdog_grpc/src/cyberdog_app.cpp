@@ -1531,7 +1531,7 @@ void Cyberdog_app::handleNavigationAction(
     rclcpp::WallRate rate(500ms);
     int latest_sub_status = -1;
     while (rclcpp::ok() &&
-      task_status_.task_status != Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING &&
+      task_status_.task_status == Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING &&
       connect_mark_)
     {
       rate.sleep();
