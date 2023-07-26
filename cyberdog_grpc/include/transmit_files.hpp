@@ -135,7 +135,6 @@ public:
       ERROR("Illegal calling SendFile!");
       return false;
     }
-
     thread_counts_++;
     ::grpcapi::FileChunk chunk;
     chunk.set_file_name(file_name);
@@ -147,12 +146,14 @@ public:
     if (!infile.is_open()) {
       ERROR_STREAM("Failed to open file: " << file_name_with_path);
       SendErrorCode(9, writer);
+      thread_counts_--;
       return false;
     }
     if (file_size == 0) {
       infile.seekg(0, infile.end);
       file_size = infile.tellg();
       infile.seekg(0, infile.beg);
+      INFO_STREAM("correct size is " << uint32_t(file_size));
     }
     chunk.set_file_size(uint32_t(file_size));
     chunk.set_error_code(0);
@@ -182,6 +183,7 @@ public:
     }
     infile.close();
     if (unexpected_interruption) {
+      thread_counts_--;
       return false;
     }
     gettimeofday(&end, NULL);
