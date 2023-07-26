@@ -460,6 +460,7 @@ void Cyberdog_app::HeartBeat()
     std::chrono::system_clock::now());
   rclcpp::WallRate r(500ms);
   std::string ipv4;
+  size_t continue_counts = 0;
   while (rclcpp::ok()) {
     if (can_process_messages_) {
       update_time_mutex_.lock();
@@ -509,6 +510,7 @@ void Cyberdog_app::HeartBeat()
         if (hear_beat_timeout) {
           heart_beat_time_point = std::chrono::system_clock::now();
           connect_mark_ = false;
+          continue_counts = 0;
           std_msgs::msg::Bool msg;
           msg.data = false;
           app_connection_pub_->publish(msg);
@@ -521,6 +523,8 @@ void Cyberdog_app::HeartBeat()
       } else {
         if (!connect_mark_) {
           connect_mark_ = true;
+        }
+        if (continue_counts++ == 5) {
           publishNotCompleteSendingFiles();
         }
         heart_beat_time_point = std::chrono::system_clock::now();
@@ -3943,7 +3947,6 @@ void Cyberdog_app::publishNotCompleteSendingFiles()
     writer.EndArray();
     writer.EndObject();
     std::string param = strBuf.GetString();
-    sleep(2);
     send_grpc_msg(::grpcapi::SendRequest::FILES_NOT_DOWNLOAD_COMPLETE, param);
   }
 }
