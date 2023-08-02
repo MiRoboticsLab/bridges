@@ -110,10 +110,10 @@ bool Cyberdog_App_Client::sendHeartBeat(
     return false;
   }
   INFO_MILLSECONDS(
-    2000, "SetHeartBeat rpc success, %s,%d,%d,%d,%s, status: %d,%d,%d,%d,%d,%d,%d,%d",
+    2000, "SetHeartBeat rpc success, %s,%d,%d,%d,%s, status: %d,%d,%d,%d,%d,%d,%d,%d,%d",
     ip.c_str(), wstrength, battery, internet, sn.c_str(),
     motion_id, task_status, task_sub_status, self_check_code,
     state_switch_state, state_switch_code, wired_charging,
-    wireless_charging);
+    wireless_charging, audio_playing);
   return true;
 }
