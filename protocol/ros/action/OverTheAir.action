@@ -25,11 +25,6 @@ string depth                                      # 深度
 ---
 # result definition
 string TYPE="result"                              # [操作]重启
-string REBOOT_UPGRADE_RESTART="upgrade_restart"   # [操作]升级重启
-string REBOOT_INVALID="invalid"                   # [操作]其他重启
-string STATE_DURING_UPGRADE="during_upgrade"      # [操作]升级中
-string STATE_UPGRADE_SUCCESSED="upgrade_successed"# [状态]升级成功
-string STATE_INVALID="invalid"                    # [状态]未开始，无效
 
 string result_msg
 
