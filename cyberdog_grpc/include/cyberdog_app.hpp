@@ -125,7 +125,10 @@ class Cyberdog_app : public rclcpp::Node
 public:
   Cyberdog_app();
   ~Cyberdog_app();
-  std::string getServiceIp();
+  std::string getServiceIp()
+  {
+    return *server_ip;
+  }
   /**
    * @brief Distribute gRPC request
    * @param grpc_request Request from APP
@@ -164,7 +167,7 @@ private:
   std::shared_ptr<Cyberdog_App_Client> app_stub_;
   mutable std::shared_mutex stub_mutex_;  // mutex for app_stub_
   std::shared_ptr<std::string> server_ip;
-  std::shared_ptr<grpc::Server> server_;
+  std::unique_ptr<grpc::Server> server_;
   // void subscribeIp(const std_msgs::msg::String::SharedPtr msg);
   void subscribeConnectStatus(const protocol::msg::ConnectorStatus::SharedPtr msg);
   void subscribeBmsStatus(const protocol::msg::BmsStatus::SharedPtr msg);
@@ -737,6 +740,9 @@ private:
     ::grpc::ServerWriter<::grpcapi::RecResponse> * grpc_writer);
 
   std::unique_ptr<ReadySnNode> ready_sn_ptr {nullptr};
+
+  // tls certificate
+  std::string pem_root_certs_, pem_server_key_, pem_server_certs_;
 
   LOGGER_MINOR_INSTANCE("Cyberdog_app");
 };

@@ -42,6 +42,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_srvs/srv/trigger.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "ament_index_cpp/get_package_share_directory.hpp"
 #define gettid() syscall(SYS_gettid)
 
 using namespace std::chrono_literals;
@@ -65,6 +66,19 @@ namespace bridges
 {
 std::atomic_int TransmitFiles::thread_counts_ = 0;
 static int64_t requestNumber;
+std::string get_file_contents(const char * fpath)
+{
+  std::ifstream finstream(fpath);
+  if (!finstream.is_open()) {
+    ERROR("file %s cannot be opened!", fpath);
+    return std::string();
+  }
+  std::string contents((std::istreambuf_iterator<char>(finstream)),
+    std::istreambuf_iterator<char>());
+  finstream.close();
+  return contents;
+}
+
 Cyberdog_app::Cyberdog_app()
 : Node("app_server"),
   ticks_(0),
@@ -425,6 +439,18 @@ Cyberdog_app::Cyberdog_app()
     connector_sub_option);
 
   INFO("Initializing grpc server");
+  auto cert_path = ament_index_cpp::get_package_share_directory("params");
+  INFO("cert_path: %s", cert_path.c_str());
+  auto pem_root_certs_file = cert_path + std::string("/toml_config/cyberdog_grpc/ca-cert.pem");
+  auto pem_server_certs_file =
+    cert_path + std::string("/toml_config/cyberdog_grpc/server-cert.pem");
+  auto pem_server_key_file = cert_path + std::string("/toml_config/cyberdog_grpc/server-key.pem");
+  pem_root_certs_ = get_file_contents(pem_root_certs_file.c_str());
+  pem_server_key_ = get_file_contents(pem_server_key_file.c_str());
+  pem_server_certs_ = get_file_contents(pem_server_certs_file.c_str());
+  INFO("pem_root_certs length: %ld", pem_root_certs_.length());
+  INFO("pem_server_key length: %ld", pem_server_key_.length());
+  INFO("pem_server_certs length: %ld", pem_server_certs_.length());
   if (!server_) {
     app_server_thread_ =
       std::make_shared<std::thread>(&Cyberdog_app::RunServer, this);
@@ -540,8 +566,6 @@ void Cyberdog_app::HeartBeat()
   INFO("Exiting HeartBeat thread...");
 }
 
-std::string Cyberdog_app::getServiceIp() {return *server_ip;}
-
 void Cyberdog_app::RunServer()
 {
   INFO("run_server thread id is %ld", gettid());
@@ -552,7 +576,19 @@ void Cyberdog_app::RunServer()
   ServerBuilder builder;
   builder.SetMaxSendMessageSize(CHUNK_SIZE / 4 * 5);
   builder.SetMaxReceiveMessageSize(CHUNK_SIZE / 4 * 5);
-  builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+  if (pem_root_certs_.empty() || pem_server_certs_.empty() || pem_server_key_.empty()) {
+    ERROR("Not able to create secure gRPC server.");
+    return;
+  }
+  grpc::SslServerCredentialsOptions::PemKeyCertPair pkcp = {
+    pem_server_key_.c_str(), pem_server_certs_.c_str()
+  };
+  grpc::SslServerCredentialsOptions ssl_opts(
+    GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY);
+  ssl_opts.pem_root_certs = pem_root_certs_;
+  ssl_opts.pem_key_cert_pairs.push_back(pkcp);
+  std::shared_ptr<grpc::ServerCredentials> creds = grpc::SslServerCredentials(ssl_opts);
+  builder.AddListeningPort(server_address, creds);
   builder.AddChannelArgument(GRPC_ARG_KEEPALIVE_TIME_MS, 1000);
   builder.AddChannelArgument(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 1000);
   builder.AddChannelArgument(
@@ -665,7 +701,14 @@ void Cyberdog_app::createGrpc()
     INFO("Client ip port: %s", ip_port.c_str());
     net_checker.set_ip(*server_ip);
   }
-  auto channel_ = grpc::CreateChannel(ip_port, grpc::InsecureChannelCredentials());
+  grpc::SslCredentialsOptions ssl_opts;
+  ssl_opts.pem_root_certs = pem_root_certs_;
+  ssl_opts.pem_private_key = pem_server_key_;
+  ssl_opts.pem_cert_chain = pem_server_certs_;
+  std::shared_ptr<grpc::ChannelCredentials> creds = grpc::SslCredentials(ssl_opts);
+  grpc::ChannelArguments channel_args;
+  channel_args.SetSslTargetNameOverride("cyberdog2.client");
+  auto channel_ = grpc::CreateCustomChannel(ip_port, creds, channel_args);
   std::unique_lock<std::shared_mutex> write_lock(stub_mutex_);
   app_stub_ = std::make_shared<Cyberdog_App_Client>(channel_);
   can_process_messages_ = true;
