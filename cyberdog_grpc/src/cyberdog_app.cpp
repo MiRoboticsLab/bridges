@@ -1546,6 +1546,7 @@ void Cyberdog_app::handleNavigationAction(
           return;
         }
         uwb_not_from_app = true;
+        INFO("uwb tracking task not from app");
       }
       bool accepted = false;
       if (!uwb_not_from_app) {
@@ -1565,27 +1566,25 @@ void Cyberdog_app::handleNavigationAction(
       }
     }
     return_accept(1);
-    if (!create_new_task && uwb_not_from_app) {
-      fake_feedback_callback(task_status_.task_sub_status);
-    } else if (!create_new_task) {  // access task
+    if (!create_new_task && !uwb_not_from_app) {  // access task
       action_task_manager_.CallLatestFeedback(goal_hash);
-    } else {  // create task
+    } else if (create_new_task) {  // create task
       action_task_manager_.CallFeedbackBeforeAcception(goal_hash);
     }
   }
 
   if (uwb_not_from_app) {
-    rclcpp::WallRate rate(500ms);
+    rclcpp::WallRate rate(100ms);
     int latest_sub_status = -1;
     while (rclcpp::ok() &&
       task_status_.task_status == Navigation::Goal::NAVIGATION_TYPE_START_UWB_TRACKING &&
       connect_mark_)
     {
-      rate.sleep();
       if (latest_sub_status != task_status_.task_sub_status) {
         fake_feedback_callback(task_status_.task_sub_status);
         latest_sub_status = task_status_.task_sub_status;
       }
+      rate.sleep();
     }
     return_result(Navigation::Result::NAVIGATION_RESULT_TYPE_FAILED);
     return;
