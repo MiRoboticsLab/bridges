@@ -3925,6 +3925,7 @@ void Cyberdog_app::ProcessGetFile(
     case ::grpcapi::SendRequest::CAMERA_SERVICE: {
         uint32_t command = 255;
         CyberdogJson::Get(json_request, "command", command);
+        INFO("%d command: %d", ::grpcapi::SendRequest::CAMERA_SERVICE, command);
         if (!processCameraMsg(grpc_request->namecode(), command, writer)) {
           ERROR("Send file error. Please check your connection!");
           return;

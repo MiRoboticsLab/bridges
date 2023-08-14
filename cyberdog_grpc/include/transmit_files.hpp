@@ -121,13 +121,14 @@ public:
     if (!writer && file_set) {  // check undownloaded files
       std::unique_lock<std::mutex> lock(file_set_mutex);
       if (file_set->empty()) {
-        for (auto & file : uncomplete_files) {
-          file_set->insert(file);
-          INFO_STREAM("Add auto saved file: " << file << " to output list.");
-        }
-      } else {
         *file_set = uncomplete_files;
         INFO("Get uncomplete list.");
+      } else {
+        for (auto & file : *file_set) {
+          uncomplete_files.insert(file);
+          INFO_STREAM("Add auto saved file: " << file << " to uncomplete list.");
+        }
+        return true;
       }
       ListUnuploadedfiles(default_folder, *file_set);
       return true;
