@@ -1,0 +1,87 @@
+# goal definition
+
+string USER_APP="APP"                             # [操作]app
+
+string OPERATE_INQUIRE="inquire"                  # [操作]查询设备信息
+string OPERATE_DOWNLOAD="download"                # [操作]下载目标版本
+string OPERATE_UPGRADE="upgrade"                  # [操作]升级目标版本
+string OPERATE_UPGRADE_AND_ROBOOT="upgrade_and_reboot"  # [操作]升级目标版本
+string OPERATE_REMOVE="remove"                    # [操作]清除目标文件
+string OPERATE_ROBOOT="reboot"                    # [操作]重启设备
+string OPERATE_RESET="reset"                      # [操作]重置状态
+string OPERATE_DISK="disk"                        # [操作]磁盘状态
+
+string TYPE_FILE="file"                           # [操作]文件
+string TYPE_DIRECTORY="directory"                 # [操作]目录
+
+string goal_msg                                   # [操作]重启
+
+string id                                         # 当前消息帧ID
+string user                                       # 当前消息帧源用户标识
+string operate                                    # 当前操作类型
+string data                                       # 当前操作类型对应的附加数据{下载的目标版本地址/磁盘路径}
+string type                                       # 类型
+string depth                                      # 深度
+---
+# result definition
+string TYPE="result"                              # [操作]重启
+
+string result_msg
+
+string id                                         # 当前消息帧ID
+string type                                       # 当前消息帧类型
+string operate                                    # 当前操作类型
+string sn                                         # 标识设备SN号
+string not_unlocked                               # 标识设备是否解锁
+string version_nx                                 # 标识设备当前版本
+string version_nx_mini_led                        # 标识设备当前版本
+string version_nx_head_tof                        # 标识设备当前版本
+string version_nx_rear_tof                        # 标识设备当前版本
+string version_nx_head_uwb                        # 标识设备当前版本
+string version_nx_rear_uwb                        # 标识设备当前版本
+string version_nx_imu                             # 标识设备当前版本
+string version_nx_power                           # 标识设备当前版本
+string version_r329                               # 标识设备当前版本
+string version_mr813                              # 标识设备当前版本
+string version_mr813_spie1                        # 标识设备当前版本
+string version_mr813_spie2                        # 标识设备当前版本
+string[] version_motors                           # 标识设备当前版本
+string disk_name                                  # 标识磁盘名称
+string disk_filesystem                            # 标识磁盘文件系统
+string disk_size                                  # 标识磁盘大小
+string disk_used                                  # 标识磁盘使用大小
+string disk_avail                                 # 标识磁盘剩余大小
+string disk_scale                                 # 标识磁盘使用占比
+string disk_mounted                               # 标识磁盘挂载对象
+string[] disk_meta_name                           # 标识磁盘元素名称
+string[] disk_meta_size                           # 标识磁盘大小
+string[] disk_meta_change_time                    # 标识磁盘修改时间
+string[] disk_meta_user_rights                    # 标识磁盘用户权限
+string reboot                                     # 标识是否为升级后首次重启？
+string state                                      # 标识最近一次升级是否成功？
+int32 code                                        # 当前操作状态码
+string result                                     # 当前操作结果
+
+---
+# feedback definition
+string TYPE="feedback"                            # [操作]重启
+string TARGET_OTA="ota"                           # [操作]OTA包
+string TARGET_DEB="deb"                           # [操作]DEB包
+
+string feedback_msg
+
+string id                                         # 当前消息帧ID
+string type                                       # 当前消息帧类型
+string operate                                    # 当前操作类型
+string now_version                                # 标识设备当前版本
+string ota_version                                # 标识设备目标版本
+string stage                                      # 当前阶段
+string target                                     # 标识当前操作的目标类型{ota包，deb包}
+string target_stage                               # 标识当前操作的目标阶段
+string file                                       # 标识当前操作的目标文件
+string size                                       # 标识当前操作目标总计大小
+string schedule                                   # 标识当前操作目标下载大小
+string time_remaining                             # 预计剩余时间
+string progress                                   # 标识当前操作的进度
+string speed                                      # 标识当前操作的速度
+string describe                                   # 描述信息

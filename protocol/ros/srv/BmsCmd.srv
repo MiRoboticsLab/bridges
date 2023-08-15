@@ -1,9 +1,15 @@
 # command
 uint8 BATTERY_COMMAND_ELECTRIC_MACHINE_POWER_UP  = 1   # electric machine power up
 uint8 BATTERY_COMMAND_ELECTRIC_MACHINE_POWER_DOWN = 2  # electric machine power down
+uint8 BATTERY_COMMAND_WIRELESS_CHARGING_TRUN_ON  = 3  # wireless charging turn on
+uint8 BATTERY_COMMAND_WIRELESS_CHARGING_TRUN_OFF = 4  # wireless charging turn off
 
 uint8  electric_machine_command		# 1: power up
                                   # 2: power down
+
+
+uint8 wireless_charging_command   # 3: turn on                 	
+                                  # 4: turn off
 ---
 bool success # true: run success
              # false: run failed
