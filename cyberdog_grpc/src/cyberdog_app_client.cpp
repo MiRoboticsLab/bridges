@@ -71,12 +71,12 @@ bool Cyberdog_App_Client::sendHeartBeat(
   int motion_id, uint8_t task_status, int task_sub_status,
   int self_check_code, const std::string & description,
   int state_switch_state, int state_switch_code,
-  bool wired_charging, bool wireless_charging)
+  bool wired_charging, bool wireless_charging, bool audio_playing)
 {
   ClientContext context;
   context.set_deadline(
     std::chrono::system_clock::now() +
-    std::chrono::duration_cast<std::chrono::seconds>(std::chrono::seconds(1)));
+    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::milliseconds(2500)));
   Result result;
   Ticks ticks_;
   ticks_.set_ip(ip);
@@ -103,16 +103,17 @@ bool Cyberdog_App_Client::sendHeartBeat(
   charging_status->set_wired_charging(wired_charging);
   charging_status->set_wireless_charging(wireless_charging);
   ticks_.set_allocated_charging_status(charging_status);
+  ticks_.set_audio(audio_playing);
   Status status = stub_->heartbeat(&context, ticks_, &result);
   if (!status.ok()) {
     INFO("SetHeartBeat error code:%d", status.error_code());
     return false;
   }
   INFO_MILLSECONDS(
-    2000, "SetHeartBeat rpc success, %s,%d,%d,%d,%s, status: %d,%d,%d,%d,%d,%d,%d,%d",
+    2000, "SetHeartBeat rpc success, %s,%d,%d,%d,%s, status: %d,%d,%d,%d,%d,%d,%d,%d,%d",
     ip.c_str(), wstrength, battery, internet, sn.c_str(),
     motion_id, task_status, task_sub_status, self_check_code,
     state_switch_state, state_switch_code, wired_charging,
-    wireless_charging);
+    wireless_charging, audio_playing);
   return true;
 }

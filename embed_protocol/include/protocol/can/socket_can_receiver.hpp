@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
+// Copyright (c) 2023 Beijing Xiaomi Mobile Software Co., Ltd. All rights reserved.
 // Copyright 2021 the Autoware Foundation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");

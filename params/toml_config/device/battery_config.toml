@@ -45,3 +45,13 @@ can_id = "0x00822100"
 description = ""
 cmd_name = "cmd_turn_off_motor"
 can_id = "0x00822200"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_turn_off_wireless_charging"
+can_id = "0x00824000"
+
+[[cmd]]
+description = ""
+cmd_name = "cmd_turn_on_wireless_charging"
+can_id = "0x00824100"

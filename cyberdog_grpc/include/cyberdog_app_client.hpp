@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Xiaomi Corporation
+// Copyright (c) 2023 Xiaomi Corporation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ public:
     int motion_id, uint8_t task_status, int task_sub_status,
     int self_check_code, const std::string & description,
     int state_switch_state, int state_switch_code,
-    bool wired_charging, bool wireless_charging);
+    bool wired_charging, bool wireless_charging, bool audio_playing);
   /**
    * @brief Call sendMsg service of gRPC
    * @param msg Request of sendMsg
