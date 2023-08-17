@@ -1306,6 +1306,7 @@ void Cyberdog_app::handleOTAAction(
       INFO_STREAM("transmit feedback progress: " << progress_str);
     };
 
+  std::mutex writer_mutex;
   auto return_accept = [&](int accepted) {
       rapidjson::StringBuffer strBuf;
       rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
@@ -1315,11 +1316,12 @@ void Cyberdog_app::handleOTAAction(
       json_writer.EndObject();
       std::string response_string(strBuf.GetString());
       grpc_response.set_data(response_string);
+      writer_mutex.lock();
       writer->Write(grpc_response);
+      writer_mutex.unlock();
       INFO_STREAM("transmit acception: " << response_string);
     };
 
-  std::mutex writer_mutex;
   auto feedback_callback =
     [&](rclcpp_action::Client<protocol::action::OverTheAir>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const protocol::action::OverTheAir::Feedback> feedback) {
@@ -1485,6 +1487,7 @@ void Cyberdog_app::handleNavigationAction(
       INFO_STREAM("transmit feedback: " << response_string);
     };
 
+  std::mutex writer_mutex;
   auto return_accept = [&](int accepted) {
       rapidjson::StringBuffer strBuf;
       rapidjson::Writer<rapidjson::StringBuffer> json_writer(strBuf);
@@ -1494,11 +1497,12 @@ void Cyberdog_app::handleNavigationAction(
       json_writer.EndObject();
       response_string = strBuf.GetString();
       grpc_response.set_data(response_string);
+      writer_mutex.lock();
       writer->Write(grpc_response);
+      writer_mutex.unlock();
       INFO_STREAM("transmit acception: " << response_string);
     };
 
-  std::mutex writer_mutex;
   auto feedback_callback =
     [&](rclcpp_action::Client<Navigation>::GoalHandle::SharedPtr goal_handel_ptr,
       const std::shared_ptr<const Navigation::Feedback> feedback) {
