@@ -1,4 +1,3 @@
-
 string module_name  # 模块名
 uint16 play_id      # 播放ID
 
@@ -7,7 +6,7 @@ uint16 PID_WIFI_ENTER_CONNECTION_MODE_0 = 1  # 进入连接模式
 uint16 PID_WIFI_ENTER_CONNECTION_MODE_1 = 2  # 开启连接模式
 uint16 PID_WIFI_WAIT_FOR_SCAN_CODE_0 = 3     # 请出示WIFI二维码辅助连接
 uint16 PID_WIFI_SCAN_CODE_SUCCEEDED_0 = 4    # 扫码成功，正在连接，请稍后
-uint16 PID_WIFI_CONNECTION_SUCCEEDED_0 = 5   # 目标WIFI连接成功，可以访问互联网
+uint16 PID_WIFI_CONNECTION_SUCCEEDED_0 = 2001   # 目标WIFI连接成功，可以访问互联网
 uint16 PID_WIFI_CONNECTION_SUCCEEDED_1 = 6   # 目标WIFI连接成功，但不可以访问互联网
 uint16 PID_WIFI_CONNECTION_FAILED_0 = 7      # 目标WIFI连接失败，请核对WIFI名称
 uint16 PID_WIFI_CONNECTION_FAILED_1 = 8      # 目标WIFI连接失败，请核对WIFI密码
@@ -106,3 +105,8 @@ uint16 PID_MODEL_VERSION_UPDATE_SUCCESS = 31051 # AI模型更新成功
 uint16 PID_MODEL_VERSION_UPDATE_FAIL = 31052    # AI模型更新失败，请重启后重试
 uint16 PID_MOVE_FAILED = 31053                  # 运动执行失败
 uint16 PID_CAMERAR_SELF_CHECK_FAILED = 31054    # camera自检失败，状态异常
+uint16 PID_POWER =  1000                        # 电量零点
+uint16 PID_PERCENT_0  = 10000                   # 电量为零，关机中
+uint16 PID_PERCENT_5  = 10005                   # 电量低于百分之五，电量即将耗尽，请尽快充电
+uint16 PID_PERCENT_20 = 10020                   # 电量低于百分之二十，部分功能受限!
+uint16 PID_PERCENT_30 = 10030                   # 电量低于百分之三十，请尽快充电!

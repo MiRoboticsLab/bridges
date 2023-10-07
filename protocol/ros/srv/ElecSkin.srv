@@ -1,0 +1,6 @@
+# request
+int32 mode # 0-全黑 1-全白 2-前向后渐变 3-后向前渐变 4-闪烁 5-随机 6-动态（随落地腿变色）
+int32 wave_cycle_time # 2-5静态效果模式下表示变色时间，6动态模式下0值表示落地腿变白，非零表示变深色
+---
+# response
+bool success  

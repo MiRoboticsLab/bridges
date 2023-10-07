@@ -1,0 +1,13 @@
+# device list: bms、touch、led、uwb
+[devices]
+jump = []
+critical = ["bms", "touch"]
+
+# sensor list: tof、lidar、gps、ultrasonic
+[sensors]
+jump = ["gps", "ultrasonic"]
+critical = []
+
+
+
+

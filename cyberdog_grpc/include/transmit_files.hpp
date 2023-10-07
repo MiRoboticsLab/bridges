@@ -21,6 +21,7 @@
 #include <set>
 #include <mutex>
 #include <atomic>
+#include <cstring>
 #include "./cyberdog_app.grpc.pb.h"
 #include "cyberdog_common/cyberdog_log.hpp"
 #include "cyberdog_common/cyberdog_json.hpp"
@@ -65,6 +66,25 @@ public:
     return SendFile(writer, file_name, "/home/mi/Camera/", file_size);
   }
 
+  static int ListUnuploadedfiles(const std::string & path, std::set<std::string> & files)
+  {
+    std::string cmd("ls ");
+    cmd += path;
+    FILE * fp;
+    char buf[128] {'\0'};
+    if ((fp = popen(cmd.c_str(), "r")) == NULL) {
+      printf("failed to popen");
+      return -1;
+    }
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+      std::string file_name(buf);
+      file_name = file_name.substr(0, file_name.length() - 1);
+      files.insert(file_name);
+      memset(buf, '\0', sizeof(buf));
+    }
+    return pclose(fp);
+  }
+
   /**
    * @brief Send error code with the writer
    * @param code Error code
@@ -72,6 +92,7 @@ public:
    */
   static void SendErrorCode(uint32_t code, ::grpc::ServerWriter<::grpcapi::FileChunk> * writer)
   {
+    ERROR("Sendfile error: %d", code);
     ::grpcapi::FileChunk chunk;
     chunk.set_error_code(code);
     writer->Write(chunk);
@@ -96,23 +117,25 @@ public:
   {
     static std::set<std::string> uncomplete_files;
     static std::mutex file_set_mutex;
-    if (!writer && file_set) {
+    static std::string default_folder = "/home/mi/Camera/";
+    if (!writer && file_set) {  // check undownloaded files
       std::unique_lock<std::mutex> lock(file_set_mutex);
       if (file_set->empty()) {
+        *file_set = uncomplete_files;
+        INFO("Get uncomplete list.");
+      } else {
         for (auto & file : *file_set) {
           uncomplete_files.insert(file);
           INFO_STREAM("Add auto saved file: " << file << " to uncomplete list.");
         }
-      } else {
-        *file_set = uncomplete_files;
-        INFO("Get uncomplete list.");
+        return true;
       }
+      ListUnuploadedfiles(default_folder, *file_set);
       return true;
     } else if (!writer) {
       ERROR("Illegal calling SendFile!");
       return false;
     }
-
     thread_counts_++;
     ::grpcapi::FileChunk chunk;
     chunk.set_file_name(file_name);
@@ -124,12 +147,14 @@ public:
     if (!infile.is_open()) {
       ERROR_STREAM("Failed to open file: " << file_name_with_path);
       SendErrorCode(9, writer);
+      thread_counts_--;
       return false;
     }
     if (file_size == 0) {
       infile.seekg(0, infile.end);
       file_size = infile.tellg();
       infile.seekg(0, infile.beg);
+      INFO_STREAM("correct size is " << uint32_t(file_size));
     }
     chunk.set_file_size(uint32_t(file_size));
     chunk.set_error_code(0);
@@ -159,6 +184,7 @@ public:
     }
     infile.close();
     if (unexpected_interruption) {
+      thread_counts_--;
       return false;
     }
     gettimeofday(&end, NULL);

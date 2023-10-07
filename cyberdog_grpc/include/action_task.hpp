@@ -122,7 +122,6 @@ protected:
   std::mutex request_mutex_;
   std::shared_ptr<std::condition_variable> cv_ptr_ {std::make_shared<std::condition_variable>()};
   std::shared_ptr<std::mutex> result_mutex_ptr_ {std::make_shared<std::mutex>()};  // for cv_ptr_
-  bool ready_ {false};  // receive goal_handle, accepted
 };
 
 /**
@@ -145,10 +144,11 @@ public:
    * @param feedback_cb Callback function
    */
   void SetFeedbackCallback(
-    FeedbackCallback<ActionType> feedback_cb)
+    FeedbackCallback<ActionType> feedback_cb, bool access = false)
   {
     std::unique_lock<std::mutex> write_lock(request_mutex_);
     feedback_cb_ = feedback_cb;
+    access_but_before_sending_acception_ = access;
   }
   /**
    * @brief Set result pointer
@@ -215,17 +215,23 @@ public:
    */
   void CallFeedback(
     typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr goal_handle_ptr,
-    const std::shared_ptr<const typename ActionType::Feedback> feedback_ptr)
+    const std::shared_ptr<const typename ActionType::Feedback> feedback_ptr,
+    bool latest_feedback = false)
   {
     std::unique_lock<std::mutex> write_lock(request_mutex_);
     latest_feedback_value_ = feedback_ptr;
     if (!ready_) {
       INFO("Receive feedback before acception.");
-      feedback_buff_.push_back(std::make_pair(goal_handle_ptr, feedback_ptr));
+      feedback_buff_.emplace_back(goal_handle_ptr, feedback_ptr);
       return;
     }
     if (feedback_cb_) {
-      feedback_cb_(goal_handle_ptr, feedback_ptr);
+      if (!access_but_before_sending_acception_) {
+        feedback_cb_(goal_handle_ptr, feedback_ptr);
+      } else if (latest_feedback) {
+        feedback_cb_(goal_handle_ptr, feedback_ptr);
+        access_but_before_sending_acception_ = false;
+      }
     }
   }
   void RemoveRequest() override
@@ -239,7 +245,7 @@ public:
     if (!latest_feedback_value_) {
       return;
     }
-    CallFeedback(goal_handle_ptr_, latest_feedback_value_);
+    CallFeedback(goal_handle_ptr_, latest_feedback_value_, true);
   }
   void CallFeedbackBeforeAcception() override
   {
@@ -293,7 +299,7 @@ public:
 
 private:
   /**
-   * @brief Add a fake result when need to unbind the request (from grpc)
+   * @brief Add a fake result when result is not received
    */
   void addFakeResult()
   {
@@ -322,6 +328,8 @@ private:
   std::shared_ptr<const typename ActionType::Feedback> latest_feedback_value_ {nullptr};
   std::list<std::pair<typename rclcpp_action::ClientGoalHandle<ActionType>::SharedPtr,
     const std::shared_ptr<const typename ActionType::Feedback>>> feedback_buff_;
+  bool ready_ {false};  // receive goal_handle, accepted
+  bool access_but_before_sending_acception_ {false};
   LOGGER_MINOR_INSTANCE("ActionTask");
 };
 
@@ -444,7 +452,7 @@ public:
     }
     std::shared_ptr<ActionTask<ActionType>> action_task_ptr =
       std::static_pointer_cast<ActionTask<ActionType>>(action_task_itr->second);
-    action_task_ptr->SetFeedbackCallback(feedback_cb);
+    action_task_ptr->SetFeedbackCallback(feedback_cb, true);
     action_task_ptr->SetConditionVariable(cv_ptr);
     action_task_ptr->SetResultPtr(result_pp);
     action_task_ptr->SetResultMutex(mx);
@@ -482,7 +490,7 @@ private:
    * @brief Feedback callback of action
    * @tparam ActionType Type of action
    * @param goal_handle Goal handle hash
-   * @param fb Action beedback pointer
+   * @param fb Action feedback pointer
    */
   template<typename ActionType>
   void feedbackCB(

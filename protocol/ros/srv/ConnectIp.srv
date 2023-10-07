@@ -1,0 +1,6 @@
+# request
+string ip_address
+
+---
+# response
+bool success
