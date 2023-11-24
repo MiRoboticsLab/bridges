@@ -1,0 +1,2 @@
+int8 advtiseable
+int8 connectable
